@@ -4,13 +4,20 @@ import Register from "./pages/Register";
 import Login from "./pages/Login";
 import LandingChatPreview from "./components/LandingChatPreview";
 
+// Type for preview chat messages
 type ChatMessage = {
   id: number;
   text: string;
   sender: "user" | "ai";
 };
 
-export default function Landing() {
+// ✅ Props passed from App.tsx
+type LandingProps = {
+  onRegisterClick: () => void;
+  onLoginClick: () => void;
+};
+
+export default function Landing({ onRegisterClick, onLoginClick }: LandingProps) {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [showChatPreview, setShowChatPreview] = useState(false);
@@ -47,41 +54,22 @@ export default function Landing() {
     }
   });
 
-  // sync state
+  // Save to sessionStorage on change
   useEffect(() => {
-    try {
-      sessionStorage.setItem(
-        "amber_chat_messages",
-        JSON.stringify(chatMessages)
-      );
-    } catch (error) {
-      console.error("Error saving chat messages:", error);
-    }
+    sessionStorage.setItem("amber_chat_messages", JSON.stringify(chatMessages));
   }, [chatMessages]);
 
   useEffect(() => {
-    try {
-      sessionStorage.setItem("amber_chat_timeLeft", chatTimeLeft.toString());
-    } catch (error) {
-      console.error("Error saving chat time:", error);
-    }
+    sessionStorage.setItem("amber_chat_timeLeft", chatTimeLeft.toString());
   }, [chatTimeLeft]);
 
   useEffect(() => {
-    try {
-      sessionStorage.setItem(
-        "amber_register_prompt",
-        showRegisterPrompt.toString()
-      );
-    } catch (error) {
-      console.error("Error saving register prompt:", error);
-    }
+    sessionStorage.setItem("amber_register_prompt", showRegisterPrompt.toString());
   }, [showRegisterPrompt]);
 
-  // filter out invalid messages
   const validMessages = chatMessages.filter(
     (msg): msg is ChatMessage =>
-      msg !== null &&
+      msg &&
       typeof msg === "object" &&
       "id" in msg &&
       "text" in msg &&
@@ -91,8 +79,7 @@ export default function Landing() {
 
   useEffect(() => {
     if (!showChatPreview && chatPreviewRef.current) {
-      chatPreviewRef.current.scrollTop =
-        chatPreviewRef.current.scrollHeight;
+      chatPreviewRef.current.scrollTop = chatPreviewRef.current.scrollHeight;
     }
   }, [validMessages, showChatPreview]);
 
@@ -102,23 +89,12 @@ export default function Landing() {
       <header className="w-full flex justify-between items-center px-8 py-4 border-b border-[#D1A75D]">
         <h1 className="text-2xl font-bold text-[#D1A75D]">amber</h1>
         <nav className="flex items-center gap-6 text-sm">
-          <a href="#chat" className="hover:text-[#D1A75D]">
-            Chat
-          </a>
-          <a href="#features" className="hover:text-[#D1A75D]">
-            Features
-          </a>
-          <a href="#reviews" className="hover:text-[#D1A75D]">
-            Reviews
-          </a>
+          <a href="#chat" className="hover:text-[#D1A75D]">Chat</a>
+          <a href="#features" className="hover:text-[#D1A75D]">Features</a>
+          <a href="#reviews" className="hover:text-[#D1A75D]">Reviews</a>
+          <button onClick={onLoginClick} className="hover:text-[#D1A75D]">Login</button>
           <button
-            onClick={() => setShowLogin(true)}
-            className="hover:text-[#D1A75D]"
-          >
-            Login
-          </button>
-          <button
-            onClick={() => setShowRegister(true)}
+            onClick={onRegisterClick}
             className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 rounded hover:bg-[#b88e4f] font-semibold"
           >
             Start Consultation
@@ -126,7 +102,7 @@ export default function Landing() {
         </nav>
       </header>
 
-      {/* Main Section */}
+      {/* Main */}
       <main className="flex-1 flex flex-col lg:flex-row justify-between px-10 py-16 gap-12 w-full">
         <div className="lg:w-1/2">
           <h2 className="text-4xl font-extrabold text-[#D1A75D] mb-4 leading-tight">
@@ -174,9 +150,7 @@ export default function Landing() {
             ))}
             {validMessages.length > 0 &&
               validMessages[validMessages.length - 1].sender === "user" && (
-                <div className="text-sm italic text-[#E7D8C1]">
-                  Amber is typing...
-                </div>
+                <div className="text-sm italic text-[#E7D8C1]">Amber is typing...</div>
               )}
           </div>
 
