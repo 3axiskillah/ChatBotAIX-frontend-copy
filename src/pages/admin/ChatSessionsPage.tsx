@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../../utils/api"; // adjust path if needed
 
 type User = {
   id: number;
@@ -21,17 +22,9 @@ export default function ChatSessionsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/chat/admin/chat-sessions/", {
-      credentials: "include",
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`Error: ${res.status}`);
-        }
-        return res.json();
-      })
+    apiFetch("/api/chat/admin/chat-sessions/", { credentials: "include" })
       .then((data) => setSessions(data))
-      .catch((error) => console.error(error));
+      .catch((error) => console.error("Failed to fetch sessions:", error));
   }, []);
 
   const indexOfLastSession = currentPage * sessionsPerPage;
@@ -70,10 +63,11 @@ export default function ChatSessionsPage() {
                 </td>
                 <td className="px-5 py-4 text-center">
                   <span
-                    className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${session.ended_at
-                      ? "bg-gray-600 text-white"
-                      : "bg-green-600 text-white"
-                      }`}
+                    className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                      session.ended_at
+                        ? "bg-gray-600 text-white"
+                        : "bg-green-600 text-white"
+                    }`}
                   >
                     {session.ended_at ? "Ended" : "Active"}
                   </span>
@@ -94,10 +88,11 @@ export default function ChatSessionsPage() {
       {totalPages > 1 && (
         <div className="flex justify-center mt-4 space-x-3">
           <button
-            className={`px-3 py-1 rounded font-bold ${currentPage === 1
-              ? "bg-[#3A1818] text-[#777] cursor-not-allowed"
-              : "bg-[#D1A75D] text-[#4B1F1F] hover:bg-[#c49851]"
-              }`}
+            className={`px-3 py-1 rounded font-bold ${
+              currentPage === 1
+                ? "bg-[#3A1818] text-[#777] cursor-not-allowed"
+                : "bg-[#D1A75D] text-[#4B1F1F] hover:bg-[#c49851]"
+            }`}
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(currentPage - 1)}
           >
@@ -107,10 +102,11 @@ export default function ChatSessionsPage() {
             Page {currentPage} of {totalPages}
           </span>
           <button
-            className={`px-3 py-1 rounded font-bold ${currentPage === totalPages
-              ? "bg-[#3A1818] text-[#777] cursor-not-allowed"
-              : "bg-[#D1A75D] text-[#4B1F1F] hover:bg-[#c49851]"
-              }`}
+            className={`px-3 py-1 rounded font-bold ${
+              currentPage === totalPages
+                ? "bg-[#3A1818] text-[#777] cursor-not-allowed"
+                : "bg-[#D1A75D] text-[#4B1F1F] hover:bg-[#c49851]"
+            }`}
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage(currentPage + 1)}
           >

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../../utils/api"; // adjust path if needed
 
 type User = {
   id: number;
@@ -17,11 +18,9 @@ export default function UsersPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/accounts/admin/users", {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => setUsers(data));
+    apiFetch("/api/accounts/admin/users/", { credentials: "include" })
+      .then((data) => setUsers(data))
+      .catch((error) => console.error("Failed to fetch users:", error));
   }, []);
 
   const indexOfLastUser = currentPage * usersPerPage;

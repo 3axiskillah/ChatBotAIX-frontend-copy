@@ -1,8 +1,6 @@
 import { useState } from "react";
-import axios from "axios";
 import { toast } from "react-toastify";
-
-axios.defaults.withCredentials = true;
+import { apiFetch } from "../utils/api"; // adjust path if needed
 
 export default function Login({
   onClose,
@@ -20,21 +18,25 @@ export default function Login({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post("/api/accounts/login/", form, { withCredentials: true });
+      await apiFetch("/api/accounts/login/", {
+        method: "POST",
+        body: JSON.stringify(form),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
       toast.success("Logged in successfully!");
 
-      const userResponse = await axios.get("/api/accounts/me/", {
-        withCredentials: true,
-      });
-      const userData = userResponse.data;
+      const userData = await apiFetch("/api/accounts/me/");
 
-      // check if anon migration is needed
       const migrationFlag = localStorage.getItem("anon_migration_needed");
       const anonChat = sessionStorage.getItem("anon_chat");
 
       if (migrationFlag === "true" && anonChat) {
-        await axios.post("/api/chat/migrate_anon/", JSON.parse(anonChat), {
-          withCredentials: true,
+        await apiFetch("/api/chat/migrate_anon/", {
+          method: "POST",
+          body: JSON.parse(anonChat),
         });
         console.log("✅ Migrated anonymous chat to new user account");
         sessionStorage.removeItem("anon_chat");

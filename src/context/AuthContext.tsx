@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import axios from "axios";
+import { apiFetch } from "../utils/api"; // Adjust if your path is different
 
 type User = {
   id: number;
@@ -23,8 +23,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchUser = async () => {
     try {
-      const res = await axios.get("/api/auth/me/", { withCredentials: true });
-      setUser(res.data);
+      const res = await apiFetch("/api/auth/me/");
+      setUser(res);
     } catch {
       setUser(null);
     } finally {
@@ -33,8 +33,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = async () => {
-    await axios.post("/api/auth/logout/", {}, { withCredentials: true });
-    setUser(null);
+    try {
+      await apiFetch("/api/auth/logout/", { method: "POST" });
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      setUser(null);
+    }
   };
 
   useEffect(() => {

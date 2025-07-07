@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { apiFetch } from "../utils/api"; // ← relative path adjusted, no alias
 
 const links = [
   { name: "Dashboard", path: "/admin/dashboard" },
@@ -14,23 +15,22 @@ export default function AdminLayout() {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:8000/api/accounts/logout/", {
+      await apiFetch("/api/accounts/logout/", {
         method: "POST",
         credentials: "include",
       });
-      navigate("/"); // Redirect to Landing page
+      navigate("/");
     } catch (error) {
-      console.error(error);
+      console.error("Logout failed:", error);
     }
   };
-  
+
   return (
     <div className="flex h-screen bg-[#4B1F1F] text-[#E7D8C1]">
       {/* Sidebar */}
       <aside className="w-64 bg-[#3A1818] p-6 border-r border-[#D1A75D] flex flex-col justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#D1A75D]">Admin</h1>
-          
           <nav className="flex flex-col space-y-2 mt-4">
             {links.map((link) => (
               <Link
@@ -48,7 +48,7 @@ export default function AdminLayout() {
           </nav>
         </div>
 
-        {/* Sign Out Button fixed at the bottom-left */}
+        {/* Sign Out Button */}
         <div className="mt-4">
           <button
             onClick={handleLogout}

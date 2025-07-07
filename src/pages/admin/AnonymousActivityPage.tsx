@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { apiFetch } from "../../utils/api"; // adjust path if needed
 
 type AnonymousSession = {
   id: number;
@@ -10,19 +11,18 @@ export default function AnonymousActivityPage() {
   const [sessions, setSessions] = useState<AnonymousSession[]>([]);
 
   useEffect(() => {
-    // Placeholder fetch call:
-    // Replace this with actual endpoint when available
-    fetch("http://localhost:8000/api/chat/admin/anonymous-sessions/", {
-      credentials: "include",
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error("Error loading anonymous sessions");
-        }
-        return res.json();
-      })
-      .then((data) => setSessions(data))
-      .catch((error) => console.error(error));
+    const fetchSessions = async () => {
+      try {
+        const data = await apiFetch("/api/chat/admin/anonymous-sessions/", {
+          credentials: "include",
+        });
+        setSessions(data);
+      } catch (error) {
+        console.error("Error loading anonymous sessions:", error);
+      }
+    };
+
+    fetchSessions();
   }, []);
 
   return (
@@ -56,9 +56,10 @@ export default function AnonymousActivityPage() {
                   </td>
                   <td className="px-5 py-4 text-center">
                     <span
-                      className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${session.ended_at
-                        ? "bg-gray-600 text-white"
-                        : "bg-green-600 text-white"
+                      className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                        session.ended_at
+                          ? "bg-gray-600 text-white"
+                          : "bg-green-600 text-white"
                       }`}
                     >
                       {session.ended_at ? "Ended" : "Active"}

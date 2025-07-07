@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../../utils/api"; // adjust path if needed
 
 type User = {
   id: number;
   username: string;
+  is_premium?: boolean;
 };
 
 type ChatSession = {
@@ -24,31 +26,39 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Chat Sessions
-    fetch("http://localhost:8000/api/chat/admin/chat-sessions/", {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setChatSessions(data);
-        setActiveUserSessions(data.filter((sess: ChatSession) => !sess.ended_at && sess.user !== null).length);
-        setAnonCount(data.filter((sess: ChatSession) => sess.user === null).length);
-      })
-      .catch((error) => console.error(error));
+    const loadDashboardData = async () => {
+      try {
+        // Chat Sessions
+        const sessions = await apiFetch("/api/chat/admin/chat-sessions/", {
+          credentials: "include",
+        });
+        setChatSessions(sessions);
+        setActiveUserSessions(
+          sessions.filter(
+            (sess: ChatSession) => !sess.ended_at && sess.user !== null
+          ).length
+        );
+        setAnonCount(sessions.filter((sess: ChatSession) => sess.user === null).length);
+      } catch (error) {
+        console.error("Error loading chat sessions:", error);
+      }
 
-    // User Stats
-    fetch("http://localhost:8000/api/accounts/admin/users/", {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setUserCount(data.length);
-        setPremiumCount(data.filter((user: any) => user.is_premium).length);
-      })
-      .catch((error) => console.error(error));
+      try {
+        // User Stats
+        const users = await apiFetch("/api/accounts/admin/users/", {
+          credentials: "include",
+        });
+        setUserCount(users.length);
+        setPremiumCount(users.filter((user: User) => user.is_premium).length);
+      } catch (error) {
+        console.error("Error loading user stats:", error);
+      }
 
-    // Placeholder
-    setRevenue(0);
+      // Placeholder for revenue (hook up billing API later)
+      setRevenue(0);
+    };
+
+    loadDashboardData();
   }, []);
 
   return (
@@ -107,10 +117,11 @@ export default function DashboardPage() {
                 </td>
                 <td className="px-5 py-4 text-center">
                   <span
-                    className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${session.ended_at
-                      ? "bg-gray-600 text-white"
-                      : "bg-green-600 text-white"
-                      }`}
+                    className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                      session.ended_at
+                        ? "bg-gray-600 text-white"
+                        : "bg-green-600 text-white"
+                    }`}
                   >
                     {session.ended_at ? "Ended" : "Active"}
                   </span>

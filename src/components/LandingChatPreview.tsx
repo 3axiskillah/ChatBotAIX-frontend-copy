@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type FormEvent } from "react";
+import { apiFetch } from "../utils/api"; // ✅ adjust path if needed
 
 type Message = {
   id: number;
@@ -40,7 +41,6 @@ export default function LandingChatPreview({
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // countdown timer
   useEffect(() => {
     if (showRegisterPrompt) return;
 
@@ -57,7 +57,6 @@ export default function LandingChatPreview({
     return () => clearInterval(timer);
   }, [showRegisterPrompt, setTimeLeft, setShowRegisterPrompt]);
 
-  // simulate initial messages
   useEffect(() => {
     if (!sessionStorage.getItem("amber_chat_initialized") && messages.length === 0) {
       const initialMessages: Message[] = [
@@ -83,12 +82,10 @@ export default function LandingChatPreview({
     }
   }, [messages, setMessages]);
 
-  // scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // send message
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault();
     if (!message.trim() || showRegisterPrompt) return;
@@ -104,9 +101,8 @@ export default function LandingChatPreview({
     setIsTyping(true);
 
     try {
-      const respondRes = await fetch("http://localhost:8001/chat/respond", {
+      const respondRes = await apiFetch("/chat/respond", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: 0,
           anon_id: anonId,
@@ -116,12 +112,13 @@ export default function LandingChatPreview({
             content: msg.text,
           })),
         }),
-      });
-      const data = await respondRes.json();
+      }, true); // useAI = true
+
+      const data = await respondRes;
 
       const fullImageUrl =
         data.image_url && !data.image_url.startsWith("http")
-          ? `http://localhost:8001${data.image_url}`
+          ? `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
           : data.image_url;
 
       const newAIMessage: Message = {
@@ -132,13 +129,10 @@ export default function LandingChatPreview({
       };
       setMessages((prev) => [...prev, newAIMessage]);
 
-      // store conversation in sessionStorage
       sessionStorage.setItem("anon_chat", JSON.stringify([...updated, newAIMessage]));
 
-      // optionally save to Django for analytics if you wish
-      await fetch("http://localhost:8000/api/chat/submit/", {
+      await apiFetch("/chat/submit/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: newUserMessage.text,
           reply: newAIMessage.text,
@@ -163,10 +157,8 @@ export default function LandingChatPreview({
     try {
       const anonHistory = sessionStorage.getItem("anon_chat");
       if (anonHistory) {
-        await fetch("http://localhost:8000/api/chat/migrate_anon/", {
+        await apiFetch("/chat/migrate_anon/", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: anonHistory,
         });
       }
@@ -251,10 +243,7 @@ export default function LandingChatPreview({
         </div>
 
         {/* Input */}
-        <form
-          onSubmit={sendMessage}
-          className="p-4 border-t border-[#D1A75D] bg-[#4B1F1F]"
-        >
+        <form onSubmit={sendMessage} className="p-4 border-t border-[#D1A75D] bg-[#4B1F1F]">
           <div className="relative flex">
             <input
               disabled={showRegisterPrompt}

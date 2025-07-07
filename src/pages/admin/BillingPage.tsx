@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { apiFetch } from "../../utils/api"; // Adjust path if needed
 
 type Transaction = {
   id: number;
@@ -14,15 +15,13 @@ export default function BillingPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/billing/admin/dashboard/", {
-      credentials: "include",
-    })
-      .then((res) => res.json())
+    apiFetch("/api/billing/admin/dashboard/", { credentials: "include" })
       .then((data) => {
         setTotalRevenue(data.total_revenue);
         setActiveSubscribers(data.active_subscribers);
         setTransactions(data.transactions);
-      });
+      })
+      .catch((err) => console.error("Failed to load billing dashboard:", err));
   }, []);
 
   return (
@@ -61,12 +60,13 @@ export default function BillingPage() {
                 <td className="px-5 py-4">{new Date(transaction.date).toLocaleString()}</td>
                 <td className="px-5 py-4">
                   <span
-                    className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${transaction.status === "paid"
-                      ? "bg-green-600 text-white"
-                      : transaction.status === "failed"
-                      ? "bg-red-600 text-white"
-                      : "bg-yellow-600 text-white"
-                      }`}
+                    className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
+                      transaction.status === "paid"
+                        ? "bg-green-600 text-white"
+                        : transaction.status === "failed"
+                        ? "bg-red-600 text-white"
+                        : "bg-yellow-600 text-white"
+                    }`}
                   >
                     {transaction.status}
                   </span>

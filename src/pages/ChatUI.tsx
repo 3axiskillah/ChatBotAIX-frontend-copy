@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../utils/api"; // adjust path if needed
 
 interface Message {
   id: number;
@@ -27,51 +28,35 @@ export default function ChatUI() {
     scrollToBottom();
   }, [messages]);
 
-
   useEffect(() => {
-  const checkAuth = async () => {
-    try {
-      const res = await fetch("http://localhost:8000/api/accounts/me/", {
-        credentials: "include",
-      });
-      if (!res.ok) {
+    const checkAuth = async () => {
+      try {
+        await apiFetch("/api/accounts/me/", { credentials: "include" });
+      } catch {
         navigate("/accounts/login");
       }
-    } catch (e) {
-      navigate("/accounts/login");
-    }
-  };
-  checkAuth();
-}, [navigate]);
+    };
+    checkAuth();
+  }, [navigate]);
 
   useEffect(() => {
     const loadHistory = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/chat/history/", {
-          credentials: "include",
-        });
-        if (!res.ok) throw new Error("Unauthorized");
-
-        const data = await res.json();
-        const formatted: Message[] = data.messages.map(
-          (msg: any, index: number) => ({
-            id: index + 1,
-            text: msg.content,
-            sender: msg.is_user ? "user" : "ai",
-            image_url: msg.image_url || undefined,
-          })
-        );
+        const data = await apiFetch("/api/chat/history/", { credentials: "include" });
+        const formatted: Message[] = data.messages.map((msg: any, index: number) => ({
+          id: index + 1,
+          text: msg.content,
+          sender: msg.is_user ? "user" : "ai",
+          image_url: msg.image_url || undefined,
+        }));
         setMessages(
           formatted.length > 0
             ? formatted
             : [{ id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" }]
         );
-
-        const imgs = formatted
-          .filter((m) => m.image_url)
-          .map((m) => m.image_url!);
+        const imgs = formatted.filter((m) => m.image_url).map((m) => m.image_url!);
         setGalleryImages(imgs);
-      } catch (err) {
+      } catch {
         setMessages([{ id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" }]);
       }
     };
@@ -79,7 +64,7 @@ export default function ChatUI() {
   }, []);
 
   const handleSignOut = async () => {
-    await fetch("http://localhost:8000/api/accounts/logout/", {
+    await apiFetch("/api/accounts/logout/", {
       method: "POST",
       credentials: "include",
     });
@@ -99,23 +84,25 @@ export default function ChatUI() {
     setTyping(true);
 
     try {
-      const res = await fetch("http://localhost:8001/chat/respond", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: message,
-          user_id: 1,
-          history: updated.map((m) => ({
-            role: m.sender === "user" ? "user" : "assistant",
-            content: m.text,
-          })),
-        }),
-      });
+      const data = await apiFetch(
+        "/chat/respond",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            prompt: message,
+            user_id: 1,
+            history: updated.map((m) => ({
+              role: m.sender === "user" ? "user" : "assistant",
+              content: m.text,
+            })),
+          }),
+        },
+        true // useAI
+      );
 
-      const data = await res.json();
       const fullImageUrl =
         data.image_url && !data.image_url.startsWith("http")
-          ? `http://localhost:8001${data.image_url}`
+          ? `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
           : data.image_url;
 
       const aiReplyText: Message = {
@@ -138,9 +125,8 @@ export default function ChatUI() {
         }
       }
 
-      await fetch("http://localhost:8000/api/chat/submit/", {
+      await apiFetch("/api/chat/submit/", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           prompt: message,

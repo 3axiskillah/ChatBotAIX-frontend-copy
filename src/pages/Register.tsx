@@ -1,8 +1,6 @@
 import { useState } from "react";
-import axios from "axios";
 import { toast } from "react-toastify";
-
-axios.defaults.withCredentials = true;
+import { apiFetch } from "../utils/api"; // adjust if your path differs
 
 export default function Register({
   onClose,
@@ -24,7 +22,13 @@ export default function Register({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post("/api/accounts/register/", form);
+      await apiFetch("/api/accounts/register/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
 
       // save credentials for auto-login after verification
       localStorage.setItem("pending_username", form.username);
