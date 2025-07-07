@@ -1,5 +1,5 @@
 // src/pages/admin/ChatSessionDetail.tsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 
 type Message = {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch } from "../../utils/api"; // adjust path if needed
 
 type AnonymousSession = {
