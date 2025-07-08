@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { apiFetch } from "../utils/api"; // adjust path if needed
+import { apiFetch } from "../utils/api";
 
 export default function Login({
   onClose,
