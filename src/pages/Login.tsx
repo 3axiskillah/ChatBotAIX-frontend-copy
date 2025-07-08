@@ -24,11 +24,14 @@ export default function Login({
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // ✅ THIS IS CRUCIAL
       });
 
       toast.success("Logged in successfully!");
 
-      const userData = await apiFetch("/api/accounts/me/");
+      const userData = await apiFetch("/api/accounts/me/", {
+        credentials: "include", // ✅ ensure cookies are included here too
+      });
 
       const migrationFlag = localStorage.getItem("anon_migration_needed");
       const anonChat = sessionStorage.getItem("anon_chat");
@@ -37,6 +40,7 @@ export default function Login({
         await apiFetch("/api/chat/migrate_anon/", {
           method: "POST",
           body: JSON.parse(anonChat),
+          credentials: "include",
         });
         console.log("✅ Migrated anonymous chat to new user account");
         sessionStorage.removeItem("anon_chat");
@@ -44,7 +48,6 @@ export default function Login({
       }
 
       window.location.href = userData.is_admin ? "/admin/dashboard" : "/chat";
-
       if (onClose) onClose();
     } catch (err) {
       toast.error("Invalid username or password.");

@@ -8,15 +8,23 @@ export const apiFetch = async (
 ) => {
   const baseUrl = useAI ? AI_WORKER_URL : API_BASE_URL;
 
-  const res = await fetch(`${baseUrl}${path}`, {
+  const response = await fetch(`${baseUrl}${path}`, {
     ...options,
-    credentials: 'include',
+    credentials: "include",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(options.headers || {}),
     },
   });
 
-  if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
-  return res.json();
+  // ✅ Give better error messages for 401/403
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Error ${response.status}: ${errorText}`);
+  }
+
+  // If it's empty response (204 No Content), return null
+  if (response.status === 204) return null;
+
+  return response.json();
 };
