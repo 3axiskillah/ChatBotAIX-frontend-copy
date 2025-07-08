@@ -9,7 +9,7 @@ export default function Login({
   onClose?: () => void;
   onSwitchToRegister?: () => void;
 }) {
-  const [form, setForm] = useState({ username: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "" });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -21,17 +21,11 @@ export default function Login({
       await apiFetch("/api/accounts/login/", {
         method: "POST",
         body: JSON.stringify(form),
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // ✅ THIS IS CRUCIAL
       });
 
       toast.success("Logged in successfully!");
 
-      const userData = await apiFetch("/api/accounts/me/", {
-        credentials: "include", // ✅ ensure cookies are included here too
-      });
+      const userData = await apiFetch("/api/accounts/me/");
 
       const migrationFlag = localStorage.getItem("anon_migration_needed");
       const anonChat = sessionStorage.getItem("anon_chat");
@@ -40,7 +34,6 @@ export default function Login({
         await apiFetch("/api/chat/migrate_anon/", {
           method: "POST",
           body: JSON.parse(anonChat),
-          credentials: "include",
         });
         console.log("✅ Migrated anonymous chat to new user account");
         sessionStorage.removeItem("anon_chat");
@@ -50,7 +43,7 @@ export default function Login({
       window.location.href = userData.is_admin ? "/admin/dashboard" : "/chat";
       if (onClose) onClose();
     } catch (err) {
-      toast.error("Invalid username or password.");
+      toast.error("Invalid email or password.");
     }
   };
 
@@ -67,13 +60,13 @@ export default function Login({
       </p>
       <div className="space-y-4">
         <div>
-          <label className="block text-sm mb-1">Username</label>
+          <label className="block text-sm mb-1">Email</label>
           <input
-            type="text"
-            name="username"
-            value={form.username}
+            type="email"
+            name="email"
+            value={form.email}
             onChange={handleChange}
-            placeholder="Enter your username"
+            placeholder="Enter your email"
             className="w-full px-4 py-2 border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] rounded-lg"
             required
           />
