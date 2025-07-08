@@ -131,7 +131,7 @@ export default function LandingChatPreview({
 
       sessionStorage.setItem("anon_chat", JSON.stringify([...updated, newAIMessage]));
 
-      await apiFetch("/chat/submit/", {
+      await apiFetch("api/chat/submit/", {
         method: "POST",
         body: JSON.stringify({
           prompt: newUserMessage.text,
@@ -157,7 +157,7 @@ export default function LandingChatPreview({
     try {
       const anonHistory = sessionStorage.getItem("anon_chat");
       if (anonHistory) {
-        await apiFetch("/chat/migrate_anon/", {
+        await apiFetch("api/chat/migrate_anon/", {
           method: "POST",
           body: anonHistory,
         });
