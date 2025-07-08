@@ -8,7 +8,7 @@ export const apiFetch = async (
 ) => {
   const baseUrl = useAI ? AI_WORKER_URL : API_BASE_URL;
 
-  const response = await fetch(`${baseUrl}/${path}`, {
+  const response = await fetch(`${baseUrl}${path}`, {
     ...options,
     credentials: "include",
     headers: {
