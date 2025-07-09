@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
 export default function Register({
@@ -9,11 +10,9 @@ export default function Register({
   onClose?: () => void;
   onSwitchToLogin?: () => void;
 }) {
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-    re_password: "",
-  });
+  const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -21,23 +20,40 @@ export default function Register({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
       await apiFetch("/api/accounts/register/", {
         method: "POST",
         body: JSON.stringify(form),
+        credentials: "include",
       });
 
-      toast.success("Check your email to verify your account before logging in.");
+      toast.success("Account created! Check your email to verify.");
 
-      const anon = sessionStorage.getItem("anon_chat");
-      if (anon) {
-        localStorage.setItem("anon_migration_needed", "true");
+      const userData = await apiFetch("/api/accounts/me/", {
+        credentials: "include",
+      });
+
+      const anonChat = sessionStorage.getItem("anon_chat");
+      const migrationNeeded = localStorage.getItem("anon_migration_needed");
+
+      if (userData && userData.email && migrationNeeded === "true" && anonChat) {
+        await apiFetch("/api/chat/migrate_anon/", {
+          method: "POST",
+          credentials: "include",
+          body: JSON.parse(anonChat),
+        });
+        sessionStorage.removeItem("anon_chat");
+        localStorage.removeItem("anon_migration_needed");
+        console.log("✅ Anonymous chat migrated");
       }
 
       if (onClose) onClose();
-      if (onSwitchToLogin) onSwitchToLogin();
+      window.location.href = userData.is_admin ? "/admin/dashboard" : "/chat";
     } catch (err) {
       toast.error("Registration failed. Please check your details.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -47,12 +63,24 @@ export default function Register({
       className="bg-[#4B1F1F] p-8 rounded-2xl shadow-2xl w-full max-w-md text-[#E7D8C1] border border-[#D1A75D]"
     >
       <h2 className="text-3xl font-extrabold text-center text-[#D1A75D] mb-2">
-        Create an Account
+        Create Account
       </h2>
       <p className="text-center text-[#E7D8C1]/70 mb-6">
-        Start chatting with Amber in just a few moments...
+        Register to unlock full features
       </p>
       <div className="space-y-4">
+        <div>
+          <label className="block text-sm mb-1">Username</label>
+          <input
+            type="text"
+            name="username"
+            value={form.username}
+            onChange={handleChange}
+            placeholder="Enter a username"
+            className="w-full px-4 py-2 border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] rounded-lg"
+            required
+          />
+        </div>
         <div>
           <label className="block text-sm mb-1">Email</label>
           <input
@@ -72,28 +100,17 @@ export default function Register({
             name="password"
             value={form.password}
             onChange={handleChange}
-            placeholder="Create a password"
-            className="w-full px-4 py-2 border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] rounded-lg"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm mb-1">Repeat Password</label>
-          <input
-            type="password"
-            name="re_password"
-            value={form.re_password}
-            onChange={handleChange}
-            placeholder="Repeat your password"
+            placeholder="Choose a strong password"
             className="w-full px-4 py-2 border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] rounded-lg"
             required
           />
         </div>
         <button
           type="submit"
+          disabled={loading}
           className="w-full bg-[#D1A75D] text-[#4B1F1F] py-2 rounded-lg hover:bg-[#b88b35] font-semibold"
         >
-          Register
+          {loading ? "Creating..." : "Register"}
         </button>
       </div>
       <p className="text-center text-sm text-[#E7D8C1]/70 mt-4">

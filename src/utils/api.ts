@@ -1,27 +1,22 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "");
-const AI_WORKER_URL = import.meta.env.VITE_AI_WORKER_URL?.replace(/\/+$/, "");
+export async function apiFetch(
+  url: string,
+  options: RequestInit = {},
+  isAIWorker = false
+) {
+  const base = isAIWorker
+    ? import.meta.env.VITE_AI_WORKER_URL
+    : import.meta.env.VITE_API_BASE_URL;
 
-export const apiFetch = async (
-  path: string,
-  options: Omit<RequestInit, 'body'> & { body?: BodyInit } = {},
-  useAI: boolean = false
-) => {
-  const baseUrl = useAI ? AI_WORKER_URL : API_BASE_URL;
-  const url = `${baseUrl}/${path.replace(/^\/+/, "")}`; // ensure 1 slash only
-
-  const response = await fetch(url, {
+  return fetch(`${base}${url}`, {
     ...options,
-    credentials: "include",
+    credentials: "include", // ✅ REQUIRED
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {}),
     },
+  }).then(async (res) => {
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw data;
+    return data;
   });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Error ${response.status}: ${text}`);
-  }
-
-  return response.status === 204 ? null : response.json();
-};
+}

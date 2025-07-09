@@ -24,13 +24,11 @@ export default function ChatUI() {
 
   const DAILY_LIMIT_SECONDS = 40 * 60;
 
-  // Scroll to latest message
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
   useEffect(scrollToBottom, [messages]);
 
-  // Auth check
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -44,7 +42,6 @@ export default function ChatUI() {
     checkAuth();
   }, [navigate]);
 
-  // Load history
   useEffect(() => {
     const loadHistory = async () => {
       try {
@@ -126,11 +123,11 @@ export default function ChatUI() {
 
     try {
       const data = await apiFetch(
-        "/chat/respond",
+        `${import.meta.env.VITE_AI_WORKER_URL}/chat/respond`,
         {
           method: "POST",
           body: JSON.stringify({
-            user_id: user.id, // ✅ critical fix here
+            user_id: user.id,
             prompt: message,
             history: updated.map((m) => ({
               role: m.sender === "user" ? "user" : "assistant",
@@ -141,9 +138,10 @@ export default function ChatUI() {
         true
       );
 
-      const fullImageUrl = data.image_url && !data.image_url.startsWith("http")
-        ? `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
-        : data.image_url;
+      const fullImageUrl =
+        data.image_url && !data.image_url.startsWith("http")
+          ? `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
+          : data.image_url;
 
       setTimeout(async () => {
         const aiReplyText: Message = {
@@ -196,7 +194,7 @@ export default function ChatUI() {
 
   return (
     <div className="w-screen h-screen flex bg-[#4B1F1F] text-[#E7D8C1] overflow-hidden">
-      {/* Sidebar Gallery */}
+      {/* Sidebar */}
       <div className={`flex flex-col bg-[#3A1818] border-r border-[#D1A75D] transition-all duration-300 ease-in-out ${
         sidebarOpen ? "w-64 p-4" : "w-0 p-0"} overflow-y-auto`}>
         <h2 className="text-lg font-bold mb-4">Gallery</h2>
@@ -213,7 +211,7 @@ export default function ChatUI() {
         </div>
       </div>
 
-      {/* Modal Image Preview */}
+      {/* Modal */}
       {modalImage && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
           onClick={() => setModalImage(null)}>
@@ -223,7 +221,7 @@ export default function ChatUI() {
         </div>
       )}
 
-      {/* Chat UI */}
+      {/* Main Chat */}
       <div className="flex-1 flex flex-col relative">
         <header className="flex justify-between items-center px-6 py-4 border-b border-[#D1A75D] bg-[#4B1F1F]">
           <div className="flex items-center gap-3">
@@ -259,7 +257,6 @@ export default function ChatUI() {
           </div>
         </header>
 
-        {/* Messages */}
         <div className="flex-1 p-6 overflow-y-auto space-y-4">
           {messages.map((msg) => (
             <div key={msg.id}>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
 export default function Login({
@@ -10,6 +11,7 @@ export default function Login({
   onSwitchToRegister?: () => void;
 }) {
   const [form, setForm] = useState({ email: "", password: "" });
+  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -21,40 +23,32 @@ export default function Login({
       await apiFetch("/api/accounts/login/", {
         method: "POST",
         body: JSON.stringify(form),
+        credentials: "include",
       });
 
       toast.success("Logged in successfully!");
 
-      const userData = await apiFetch("/api/accounts/me/");
+      const userData = await apiFetch("/api/accounts/me/", {
+        credentials: "include",
+      });
 
+      const migrationFlag = localStorage.getItem("anon_migration_needed");
       const anonChat = sessionStorage.getItem("anon_chat");
-      const cameFromLanding = sessionStorage.getItem("amber_chat_initialized");
 
-      // Only migrate if chat exists and it's not an admin
-      if (anonChat && cameFromLanding && !userData.is_admin) {
-        try {
-          await apiFetch("/api/chat/migrate_anon/", {
-            method: "POST",
-            body: JSON.parse(anonChat),
-          });
-          console.log("✅ Migrated anonymous chat");
-          sessionStorage.removeItem("anon_chat");
-          sessionStorage.removeItem("amber_chat_initialized");
-        } catch (err) {
-          console.warn("Migration failed (non-critical):", err);
-        }
-      }
-
-      // Admin users go to dashboard
-      if (userData.is_admin) {
-        window.location.href = "/admin/dashboard";
-      } else {
-        window.location.href = "/chat";
+      if (migrationFlag === "true" && anonChat) {
+        await apiFetch("/api/chat/migrate_anon/", {
+          method: "POST",
+          credentials: "include",
+          body: JSON.parse(anonChat),
+        });
+        console.log("✅ Migrated anonymous chat to new user account");
+        sessionStorage.removeItem("anon_chat");
+        localStorage.removeItem("anon_migration_needed");
       }
 
       if (onClose) onClose();
+      window.location.href = userData.is_admin ? "/admin/dashboard" : "/chat";
     } catch (err) {
-      console.error("Login failed:", err);
       toast.error("Invalid email or password.");
     }
   };
