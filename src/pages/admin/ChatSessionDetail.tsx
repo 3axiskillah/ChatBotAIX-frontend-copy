@@ -1,6 +1,7 @@
 // src/pages/admin/ChatSessionDetail.tsx
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { apiFetch } from "../../utils/api"; // Adjust path as needed
 
 type Message = {
   id: number;
@@ -14,11 +15,18 @@ export default function ChatSessionDetail() {
   const [messages, setMessages] = useState<Message[]>([]);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/api/chat/admin/chat-sessions/${sessionId}/messages/`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => setMessages(data));
+    const loadMessages = async () => {
+      try {
+        const data = await apiFetch(`/api/chat/admin/chat-sessions/${sessionId}/messages/`, {
+          credentials: "include",
+        });
+        setMessages(data);
+      } catch (err) {
+        console.error("Failed to load messages", err);
+      }
+    };
+
+    if (sessionId) loadMessages();
   }, [sessionId]);
 
   return (
@@ -37,7 +45,11 @@ export default function ChatSessionDetail() {
             <p className="mb-2">{msg.content}</p>
             {msg.image_url && (
               <img
-                src={`http://localhost:8001${msg.image_url}`}
+                src={
+                  msg.image_url.startsWith("http")
+                    ? msg.image_url
+                    : `${import.meta.env.VITE_API_BASE_URL}${msg.image_url}`
+                }
                 alt="Chat image"
                 className="rounded max-w-sm"
               />
