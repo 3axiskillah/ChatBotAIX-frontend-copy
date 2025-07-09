@@ -1,5 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;       // Django backend
-const AI_WORKER_URL = import.meta.env.VITE_AI_WORKER_URL;     // AI worker
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "");
+const AI_WORKER_URL = import.meta.env.VITE_AI_WORKER_URL?.replace(/\/+$/, "");
 
 export const apiFetch = async (
   path: string,
@@ -7,8 +7,9 @@ export const apiFetch = async (
   useAI: boolean = false
 ) => {
   const baseUrl = useAI ? AI_WORKER_URL : API_BASE_URL;
+  const url = `${baseUrl}/${path.replace(/^\/+/, "")}`; // ensure 1 slash only
 
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await fetch(url, {
     ...options,
     credentials: "include",
     headers: {
@@ -17,14 +18,10 @@ export const apiFetch = async (
     },
   });
 
-  // ✅ Give better error messages for 401/403
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Error ${response.status}: ${errorText}`);
+    const text = await response.text();
+    throw new Error(`Error ${response.status}: ${text}`);
   }
 
-  // If it's empty response (204 No Content), return null
-  if (response.status === 204) return null;
-
-  return response.json();
+  return response.status === 204 ? null : response.json();
 };
