@@ -27,22 +27,34 @@ export default function Login({
 
       const userData = await apiFetch("/api/accounts/me/");
 
-      const migrationFlag = localStorage.getItem("anon_migration_needed");
       const anonChat = sessionStorage.getItem("anon_chat");
+      const cameFromLanding = sessionStorage.getItem("amber_chat_initialized");
 
-      if (migrationFlag === "true" && anonChat) {
-        await apiFetch("/api/chat/migrate_anon/", {
-          method: "POST",
-          body: JSON.parse(anonChat),
-        });
-        console.log("✅ Migrated anonymous chat to new user account");
-        sessionStorage.removeItem("anon_chat");
-        localStorage.removeItem("anon_migration_needed");
+      // Only migrate if chat exists and it's not an admin
+      if (anonChat && cameFromLanding && !userData.is_admin) {
+        try {
+          await apiFetch("/api/chat/migrate_anon/", {
+            method: "POST",
+            body: JSON.parse(anonChat),
+          });
+          console.log("✅ Migrated anonymous chat");
+          sessionStorage.removeItem("anon_chat");
+          sessionStorage.removeItem("amber_chat_initialized");
+        } catch (err) {
+          console.warn("Migration failed (non-critical):", err);
+        }
       }
 
-      window.location.href = userData.is_admin ? "/admin/dashboard" : "/chat";
+      // Admin users go to dashboard
+      if (userData.is_admin) {
+        window.location.href = "/admin/dashboard";
+      } else {
+        window.location.href = "/chat";
+      }
+
       if (onClose) onClose();
     } catch (err) {
+      console.error("Login failed:", err);
       toast.error("Invalid email or password.");
     }
   };
