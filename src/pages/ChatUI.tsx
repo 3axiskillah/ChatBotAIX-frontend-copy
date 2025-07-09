@@ -18,7 +18,7 @@ export default function ChatUI() {
   const [typing, setTyping] = useState(false);
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
-  const [isPremium, setIsPremium] = useState(false);
+  const [user, setUser] = useState<{ id: number; is_premium: boolean } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -28,16 +28,15 @@ export default function ChatUI() {
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-
   useEffect(scrollToBottom, [messages]);
 
-  // Auth check + get is_premium flag
+  // Auth check
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const user = await apiFetch("/api/accounts/me/", { credentials: "include" });
-        if (!user || !user.email) throw new Error();
-        setIsPremium(user.is_premium);
+        const u = await apiFetch("/api/accounts/me/", { credentials: "include" });
+        if (!u || !u.email) throw new Error();
+        setUser({ id: u.id, is_premium: u.is_premium });
       } catch {
         navigate("/accounts/login");
       }
@@ -45,7 +44,7 @@ export default function ChatUI() {
     checkAuth();
   }, [navigate]);
 
-  // Load chat history
+  // Load history
   useEffect(() => {
     const loadHistory = async () => {
       try {
@@ -80,7 +79,7 @@ export default function ChatUI() {
   };
 
   const checkTimeLimit = () => {
-    if (isPremium) return true;
+    if (user?.is_premium) return true;
 
     const today = new Date().toISOString().slice(0, 10);
     const usedDate = localStorage.getItem("chat_last_used_date");
@@ -115,7 +114,7 @@ export default function ChatUI() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || typing || !checkTimeLimit()) return;
+    if (!message.trim() || typing || !checkTimeLimit() || !user) return;
 
     const newMsg: Message = { id: Date.now(), text: message, sender: "user" };
     const updated = [...messages, newMsg];
@@ -131,6 +130,7 @@ export default function ChatUI() {
         {
           method: "POST",
           body: JSON.stringify({
+            user_id: user.id, // ✅ critical fix here
             prompt: message,
             history: updated.map((m) => ({
               role: m.sender === "user" ? "user" : "assistant",
@@ -145,7 +145,6 @@ export default function ChatUI() {
         ? `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
         : data.image_url;
 
-      // Simulate typing delay
       setTimeout(async () => {
         const aiReplyText: Message = {
           id: Date.now() + 1,
@@ -180,7 +179,7 @@ export default function ChatUI() {
         const durationSec = Math.floor((Date.now() - startTime) / 1000);
         incrementTimeUsed(durationSec);
         setTyping(false);
-      }, 1500 + Math.random() * 1000); // Simulate realistic delay
+      }, 1500 + Math.random() * 1000);
     } catch (err) {
       console.error(err);
       setMessages((prev) => [
