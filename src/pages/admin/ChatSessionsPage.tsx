@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetch } from "../../utils/api"; // adjust path if needed
+import { apiFetch } from "../../utils/api";
 
 type User = {
   id: number;
