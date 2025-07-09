@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { apiFetch } from "../utils/api"; // adjust if your path differs
+import { apiFetch } from "../utils/api";
 
 export default function Register({
   onClose,
@@ -10,9 +10,9 @@ export default function Register({
   onSwitchToLogin?: () => void;
 }) {
   const [form, setForm] = useState({
-    username: "",
     email: "",
     password: "",
+    re_password: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,22 +24,18 @@ export default function Register({
     try {
       await apiFetch("/api/accounts/register/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify(form),
       });
 
-      // save credentials for auto-login after verification
-      localStorage.setItem("pending_username", form.username);
-      localStorage.setItem("pending_password", form.password);
+      toast.success("Check your email to verify your account before logging in.");
 
-      // flag to migrate anon chat only for NEW account
-      localStorage.setItem("anon_migration_needed", "true");
-
-      toast.success("Account created! Please check your email to verify.");
+      const anon = sessionStorage.getItem("anon_chat");
+      if (anon) {
+        localStorage.setItem("anon_migration_needed", "true");
+      }
 
       if (onClose) onClose();
+      if (onSwitchToLogin) onSwitchToLogin();
     } catch (err) {
       toast.error("Registration failed. Please check your details.");
     }
@@ -51,24 +47,12 @@ export default function Register({
       className="bg-[#4B1F1F] p-8 rounded-2xl shadow-2xl w-full max-w-md text-[#E7D8C1] border border-[#D1A75D]"
     >
       <h2 className="text-3xl font-extrabold text-center text-[#D1A75D] mb-2">
-        Create Your Account
+        Create an Account
       </h2>
       <p className="text-center text-[#E7D8C1]/70 mb-6">
-        Start your journey with Amber
+        Start chatting with Amber in just a few moments...
       </p>
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm mb-1">Username</label>
-          <input
-            type="text"
-            name="username"
-            value={form.username}
-            onChange={handleChange}
-            placeholder="Enter your username"
-            className="w-full px-4 py-2 border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] rounded-lg"
-            required
-          />
-        </div>
         <div>
           <label className="block text-sm mb-1">Email</label>
           <input
@@ -93,11 +77,23 @@ export default function Register({
             required
           />
         </div>
+        <div>
+          <label className="block text-sm mb-1">Repeat Password</label>
+          <input
+            type="password"
+            name="re_password"
+            value={form.re_password}
+            onChange={handleChange}
+            placeholder="Repeat your password"
+            className="w-full px-4 py-2 border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] rounded-lg"
+            required
+          />
+        </div>
         <button
           type="submit"
           className="w-full bg-[#D1A75D] text-[#4B1F1F] py-2 rounded-lg hover:bg-[#b88b35] font-semibold"
         >
-          Sign Up
+          Register
         </button>
       </div>
       <p className="text-center text-sm text-[#E7D8C1]/70 mt-4">
@@ -109,7 +105,7 @@ export default function Register({
             if (onSwitchToLogin) onSwitchToLogin();
           }}
         >
-          Log In
+          Sign In
         </span>
       </p>
     </form>
