@@ -1,7 +1,6 @@
-// src/pages/admin/ChatSessionDetail.tsx
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { apiFetch } from "../../utils/api"; // Adjust path as needed
+import { apiFetch } from "../../utils/api";
 
 type Message = {
   id: number;
@@ -15,18 +14,11 @@ export default function ChatSessionDetail() {
   const [messages, setMessages] = useState<Message[]>([]);
 
   useEffect(() => {
-    const loadMessages = async () => {
-      try {
-        const data = await apiFetch(`/api/chat/admin/chat-sessions/${sessionId}/messages/`, {
-          credentials: "include",
-        });
-        setMessages(data);
-      } catch (err) {
-        console.error("Failed to load messages", err);
-      }
-    };
+    if (!sessionId) return;
 
-    if (sessionId) loadMessages();
+    apiFetch(`/api/chat/admin/chat-sessions/${sessionId}/messages/`)
+      .then((data) => setMessages(data))
+      .catch((err) => console.error("Failed to load messages", err));
   }, [sessionId]);
 
   return (
@@ -45,11 +37,7 @@ export default function ChatSessionDetail() {
             <p className="mb-2">{msg.content}</p>
             {msg.image_url && (
               <img
-                src={
-                  msg.image_url.startsWith("http")
-                    ? msg.image_url
-                    : `${import.meta.env.VITE_API_BASE_URL}${msg.image_url}`
-                }
+                src={msg.image_url.startsWith("http") ? msg.image_url : `${import.meta.env.VITE_API_BASE_URL}${msg.image_url}`}
                 alt="Chat image"
                 className="rounded max-w-sm"
               />
