@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { apiFetch } from "../utils/api";
+import { useNavigate } from "react-router-dom";
 
 export default function Login({
   onClose,
@@ -10,6 +11,7 @@ export default function Login({
   onSwitchToRegister?: () => void;
 }) {
   const [form, setForm] = useState({ email: "", password: "" });
+  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -18,46 +20,53 @@ export default function Login({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await apiFetch("/api/accounts/login/", {
+      // Login
+      const loginRes = await apiFetch("/api/accounts/login/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           email: form.email,
           password: form.password,
         }),
       });
 
+      if (!loginRes.ok) {
+        throw new Error("Login failed");
+      }
+
       toast.success("Logged in successfully!");
 
+      // Fetch user data
       const userData = await apiFetch("/api/accounts/me/", {
         method: "GET",
-      });
+        credentials: "include",
+      }).then((res) => res.json());
 
-      // Optional: migrate anonymous chat if flagged
+      // Migrate anonymous chat
       const migrationFlag = localStorage.getItem("anon_migration_needed");
       const anonChat = sessionStorage.getItem("anon_chat");
 
       if (migrationFlag === "true" && anonChat) {
         await apiFetch("/api/chat/migrate_anon/", {
           method: "POST",
-          body: JSON.parse(anonChat),
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: anonChat,
         });
         sessionStorage.removeItem("anon_chat");
         localStorage.removeItem("anon_migration_needed");
         console.log("✅ Migrated anonymous chat to new user account");
       }
 
-      // Redirect
       if (onClose) onClose();
-      if (userData.is_admin) {
-        window.location.href = "/admin/dashboard";
-      } else {
-        window.location.href = "/chat";
-      }
-    } catch (err: any) {
-      console.error("❌ Login error:", err);
+      navigate(userData.is_admin ? "/admin/dashboard" : "/chat");
+    } catch (err) {
+      console.error(err);
       toast.error("Invalid email or password.");
     }
   };
@@ -106,7 +115,7 @@ export default function Login({
         </button>
       </div>
       <p className="text-center text-sm text-[#E7D8C1]/70 mt-4">
-        Don’t have an account?{" "}
+        Don’t have an account?{' '}
         <span
           className="text-[#D1A75D] hover:underline cursor-pointer"
           onClick={() => {
