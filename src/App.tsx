@@ -62,7 +62,13 @@ function App() {
       {/* Modals */}
       {showRegister && (
         <Modal onClose={() => setShowRegister(false)}>
-          <Register onClose={() => setShowRegister(false)} />
+          <Register
+            onClose={() => setShowRegister(false)}
+            onSwitchToLogin={() => {
+              setShowRegister(false);
+              setShowLogin(true);
+            }}
+          />
         </Modal>
       )}
       {showLogin && (

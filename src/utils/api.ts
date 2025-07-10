@@ -1,22 +1,39 @@
+// utils/api.ts
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const AI_WORKER_URL = import.meta.env.VITE_AI_WORKER_URL;
+
 export async function apiFetch(
-  url: string,
+  endpoint: string,
   options: RequestInit = {},
   isAIWorker = false
 ) {
-  const base = isAIWorker
-    ? import.meta.env.VITE_AI_WORKER_URL
-    : import.meta.env.VITE_API_BASE_URL;
+  const url = isAIWorker ? `${AI_WORKER_URL}${endpoint}` : `${API_BASE_URL}${endpoint}`;
 
-  return fetch(`${base}${url}`, {
-    ...options,
-    credentials: "include", // ✅ REQUIRED
+  const defaultHeaders: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  const fetchOptions: RequestInit = {
+    method: options.method || "GET",
     headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
+      ...defaultHeaders,
+      ...options.headers,
     },
-  }).then(async (res) => {
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw data;
-    return data;
-  });
+    credentials: isAIWorker ? "omit" : "include", // only Django uses cookies
+    ...options,
+  };
+
+  if (options.body && typeof options.body !== "string") {
+    fetchOptions.body = JSON.stringify(options.body);
+  }
+
+  const res = await fetch(url, fetchOptions);
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Fetch failed: ${res.status} ${errorText}`);
+  }
+
+  return res.json();
 }

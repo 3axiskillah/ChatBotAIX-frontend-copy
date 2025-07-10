@@ -33,7 +33,7 @@ export default function ChatUI() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const u = await apiFetch("/api/accounts/me/", { credentials: "include" });
+        const u = await apiFetch("/api/accounts/me/");
         if (!u || !u.email) throw new Error();
         setUser({ id: u.id, is_premium: u.is_premium });
       } catch {
@@ -46,7 +46,7 @@ export default function ChatUI() {
   useEffect(() => {
     const loadAllHistory = async () => {
       try {
-        const data = await apiFetch("/api/chat/history/all/", { credentials: "include" });
+        const data = await apiFetch("/api/chat/history/all/");
         const formatted: Message[] = data.messages.map((msg: any, index: number) => ({
           id: index + 1,
           text: msg.content,
@@ -69,10 +69,7 @@ export default function ChatUI() {
   }, []);
 
   const handleSignOut = async () => {
-    await apiFetch("/api/accounts/logout/", {
-      method: "POST",
-      credentials: "include",
-    });
+    await apiFetch("/api/accounts/logout/", { method: "POST" });
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
     navigate("/");
@@ -126,9 +123,10 @@ export default function ChatUI() {
 
     try {
       const data = await apiFetch(
-        `${import.meta.env.VITE_AI_WORKER_URL}/chat/respond`,
+        "/chat/respond",
         {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             user_id: user.id,
             prompt: message,
@@ -138,7 +136,7 @@ export default function ChatUI() {
             })),
           }),
         },
-        true
+        true // isAIWorker = true
       );
 
       const fullImageUrl =
@@ -169,7 +167,7 @@ export default function ChatUI() {
 
         await apiFetch("/api/chat/submit/", {
           method: "POST",
-          credentials: "include",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             prompt: message,
             reply: data.response,
