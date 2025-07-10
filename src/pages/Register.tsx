@@ -4,10 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
 export default function Register({
-  onClose,
   onSwitchToLogin,
 }: {
-  onClose: () => void;
   onSwitchToLogin: () => void;
 }) {
   const navigate = useNavigate();

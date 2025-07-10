@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
 export default function Login({
@@ -11,7 +10,6 @@ export default function Login({
   onSwitchToRegister?: () => void;
 }) {
   const [form, setForm] = useState({ email: "", password: "" });
-  const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });

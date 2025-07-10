@@ -181,7 +181,6 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
       {showRegister && (
         <Modal onClose={() => setShowRegister(false)}>
           <Register
-            onClose={() => setShowRegister(false)}
             onSwitchToLogin={() => {
               setShowRegister(false);
               setShowLogin(true);
