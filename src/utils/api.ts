@@ -20,12 +20,13 @@ export async function apiFetch(
       ...defaultHeaders,
       ...options.headers,
     },
-    credentials: isAIWorker ? "omit" : "include", // only Django uses cookies
+    credentials: isAIWorker ? "omit" : "include",
     ...options,
   };
 
-  if (options.body && typeof options.body !== "string") {
-    fetchOptions.body = JSON.stringify(options.body);
+  if (options.body) {
+    fetchOptions.body =
+      typeof options.body === "string" ? options.body : JSON.stringify(options.body);
   }
 
   const res = await fetch(url, fetchOptions);
@@ -37,3 +38,4 @@ export async function apiFetch(
 
   return res.json();
 }
+
