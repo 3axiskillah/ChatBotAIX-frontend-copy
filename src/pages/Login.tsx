@@ -18,15 +18,17 @@ export default function Login({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Login using "username" field for backend compatibility (even though it's email)
-      await apiFetch("/api/accounts/login/", {
+      // Login via email & password
+      const loginRes = await apiFetch("/api/accounts/login/", {
         method: "POST",
         credentials: "include",
         body: JSON.stringify({
-          username: form.email, // backend expects "username" key
+          email: form.email,
           password: form.password,
         }),
       });
+
+      if (!loginRes.ok) throw new Error("Invalid login");
 
       toast.success("Logged in successfully!");
 
@@ -34,7 +36,7 @@ export default function Login({
         credentials: "include",
       });
 
-      // Migrate anonymous chat if needed
+      // Optional: migrate anon chat if flagged
       const migrationFlag = localStorage.getItem("anon_migration_needed");
       const anonChat = sessionStorage.getItem("anon_chat");
 
@@ -44,11 +46,12 @@ export default function Login({
           credentials: "include",
           body: JSON.parse(anonChat),
         });
-        console.log("✅ Migrated anonymous chat to new user account");
         sessionStorage.removeItem("anon_chat");
         localStorage.removeItem("anon_migration_needed");
+        console.log("✅ Migrated anonymous chat to new user account");
       }
 
+      // Redirect
       if (onClose) onClose();
       window.location.href = userData.is_admin ? "/admin/dashboard" : "/chat";
     } catch (err) {
