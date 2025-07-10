@@ -39,7 +39,7 @@ export default function Login({
       const userData = await apiFetch("/api/accounts/me/", {
         method: "GET",
         credentials: "include",
-      })
+      });
 
       // Migrate anonymous chat
       const migrationFlag = localStorage.getItem("anon_migration_needed");
