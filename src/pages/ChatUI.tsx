@@ -7,6 +7,7 @@ interface Message {
   text: string;
   sender: "user" | "ai";
   image_url?: string;
+  timestamp?: string;
 }
 
 export default function ChatUI() {
@@ -43,18 +44,20 @@ export default function ChatUI() {
   }, [navigate]);
 
   useEffect(() => {
-    const loadHistory = async () => {
+    const loadAllHistory = async () => {
       try {
-        const data = await apiFetch("/api/chat/history/", { credentials: "include" });
+        const data = await apiFetch("/api/chat/history/all/", { credentials: "include" });
         const formatted: Message[] = data.messages.map((msg: any, index: number) => ({
           id: index + 1,
           text: msg.content,
           sender: msg.is_user ? "user" : "ai",
           image_url: msg.image_url || undefined,
+          timestamp: msg.timestamp,
         }));
-        setMessages(formatted.length > 0
-          ? formatted
-          : [{ id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" }]
+        setMessages(
+          formatted.length > 0
+            ? formatted
+            : [{ id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" }]
         );
         const imgs = formatted.filter((m) => m.image_url).map((m) => m.image_url!);
         setGalleryImages(imgs);
@@ -62,7 +65,7 @@ export default function ChatUI() {
         setMessages([{ id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" }]);
       }
     };
-    loadHistory();
+    loadAllHistory();
   }, []);
 
   const handleSignOut = async () => {

@@ -21,6 +21,7 @@ export default function ChatSessionDetail() {
       .catch((err) => console.error("Failed to load messages", err));
   }, [sessionId]);
 
+  
   return (
     <div className="p-6">
       <h2 className="text-2xl font-bold text-[#D1A75D] mb-4">Session #{sessionId} Messages</h2>
