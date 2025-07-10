@@ -33,10 +33,6 @@ export default function Login({
         }),
       });
 
-      if (!loginRes.ok) {
-        throw new Error("Login failed");
-      }
-
       toast.success("Logged in successfully!");
 
       // Fetch user data
