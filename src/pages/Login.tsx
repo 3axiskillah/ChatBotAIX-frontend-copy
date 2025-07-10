@@ -18,32 +18,30 @@ export default function Login({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Login via email & password
-      const loginRes = await apiFetch("/api/accounts/login/", {
+      await apiFetch("/api/accounts/login/", {
         method: "POST",
-        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           email: form.email,
           password: form.password,
         }),
       });
 
-      if (!loginRes.ok) throw new Error("Invalid login");
-
       toast.success("Logged in successfully!");
 
       const userData = await apiFetch("/api/accounts/me/", {
-        credentials: "include",
+        method: "GET",
       });
 
-      // Optional: migrate anon chat if flagged
+      // Optional: migrate anonymous chat if flagged
       const migrationFlag = localStorage.getItem("anon_migration_needed");
       const anonChat = sessionStorage.getItem("anon_chat");
 
       if (migrationFlag === "true" && anonChat) {
         await apiFetch("/api/chat/migrate_anon/", {
           method: "POST",
-          credentials: "include",
           body: JSON.parse(anonChat),
         });
         sessionStorage.removeItem("anon_chat");
@@ -53,8 +51,13 @@ export default function Login({
 
       // Redirect
       if (onClose) onClose();
-      window.location.href = userData.is_admin ? "/admin/dashboard" : "/chat";
-    } catch (err) {
+      if (userData.is_admin) {
+        window.location.href = "/admin/dashboard";
+      } else {
+        window.location.href = "/chat";
+      }
+    } catch (err: any) {
+      console.error("❌ Login error:", err);
       toast.error("Invalid email or password.");
     }
   };
