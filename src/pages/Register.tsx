@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
 export default function Register({
@@ -8,7 +7,6 @@ export default function Register({
 }: {
   onSwitchToLogin: () => void;
 }) {
-  const navigate = useNavigate();
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
@@ -23,41 +21,25 @@ export default function Register({
     try {
       await apiFetch("/api/accounts/register/", {
         method: "POST",
-        body: JSON.stringify(form),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...form,
+          anon_id: sessionStorage.getItem("anon_id"),
+        }),
         credentials: "include",
       });
 
-      toast.success("Account created! Check your email to verify.");
+      toast.success("✅ Account created! Check your email to verify.");
+      sessionStorage.setItem("pending_username", form.username);
+      sessionStorage.setItem("pending_password", form.password);
+      sessionStorage.setItem("anon_migration_needed", "true");
 
-      // Fetch user to check login
-      const userData = await apiFetch("/api/accounts/me/", {
-        credentials: "include",
-      });
-
-      // ✅ Check if anonymous chat exists and migrate it
-      const anonData = sessionStorage.getItem("anon_chat");
-      if (anonData && userData && userData.id) {
-        try {
-          await apiFetch("/api/chat/migrate_anon/", {
-            method: "POST",
-            credentials: "include",
-            body: anonData,
-          });
-          sessionStorage.removeItem("anon_chat");
-        } catch (e) {
-          console.warn("Anon migration failed:", e);
-        }
-      }
-
-      // ✅ Redirect to correct place
-      if (userData?.is_superuser) {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/chat");
-      }
-
+      // Optionally switch to verify screen
+      window.location.href = "/accounts/email-verify?status=sent";
     } catch (err: any) {
-      toast.error("Registration failed. Try again.");
+      toast.error("❌ Registration failed: " + (err.message || "Unknown error"));
       console.error(err);
     } finally {
       setLoading(false);

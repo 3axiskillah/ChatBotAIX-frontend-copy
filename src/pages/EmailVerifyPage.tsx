@@ -8,16 +8,21 @@ export default function EmailVerifyPage() {
   const status = params.get("status");
 
   useEffect(() => {
-    if (status === "success") {
+    const verifyAndLogin = async () => {
+      if (status !== "success") return;
+
       toast.success("✅ Email verified! Logging you in…");
 
-      // grab stored credentials
       const savedUsername = localStorage.getItem("pending_username");
       const savedPassword = localStorage.getItem("pending_password");
 
-      if (savedUsername && savedPassword) {
-        // attempt login with saved credentials
-        fetch("/api/accounts/login/", {
+      if (!savedUsername || !savedPassword) {
+        navigate("/accounts/login");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/accounts/login/", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
@@ -25,44 +30,50 @@ export default function EmailVerifyPage() {
             username: savedUsername,
             password: savedPassword,
           }),
-        })
-          .then(async (res) => {
-            if (res.ok) {
-              // if migration flagged, move the anon conversation
-              const migrationFlag = localStorage.getItem("anon_migration_needed");
-              const anonChat = sessionStorage.getItem("anon_chat");
-              if (migrationFlag === "true" && anonChat) {
-                await fetch("/api/chat/migrate_anon/", {
-                  method: "POST",
-                  credentials: "include",
-                  headers: { "Content-Type": "application/json" },
-                  body: anonChat,
-                });
-                console.log("✅ Migrated anonymous chat after verify");
-                sessionStorage.removeItem("anon_chat");
-                localStorage.removeItem("anon_migration_needed");
-              }
+        });
 
-              // cleanup
-              localStorage.removeItem("pending_username");
-              localStorage.removeItem("pending_password");
+        if (!res.ok) throw new Error("Login failed");
 
-              // redirect
-              navigate("/chat");
-            } else {
-              toast.error("Could not log in automatically — please sign in manually.");
-              navigate("/accounts/login");
-            }
-          })
-          .catch(() => {
-            toast.error("Network error during auto-login.");
-            navigate("/accounts/login");
+        // 🧠 Get user data
+        const userRes = await fetch("/api/accounts/me/", {
+          credentials: "include",
+        });
+        const user = await userRes.json();
+
+        // ✅ Migrate anon chat if needed
+        const migrationFlag = localStorage.getItem("anon_migration_needed");
+        const anonChat = sessionStorage.getItem("anon_chat");
+
+        if (migrationFlag === "true" && anonChat) {
+          await fetch("/api/chat/migrate_anon/", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: anonChat,
           });
-      } else {
-        // no credentials saved, fallback
+          console.log("✅ Migrated anonymous chat after verify");
+          sessionStorage.removeItem("anon_chat");
+          localStorage.removeItem("anon_migration_needed");
+        }
+
+        // 🔐 Clean up
+        localStorage.removeItem("pending_username");
+        localStorage.removeItem("pending_password");
+
+        // 🎯 Redirect based on user type
+        if (user?.is_superuser) {
+          navigate("/admin/dashboard");
+        } else {
+          navigate("/chat");
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("❌ Could not log in — please sign in manually.");
         navigate("/accounts/login");
       }
-    }
+    };
+
+    verifyAndLogin();
   }, [status, navigate]);
 
   let message = "";
