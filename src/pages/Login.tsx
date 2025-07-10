@@ -21,7 +21,7 @@ export default function Login({
     e.preventDefault();
     try {
       // Login
-      const loginRes = await apiFetch("/api/accounts/login/", {
+      await apiFetch("/api/accounts/login/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
