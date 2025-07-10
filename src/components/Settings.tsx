@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { apiFetch } from "../utils/api"; // ✅ make sure this path is correct
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
@@ -14,42 +15,34 @@ export default function Settings() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch("/api/accounts/me/", {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!res.ok) throw new Error("Failed to fetch user");
-        const data = await res.json();
+        const data = await apiFetch("/api/accounts/me/");
         setUser(data);
         setUsername(data.username);
         setEmail(data.email);
       } catch (err) {
         console.error(err);
-        toast.error("Error loading user info");
+        toast.error("Unable to load user info");
+        navigate("/accounts/login");
       } finally {
         setLoading(false);
       }
     };
-
     fetchUser();
-  }, []);
+  }, [navigate]);
 
   const handleSave = async () => {
     try {
-      const res = await fetch("/api/accounts/me/", {
+      await apiFetch("/api/accounts/me/", {
         method: "PUT",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+        }),
       });
-
-      if (!res.ok) throw new Error("Update failed");
       toast.success("Profile updated!");
     } catch (err) {
       console.error(err);
@@ -58,16 +51,11 @@ export default function Settings() {
   };
 
   const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete your account? This cannot be undone.")) return;
-
+    if (!confirm("Are you sure you want to delete your account?")) return;
     try {
-      const res = await fetch("/api/accounts/delete/", {
+      await apiFetch("/api/accounts/delete/", {
         method: "DELETE",
-        credentials: "include",
       });
-
-      if (!res.ok) throw new Error("Deletion failed");
-
       toast.success("Account deleted");
       navigate("/");
     } catch (err) {
@@ -78,15 +66,12 @@ export default function Settings() {
 
   const resendVerification = async () => {
     try {
-      const res = await fetch("/api/accounts/resend-verification/", {
+      await apiFetch("/api/accounts/resend-verification/", {
         method: "POST",
-        credentials: "include",
       });
-
-      if (!res.ok) throw new Error("Failed to resend email");
       toast.success("Verification email sent");
     } catch {
-      toast.error("Could not resend verification email");
+      toast.error("Failed to resend verification email");
     }
   };
 
@@ -146,7 +131,7 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Subscription */}
+        {/* Plan Info */}
         <div>
           <p className="text-sm text-[#D1A75D]">Current Plan</p>
           <p className="text-lg font-bold">{user.is_premium ? "Premium" : "Free Trial"}</p>
