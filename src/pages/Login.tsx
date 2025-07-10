@@ -18,10 +18,14 @@ export default function Login({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Login using "username" field for backend compatibility (even though it's email)
       await apiFetch("/api/accounts/login/", {
         method: "POST",
-        body: JSON.stringify(form),
         credentials: "include",
+        body: JSON.stringify({
+          username: form.email, // backend expects "username" key
+          password: form.password,
+        }),
       });
 
       toast.success("Logged in successfully!");
@@ -30,6 +34,7 @@ export default function Login({
         credentials: "include",
       });
 
+      // Migrate anonymous chat if needed
       const migrationFlag = localStorage.getItem("anon_migration_needed");
       const anonChat = sessionStorage.getItem("anon_chat");
 
