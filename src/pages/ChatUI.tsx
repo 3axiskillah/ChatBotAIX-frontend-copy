@@ -193,129 +193,150 @@ export default function ChatUI() {
     }
   };
 
-  return (
-    <div className="w-screen h-screen flex bg-[#4B1F1F] text-[#E7D8C1] overflow-hidden">
-      {/* Sidebar */}
-      <div className={`flex flex-col bg-[#3A1818] border-r border-[#D1A75D] transition-all duration-300 ease-in-out ${
-        sidebarOpen ? "w-64 p-4" : "w-0 p-0"} overflow-y-auto`}>
-        <h2 className="text-lg font-bold mb-4">Gallery</h2>
-        <div className="grid grid-cols-2 gap-4 pr-2">
-          {galleryImages.map((url, i) => (
-            <img
-              key={i}
-              src={url}
-              alt={`Generated ${i}`}
-              className="rounded shadow hover:scale-105 transition cursor-pointer"
-              onClick={() => setModalImage(url)}
-            />
-          ))}
-        </div>
+return (
+  <div className="w-screen h-screen flex bg-[#4B1F1F] text-[#E7D8C1] overflow-hidden">
+    {/* Sidebar */}
+    <div className={`flex flex-col bg-[#3A1818] border-r border-[#D1A75D] transition-all duration-300 ease-in-out ${
+      sidebarOpen ? "w-64 p-4" : "w-0 p-0"} overflow-y-auto`}>
+      <h2 className="text-lg font-bold mb-4">Gallery</h2>
+      <div className="grid grid-cols-2 gap-4 pr-2">
+        {galleryImages.map((url, i) => (
+          <img
+            key={i}
+            src={url}
+            alt={`Generated ${i}`}
+            className="rounded-lg shadow hover:scale-105 transition cursor-pointer object-cover h-32 w-full"
+            onClick={() => setModalImage(url)}
+          />
+        ))}
       </div>
+    </div>
 
-      {/* Modal */}
-      {modalImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
-          onClick={() => setModalImage(null)}>
-          <img src={modalImage} alt="preview"
-            className="max-w-full max-h-full rounded shadow"
-            onClick={(e) => e.stopPropagation()} />
+    {/* Image Preview Modal */}
+    {modalImage && (
+      <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
+        onClick={() => setModalImage(null)}>
+        <img src={modalImage} alt="preview"
+          className="max-w-full max-h-full rounded-lg shadow-lg"
+          onClick={(e) => e.stopPropagation()} />
+      </div>
+    )}
+
+    {/* Main Chat Area */}
+    <div className="flex-1 flex flex-col relative">
+      {/* Header */}
+      <header className="flex justify-between items-center px-6 py-4 border-b border-[#D1A75D] bg-[#4B1F1F]">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="bg-[#D1A75D] text-[#4B1F1F] px-3 py-1 rounded hover:bg-[#b88b35] transition">
+            {sidebarOpen ? "←" : "→"}
+          </button>
+          <h1 className="text-xl font-bold text-[#D1A75D]">Amber</h1>
         </div>
-      )}
+        <div className="relative">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 rounded hover:bg-[#c49851] transition">
+            ☰ Menu
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 mt-2 w-40 bg-[#3A1818] text-[#E7D8C1] border border-[#D1A75D] rounded shadow-md z-10">
+              <button onClick={() => navigate("/settings")}
+                className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition">
+                Settings
+              </button>
+              <button onClick={() => navigate("/subscriptions")}
+                className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition">
+                Subscriptions
+              </button>
+              <button onClick={handleSignOut}
+                className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition">
+                Sign Out
+              </button>
+            </div>
+          )}
+        </div>
+      </header>
 
-      {/* Main Chat */}
-      <div className="flex-1 flex flex-col relative">
-        <header className="flex justify-between items-center px-6 py-4 border-b border-[#D1A75D] bg-[#4B1F1F]">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="bg-[#D1A75D] text-[#4B1F1F] px-3 py-1 rounded">
-              {sidebarOpen ? "←" : "→"}
-            </button>
-            <h1 className="text-xl font-bold text-[#D1A75D]">Amber</h1>
-          </div>
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 rounded hover:bg-[#c49851]">
-              ☰ Menu
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 mt-2 w-40 bg-[#3A1818] text-[#E7D8C1] border border-[#D1A75D] rounded shadow-md z-10">
-                <button onClick={() => navigate("/settings")}
-                  className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F]">
-                  Settings
-                </button>
-                <button onClick={() => navigate("/subscriptions")}
-                  className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F]">
-                  Subscriptions
-                </button>
-                <button onClick={handleSignOut}
-                  className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F]">
-                  Sign Out
-                </button>
+      {/* Messages Container */}
+      <div className="flex-1 p-6 overflow-y-auto space-y-4">
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+            {msg.text && (
+              <div className={`max-w-3xl px-4 py-3 rounded-2xl shadow-lg ${
+                msg.sender === "user"
+                  ? "bg-[#D1A75D] text-[#4B1F1F] rounded-br-none"
+                  : "bg-[#3A1A1A] text-[#E7D8C1] rounded-bl-none border border-[#D1A75D]/30"
+              }`}>
+                <p className="whitespace-pre-wrap">{msg.text}</p>
+              </div>
+            )}
+            {msg.image_url && (
+              <div className={`mt-2 max-w-md ${msg.sender === "user" ? "ml-auto" : "mr-auto"}`}>
+                <div className={`p-2 rounded-2xl shadow ${
+                  msg.sender === "user" 
+                    ? "bg-[#D1A75D]/20 border border-[#D1A75D]/30" 
+                    : "bg-[#3A1A1A] border border-[#D1A75D]/30"
+                }`}>
+                  <img 
+                    src={msg.image_url} 
+                    alt="AI generated" 
+                    className="rounded-lg max-h-80 object-contain cursor-pointer hover:opacity-90 transition"
+                    onClick={() => setModalImage(msg.image_url || null)}
+                  />
+                </div>
               </div>
             )}
           </div>
-        </header>
-
-        <div className="flex-1 p-6 overflow-y-auto space-y-4">
-          {messages.map((msg) => (
-            <div key={msg.id}>
-              {msg.text && (
-                <div className={`max-w-xl px-4 py-3 text-sm shadow ${
-                  msg.sender === "user"
-                    ? "bg-[#E7D8C1] text-[#4B1F1F] ml-auto"
-                    : "bg-[#D1A75D] text-[#4B1F1F]"
-                } rounded-2xl`}>
-                  <p>{msg.text}</p>
-                </div>
-              )}
-              {msg.image_url && (
-                <div className="max-w-xl p-2 bg-[#D1A75D] rounded-2xl shadow ml-2">
-                  <img src={msg.image_url} alt="AI generated"
-                    className="max-w-xs rounded-xl shadow" />
-                </div>
-              )}
+        ))}
+        
+        {typing && (
+          <div className="flex justify-start">
+            <div className="bg-[#3A1A1A] text-[#E7D8C1] px-4 py-2 rounded-2xl rounded-bl-none border border-[#D1A75D]/30">
+              <div className="flex space-x-2">
+                <div className="w-2 h-2 rounded-full bg-[#D1A75D] animate-bounce"></div>
+                <div className="w-2 h-2 rounded-full bg-[#D1A75D] animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                <div className="w-2 h-2 rounded-full bg-[#D1A75D] animate-bounce" style={{animationDelay: '0.4s'}}></div>
+              </div>
             </div>
-          ))}
-          {typing && (
-            <div className="italic text-sm text-[#E7D8C1]">Amber is typing…</div>
-          )}
-          <div ref={chatEndRef} />
-        </div>
-
-        {/* Input */}
-        <form onSubmit={handleSend}
-          className="flex items-center px-6 py-4 border-t border-[#D1A75D] bg-[#4B1F1F]">
-          <input
-            type="text"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Ask about your wildest desires..."
-            className="flex-1 px-4 py-2 rounded-lg border border-[#D1A75D] bg-[#4B1F1F] text-[#E7D8C1] placeholder-[#E7D8C1]"
-            disabled={showUpgradePrompt}
-          />
-          <button
-            type="submit"
-            disabled={!message.trim() || typing || showUpgradePrompt}
-            className="ml-4 px-4 py-2 bg-[#D1A75D] text-[#4B1F1F] rounded hover:bg-[#c49851] disabled:opacity-40">
-            ➤
-          </button>
-        </form>
-
-        {/* Upgrade Prompt */}
-        {showUpgradePrompt && (
-          <div className="absolute inset-0 z-50 bg-black bg-opacity-80 flex flex-col items-center justify-center">
-            <h2 className="text-2xl font-bold text-[#E7D8C1] mb-4">⏳ Your free chat time is up!</h2>
-            <p className="text-[#E7D8C1] mb-6">Subscribe now to unlock unlimited time with Amber.</p>
-            <button
-              onClick={() => navigate("/subscriptions")}
-              className="bg-[#D1A75D] text-[#4B1F1F] px-6 py-3 rounded-lg hover:bg-[#b88e4f] font-semibold">
-              Go Premium
-            </button>
           </div>
         )}
+        <div ref={chatEndRef} />
       </div>
+
+      {/* Input Area */}
+      <form onSubmit={handleSend}
+        className="flex items-center px-6 py-4 border-t border-[#D1A75D] bg-[#4B1F1F]">
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Ask about your wildest desires..."
+          className="flex-1 px-4 py-2 rounded-lg border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] placeholder-[#E7D8C1]/70 focus:outline-none focus:ring-2 focus:ring-[#D1A75D]"
+          disabled={showUpgradePrompt}
+        />
+        <button
+          type="submit"
+          disabled={!message.trim() || typing || showUpgradePrompt}
+          className="ml-4 px-4 py-2 bg-[#D1A75D] text-[#4B1F1F] rounded-lg hover:bg-[#c49851] disabled:opacity-50 transition">
+          Send
+        </button>
+      </form>
+
+      {/* Upgrade Prompt */}
+      {showUpgradePrompt && (
+        <div className="absolute inset-0 z-50 bg-black bg-opacity-80 flex flex-col items-center justify-center">
+          <h2 className="text-2xl font-bold text-[#E7D8C1] mb-4">⏳ Your free chat time is up!</h2>
+          <p className="text-[#E7D8C1] mb-6">Subscribe now to unlock unlimited time with Amber.</p>
+          <button
+            onClick={() => navigate("/subscriptions")}
+            className="bg-[#D1A75D] text-[#4B1F1F] px-6 py-3 rounded-lg hover:bg-[#b88e4f] font-semibold transition">
+            Go Premium
+          </button>
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 }
