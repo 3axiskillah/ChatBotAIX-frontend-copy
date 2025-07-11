@@ -11,6 +11,7 @@ export default function Login({
   onSwitchToRegister?: () => void;
 }) {
   const [form, setForm] = useState({ email: "", password: "" });
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -19,8 +20,10 @@ export default function Login({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    
     try {
-      // Login
+      // 1. Login
       await apiFetch("/api/accounts/login/", {
         method: "POST",
         headers: {
@@ -33,37 +36,52 @@ export default function Login({
         }),
       });
 
-      toast.success("Logged in successfully!");
-
-      // Fetch user data
+      // 2. Fetch user data
       const userData = await apiFetch("/api/accounts/me/", {
         method: "GET",
         credentials: "include",
       });
 
-      // Migrate anonymous chat
-      const migrationFlag = localStorage.getItem("anon_migration_needed");
-      const anonChat = sessionStorage.getItem("anon_chat");
+      // 3. Handle migration (if needed)
+      try {
+        const migrationFlag = localStorage.getItem("anon_migration_needed");
+        const anonChat = sessionStorage.getItem("anon_chat");
 
-      if (migrationFlag === "true" && anonChat) {
-        await apiFetch("/api/chat/migrate_anon/", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: anonChat,
-        });
-        sessionStorage.removeItem("anon_chat");
-        localStorage.removeItem("anon_migration_needed");
-        console.log("✅ Migrated anonymous chat to new user account");
+        if (migrationFlag === "true" && anonChat) {
+          await apiFetch("/api/chat/migrate_anon/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: anonChat,
+          });
+          sessionStorage.removeItem("anon_chat");
+          localStorage.removeItem("anon_migration_needed");
+        }
+      } catch (migrationError) {
+        console.error("Migration failed (non-critical):", migrationError);
       }
 
-      if (onClose) onClose();
+      // 4. Show success message
+      toast.success("Logged in successfully!");
+
+      // 5. Close modal first (if exists)
+      if (onClose) {
+        onClose();
+        // Small delay to ensure modal is fully closed before navigation
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      // 6. Navigate
+      console.log("Navigating to:", userData.is_admin ? "/admin/dashboard" : "/chat");
       navigate(userData.is_admin ? "/admin/dashboard" : "/chat");
+      
     } catch (err) {
-      console.error(err);
-      toast.error("Invalid email or password.");
+      console.error("Login error:", err);
+      toast.error(err instanceof Error ? err.message : "Invalid email or password.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -89,6 +107,7 @@ export default function Login({
             placeholder="Enter your email"
             className="w-full px-4 py-2 border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] rounded-lg"
             required
+            disabled={isLoading}
           />
         </div>
         <div>
@@ -101,17 +120,19 @@ export default function Login({
             placeholder="Enter your password"
             className="w-full px-4 py-2 border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] rounded-lg"
             required
+            disabled={isLoading}
           />
         </div>
         <button
           type="submit"
-          className="w-full bg-[#D1A75D] text-[#4B1F1F] py-2 rounded-lg hover:bg-[#b88b35] font-semibold"
+          className="w-full bg-[#D1A75D] text-[#4B1F1F] py-2 rounded-lg hover:bg-[#b88b35] font-semibold disabled:opacity-50"
+          disabled={isLoading}
         >
-          Sign In
+          {isLoading ? "Signing In..." : "Sign In"}
         </button>
       </div>
       <p className="text-center text-sm text-[#E7D8C1]/70 mt-4">
-        Don’t have an account?{' '}
+        Don't have an account?{' '}
         <span
           className="text-[#D1A75D] hover:underline cursor-pointer"
           onClick={() => {
