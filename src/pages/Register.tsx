@@ -37,46 +37,52 @@ export default function Register({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    setIsLoading(true);
+      e.preventDefault();
+      if (!validateForm()) return;
+      setIsLoading(true);
 
-    try {
-      await apiFetch("/api/accounts/register/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: form.username.trim(),
-          email: form.email.toLowerCase().trim(),
-          password: form.password,
-          anon_id: sessionStorage.getItem("anon_id"),
-        }),
-        credentials: "include",
-      });
+      try {
+          const payload = {
+              username: form.username.trim(),
+              email: form.email.toLowerCase().trim(),
+              password: form.password,
+              anon_id: sessionStorage.getItem("anon_id"),
+          };
 
-      // ✅ Store for use in email verify page
-      localStorage.setItem("pending_email", form.email.toLowerCase().trim());
-      localStorage.setItem("pending_password", form.password);
-      sessionStorage.setItem("anon_migration_needed", "true");
+          const response = await apiFetch("/api/accounts/register/", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+              credentials: "include",
+          });
 
-      toast.success("✅ Account created! Check your email to verify.");
-      navigate("/accounts/email-verify?status=sent");
-    } catch (err: any) {
-      let errorMessage = "Registration failed. Please try again.";
-      if (err.message.includes("409")) {
-        if (err.message.includes("email")) {
-          errorMessage = "This email is already registered";
-        } else {
-          errorMessage = "This username is already taken";
-        }
+          // Handle success (201 Created)
+          if (response.status === 201) {
+              localStorage.setItem("pending_email", form.email);
+              toast.success("✅ Account created! Check your email.");
+              navigate("/accounts/email-verify?status=sent");
+              return;
+          }
+
+          // Handle errors
+          const errorData = await response.json();
+          
+          if (response.status === 409) {
+              toast.error("❌ Username or email already exists");
+          } else if (response.status === 400) {
+              // Field-specific errors (e.g., "Username too short")
+              const firstError = Object.values(errorData)[0] as string;
+              toast.error(`❌ ${firstError}`);
+          } else {
+              toast.error("❌ Registration failed. Try again.");
+          }
+
+      } catch (err) {
+          console.error("Network error:", err);
+          toast.error("❌ Server error. Try again later.");
+      } finally {
+          setIsLoading(false);
       }
-      toast.error(`❌ ${errorMessage}`);
-      console.error("Registration error:", err);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
