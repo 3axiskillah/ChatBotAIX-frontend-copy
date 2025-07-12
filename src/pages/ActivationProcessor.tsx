@@ -10,7 +10,7 @@ export default function ActivationProcessor() {
     const processActivation = async () => {
       try {
         const response = await api.get(
-          `/accounts/activate/${uidb64}/${token}/`
+          `https://chatbotax-backend.onrender.com/api/accounts/activate/${uidb64}/${token}/`
         );
         
         if (response.status === 'success') {
