@@ -59,6 +59,7 @@ export default function Register({
           // Handle success (201 Created)
           if (response.status === 201) {
               localStorage.setItem("pending_email", form.email);
+              sessionStorage.setItem("anon_migration_needed", "true");
               toast.success("✅ Account created! Check your email.");
               navigate("/accounts/email-verify?status=sent");
               return;

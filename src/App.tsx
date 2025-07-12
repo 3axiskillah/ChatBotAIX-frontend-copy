@@ -22,6 +22,7 @@ import BillingPage from "./pages/admin/BillingPage";
 import ChatSessionDetail from "./pages/admin/ChatSessionDetail";
 import DashboardPage from "./pages/admin/DashboardPage";
 import EmailVerifyPage from "./pages/EmailVerifyPage";
+import ActivationProcessor from "./pages/ActivationProcessor";
 
 
 
@@ -46,6 +47,8 @@ function App() {
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/accounts/email-verify" element={<EmailVerifyPage />} />
+
+        <Route path="/accounts/activate/:uidb64/:token/" element={<ActivationProcessor />} />
 
 
         {/* Admin Layout Wrapper */}
