@@ -12,40 +12,19 @@ export default function EmailVerifyPage() {
 
   useEffect(() => {
     const completeActivation = async () => {
-      if (status === "success") {
+      if (status === "success" && accessToken && refreshToken) {
         try {
           const maxAge = 60 * 60 * 24 * 7; // 7 days
 
-          if (accessToken && refreshToken) {
-            // ✅ Set cookies directly if present
-            document.cookie = `access_token=${accessToken}; path=/; max-age=${maxAge}; secure; samesite=None`;
-            document.cookie = `refresh_token=${refreshToken}; path=/; max-age=${maxAge}; secure; samesite=None`;
-          } else {
-            // ✅ Fallback to auto-login using email/password stored during registration
-            const email = localStorage.getItem("pending_email");
-            const password = localStorage.getItem("pending_password");
+          // Set cookies manually (fallback for token login)
+          document.cookie = `access_token=${accessToken}; path=/; max-age=${maxAge}; secure; samesite=None`;
+          document.cookie = `refresh_token=${refreshToken}; path=/; max-age=${maxAge}; secure; samesite=None`;
 
-            if (email && password) {
-              await apiFetch("/api/accounts/login/", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ email, password }),
-                credentials: "include",
-              });
-            } else {
-              throw new Error("No token or credentials found");
-            }
-          }
-
-          // ✅ Confirm login worked
           const user = await apiFetch("/api/accounts/me/", {
             credentials: "include",
           });
 
           if (user?.is_active) {
-            // ✅ Migrate anonymous chat
             const migrationFlag = sessionStorage.getItem("anon_migration_needed");
             const anonChat = sessionStorage.getItem("anon_chat");
 
@@ -60,10 +39,8 @@ export default function EmailVerifyPage() {
             }
 
             sessionStorage.removeItem("pending_email");
-            localStorage.removeItem("pending_email");
-            localStorage.removeItem("pending_password");
-
             toast.success("🎉 Account activated successfully!");
+
             navigate(user.is_staff ? "/admin/dashboard" : "/chat");
           } else {
             throw new Error("Account is not active");
