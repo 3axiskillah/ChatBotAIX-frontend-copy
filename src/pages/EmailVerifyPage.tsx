@@ -12,24 +12,40 @@ export default function EmailVerifyPage() {
 
   useEffect(() => {
     const completeActivation = async () => {
-      if (status === "success" && accessToken && refreshToken) {
+      if (status === "success") {
         try {
-          // Set HTTP-only cookie fallback (works for frontend behavior)
           const maxAge = 60 * 60 * 24 * 7; // 7 days
-          document.cookie = `access_token=${accessToken}; path=/; max-age=${maxAge}; secure; samesite=None`;
-          document.cookie = `refresh_token=${refreshToken}; path=/; max-age=${maxAge}; secure; samesite=None`;
 
-          // Optional: Store in localStorage temporarily (not used for auth)
-          // localStorage.setItem("access_token", accessToken);
-          // localStorage.setItem("refresh_token", refreshToken);
+          if (accessToken && refreshToken) {
+            // ✅ Set cookies directly if present
+            document.cookie = `access_token=${accessToken}; path=/; max-age=${maxAge}; secure; samesite=None`;
+            document.cookie = `refresh_token=${refreshToken}; path=/; max-age=${maxAge}; secure; samesite=None`;
+          } else {
+            // ✅ Fallback to auto-login using email/password stored during registration
+            const email = localStorage.getItem("pending_email");
+            const password = localStorage.getItem("pending_password");
 
-          // Confirm user is authenticated and active
+            if (email && password) {
+              await apiFetch("/api/accounts/login/", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ email, password }),
+                credentials: "include",
+              });
+            } else {
+              throw new Error("No token or credentials found");
+            }
+          }
+
+          // ✅ Confirm login worked
           const user = await apiFetch("/api/accounts/me/", {
             credentials: "include",
           });
 
           if (user?.is_active) {
-            // Migrate anonymous chat if flagged
+            // ✅ Migrate anonymous chat
             const migrationFlag = sessionStorage.getItem("anon_migration_needed");
             const anonChat = sessionStorage.getItem("anon_chat");
 
@@ -44,9 +60,10 @@ export default function EmailVerifyPage() {
             }
 
             sessionStorage.removeItem("pending_email");
-            toast.success("🎉 Account activated successfully!");
+            localStorage.removeItem("pending_email");
+            localStorage.removeItem("pending_password");
 
-            // Redirect based on user type
+            toast.success("🎉 Account activated successfully!");
             navigate(user.is_staff ? "/admin/dashboard" : "/chat");
           } else {
             throw new Error("Account is not active");
