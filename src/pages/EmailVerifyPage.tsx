@@ -14,24 +14,22 @@ export default function EmailVerifyPage() {
     const completeActivation = async () => {
       if (status === "success" && accessToken && refreshToken) {
         try {
-          // Set secure cookies
-          const cookieSettings = {
-            path: '/',
-            secure: true,
-            sameSite: 'None' as const,
-            maxAge: 60 * 60 * 24 * 7 // 1 week
-          };
+          // Set HTTP-only cookie fallback (works for frontend behavior)
+          const maxAge = 60 * 60 * 24 * 7; // 7 days
+          document.cookie = `access_token=${accessToken}; path=/; max-age=${maxAge}; secure; samesite=None`;
+          document.cookie = `refresh_token=${refreshToken}; path=/; max-age=${maxAge}; secure; samesite=None`;
 
-          document.cookie = `access_token=${accessToken}; ${Object.entries(cookieSettings).map(([k,v]) => `${k}=${v}`).join('; ')}`;
-          document.cookie = `refresh_token=${refreshToken}; ${Object.entries(cookieSettings).map(([k,v]) => `${k}=${v}`).join('; ')}`;
+          // Optional: Store in localStorage temporarily (not used for auth)
+          // localStorage.setItem("access_token", accessToken);
+          // localStorage.setItem("refresh_token", refreshToken);
 
-          // Verify activation
+          // Confirm user is authenticated and active
           const user = await apiFetch("/api/accounts/me/", {
             credentials: "include",
           });
 
           if (user?.is_active) {
-            // Handle chat migration
+            // Migrate anonymous chat if flagged
             const migrationFlag = sessionStorage.getItem("anon_migration_needed");
             const anonChat = sessionStorage.getItem("anon_chat");
 
@@ -46,10 +44,12 @@ export default function EmailVerifyPage() {
             }
 
             sessionStorage.removeItem("pending_email");
+            toast.success("🎉 Account activated successfully!");
+
+            // Redirect based on user type
             navigate(user.is_staff ? "/admin/dashboard" : "/chat");
-            toast.success("Account activated successfully!");
           } else {
-            throw new Error("Account not active");
+            throw new Error("Account is not active");
           }
         } catch (error) {
           console.error("Activation failed:", error);
@@ -62,14 +62,18 @@ export default function EmailVerifyPage() {
     completeActivation();
   }, [status, accessToken, refreshToken, navigate]);
 
-  // Status message rendering
   const getMessage = () => {
     switch (status) {
-      case "sent": return "Check your email for the verification link";
-      case "success": return "Finalizing your account...";
-      case "invalid": return "Invalid or expired verification link";
-      case "error": return "Activation failed - please try again";
-      default: return "Verifying your account...";
+      case "sent":
+        return "Check your email for the verification link";
+      case "success":
+        return "Finalizing your account...";
+      case "invalid":
+        return "Invalid or expired verification link";
+      case "error":
+        return "Activation failed - please try again";
+      default:
+        return "Verifying your account...";
     }
   };
 
@@ -80,7 +84,7 @@ export default function EmailVerifyPage() {
           {status === "success" ? "Almost There!" : "Account Verification"}
         </h2>
         <p className="text-[#E7D8C1] mb-6">{getMessage()}</p>
-        
+
         {status === "invalid" && (
           <button
             onClick={() => navigate("/accounts/register")}
