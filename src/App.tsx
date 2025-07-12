@@ -10,7 +10,6 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Subscriptions from "./components/Subscriptions";
 import Settings from "./components/Settings";
-import EmailActivationHandler from "./pages/EmailActivationHandler";
 
 
   //Admin Layout + Pages
@@ -47,7 +46,6 @@ function App() {
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/accounts/email-verify" element={<EmailVerifyPage />} />
-        <Route path="/accounts/activate/:uidb64/:token" element={<EmailActivationHandler />} />
 
 
         {/* Admin Layout Wrapper */}
