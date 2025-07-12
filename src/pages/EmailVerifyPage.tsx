@@ -10,41 +10,50 @@ export default function EmailVerifyPage() {
   const accessToken = params.get("access");
   const refreshToken = params.get("refresh");
 
+  function setAuthCookies(access: string, refresh: string) {
+    const cookieOptions = [
+      `path=/`,
+      `max-age=${60 * 60 * 24 * 7}`, // 7 days
+      `secure`,
+      `samesite=None`
+    ].join('; ');
+    
+    document.cookie = `access_token=${access}; ${cookieOptions}`;
+    document.cookie = `refresh_token=${refresh}; ${cookieOptions}`;
+  }
+
   useEffect(() => {
     const completeActivation = async () => {
       if (status === "success" && accessToken && refreshToken) {
         try {
-          const maxAge = 60 * 60 * 24 * 7; // 7 days
-
-          // Set cookies manually (fallback for token login)
-          document.cookie = `access_token=${accessToken}; path=/; max-age=${maxAge}; secure; samesite=None`;
-          document.cookie = `refresh_token=${refreshToken}; path=/; max-age=${maxAge}; secure; samesite=None`;
-
+          setAuthCookies(accessToken, refreshToken);
+          
           const user = await apiFetch("/api/accounts/me/", {
             credentials: "include",
           });
 
-          if (user?.is_active) {
-            const migrationFlag = sessionStorage.getItem("anon_migration_needed");
-            const anonChat = sessionStorage.getItem("anon_chat");
-
-            if (migrationFlag === "true" && anonChat) {
-              await apiFetch("/api/chat/migrate_anon/", {
-                method: "POST",
-                credentials: "include",
-                body: anonChat,
-              });
-              sessionStorage.removeItem("anon_chat");
-              sessionStorage.removeItem("anon_migration_needed");
-            }
-
-            sessionStorage.removeItem("pending_email");
-            toast.success("🎉 Account activated successfully!");
-
-            navigate(user.is_staff ? "/admin/dashboard" : "/chat");
-          } else {
-            throw new Error("Account is not active");
+          if (!user?.is_active) {
+            throw new Error("Account not active");
           }
+
+          // Handle anonymous chat migration
+          const migrationFlag = sessionStorage.getItem("anon_migration_needed");
+          const anonChat = sessionStorage.getItem("anon_chat");
+
+          if (migrationFlag === "true" && anonChat) {
+            await apiFetch("/api/chat/migrate_anon/", {
+              method: "POST",
+              credentials: "include",
+              body: anonChat,
+            });
+            sessionStorage.removeItem("anon_chat");
+            sessionStorage.removeItem("anon_migration_needed");
+          }
+
+          sessionStorage.removeItem("pending_email");
+          toast.success("🎉 Account activated successfully!");
+          navigate(user.is_staff ? "/admin/dashboard" : "/chat");
+          
         } catch (error) {
           console.error("Activation failed:", error);
           toast.error("Activation failed. Please try logging in.");
@@ -52,7 +61,6 @@ export default function EmailVerifyPage() {
         }
       }
     };
-
     completeActivation();
   }, [status, accessToken, refreshToken, navigate]);
 
