@@ -53,23 +53,21 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
     setIsLoading(true);
 
     try {
-      // 1. Login
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/accounts/login/`, {
+      // ✅ Login via POST
+      await apiFetch("/api/accounts/login/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(form),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || "Login failed");
-      }
+      // ✅ Fetch user
+      const user = await apiFetch("/api/accounts/me/", {
+        method: "GET",
+        credentials: "include",
+      });
 
-      // 2. Fetch user
-      const user = await apiFetch("/api/accounts/me/", { credentials: "include" });
-
-      // 3. Optional anonymous chat migration
+      // ✅ Migrate anonymous chat
       try {
         const migrationFlag = localStorage.getItem("anon_migration_needed");
         const anonChat = sessionStorage.getItem("anon_chat");
@@ -77,6 +75,7 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
         if (migrationFlag === "true" && anonChat) {
           await apiFetch("/api/chat/migrate_anon/", {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
             credentials: "include",
             body: anonChat,
           });
@@ -95,7 +94,7 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
         await new Promise(res => setTimeout(res, 50));
       }
 
-      const targetPath = user?.is_staff ? "/admin/dashboard" : "/chat";
+      const targetPath = user?.is_admin ? "/admin/dashboard" : "/chat";
       navigate(targetPath);
 
     } catch (err: unknown) {
