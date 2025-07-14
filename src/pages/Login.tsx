@@ -22,8 +22,7 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
-    
-    // Clear error when user types
+
     if (errors[name as keyof LoginForm]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
@@ -31,107 +30,84 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
 
   const validateForm = (): boolean => {
     const newErrors: Partial<LoginForm> = {};
-    
+
     if (!form.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/^\S+@\S+\.\S+$/.test(form.email)) {
       newErrors.email = "Please enter a valid email";
     }
-    
+
     if (!form.password) {
       newErrors.password = "Password is required";
     } else if (form.password.length < 8) {
       newErrors.password = "Password must be at least 8 characters";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-    
     setIsLoading(true);
-    
+
     try {
       // 1. Login
-      const loginResponse = await apiFetch("/api/accounts/login/", {
+      await apiFetch("/api/accounts/login/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(form),
       });
 
-      if (!loginResponse.ok) {
-        const errorData = await loginResponse.json();
-        throw new Error(errorData.message || "Login failed");
-      }
-
       // 2. Fetch user data
-      const userData = await apiFetch("/api/accounts/me/", {
+      const user = await apiFetch("/api/accounts/me/", {
         method: "GET",
         credentials: "include",
       });
 
-      if (!userData.ok) {
-        throw new Error("Failed to fetch user data");
-      }
-
-      const user = await userData.json();
-
-      // 3. Handle migration (if needed)
+      // 3. Optional anonymous chat migration
       try {
         const migrationFlag = localStorage.getItem("anon_migration_needed");
         const anonChat = sessionStorage.getItem("anon_chat");
 
         if (migrationFlag === "true" && anonChat) {
-          const migrationResponse = await apiFetch("/api/chat/migrate_anon/", {
+          await apiFetch("/api/chat/migrate_anon/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
             body: anonChat,
           });
 
-          if (migrationResponse.ok) {
-            sessionStorage.removeItem("anon_chat");
-            localStorage.removeItem("anon_migration_needed");
-          }
+          sessionStorage.removeItem("anon_chat");
+          localStorage.removeItem("anon_migration_needed");
         }
-      } catch (migrationError) {
-        console.warn("Migration failed (non-critical):", migrationError);
+      } catch (err) {
+        console.warn("Migration failed (non-critical):", err);
       }
 
-      // 4. Show success message
       toast.success("Logged in successfully!");
 
-      // 5. Close modal first (if exists)
       if (onClose) {
         onClose();
-        // Small delay to ensure modal is fully closed before navigation
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(res => setTimeout(res, 50));
       }
 
-      // 6. Navigate based on user role
-      const targetPath = user.is_admin ? "/admin/dashboard" : "/chat";
-      console.log("Navigating to:", targetPath);
+      const targetPath = user?.is_admin ? "/admin/dashboard" : "/chat";
       navigate(targetPath);
-      
+
     } catch (err: unknown) {
       console.error("Login error:", err);
-      
-      const errorMessage = err instanceof Error 
-        ? err.message 
-        : "Invalid email or password";
-        
+      const errorMessage =
+        err instanceof Error ? err.message : "Login failed, please try again.";
+
       toast.error(errorMessage);
-      
-      // Set field-level errors if available
-      if (err instanceof Error && err.message.includes("email")) {
-        setErrors({ email: err.message });
-      } else if (err instanceof Error && err.message.includes("password")) {
-        setErrors({ password: err.message });
+
+      if (errorMessage.toLowerCase().includes("email")) {
+        setErrors({ email: errorMessage });
+      } else if (errorMessage.toLowerCase().includes("password")) {
+        setErrors({ password: errorMessage });
       }
     } finally {
       setIsLoading(false);
@@ -149,9 +125,8 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
       <p className="text-center text-[#E7D8C1]/70 mb-6">
         Sign in to continue your journey
       </p>
-      
+
       <div className="space-y-4">
-        {/* Email Field */}
         <div>
           <label className="block text-sm mb-1">Email</label>
           <input
@@ -172,7 +147,6 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
           )}
         </div>
 
-        {/* Password Field */}
         <div>
           <label className="block text-sm mb-1">Password</label>
           <input
@@ -193,7 +167,6 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
           )}
         </div>
 
-        {/* Submit Button */}
         <button
           type="submit"
           className="w-full bg-[#D1A75D] hover:bg-[#b88b35] text-[#4B1F1F] py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -213,7 +186,6 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
         </button>
       </div>
 
-      {/* Sign Up Link */}
       <p className="text-center text-sm text-[#E7D8C1]/70 mt-4">
         Don't have an account?{" "}
         <button
