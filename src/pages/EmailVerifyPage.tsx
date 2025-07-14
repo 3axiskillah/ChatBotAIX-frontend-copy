@@ -7,18 +7,23 @@ export default function EmailVerifyPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const status = params.get("status");
+  const access = params.get("access");
+  const refresh = params.get("refresh");
 
   useEffect(() => {
     const completeActivation = async () => {
-      if (status === "success") {
+      if (status === "success" && access && refresh) {
         try {
-          // ✅ Cookies are now set server-side via redirect response
-          const user = await apiFetch("/api/accounts/me/", { credentials: "include" });
+          // ✅ Set tokens manually from URL params (in case not set via redirect)
+          document.cookie = `access_token=${access}; path=/; Secure; SameSite=None; HttpOnly`;
+          document.cookie = `refresh_token=${refresh}; path=/; Secure; SameSite=None; HttpOnly`;
 
+          // ✅ Fetch user info to confirm login
+          const user = await apiFetch("/api/accounts/me/", { credentials: "include" });
           if (!user?.is_active) throw new Error("Account not active");
 
-          // ✅ Migrate anonymous chat if flagged
-          const migrationFlag = sessionStorage.getItem("anon_migration_needed");
+          // ✅ Migrate anonymous chat if needed
+          const migrationFlag = localStorage.getItem("anon_migration_needed");
           const anonChat = sessionStorage.getItem("anon_chat");
           if (migrationFlag === "true" && anonChat) {
             await apiFetch("/api/chat/migrate_anon/", {
@@ -27,11 +32,11 @@ export default function EmailVerifyPage() {
               body: anonChat,
             });
             sessionStorage.removeItem("anon_chat");
-            sessionStorage.removeItem("anon_migration_needed");
+            localStorage.removeItem("anon_migration_needed");
           }
 
           sessionStorage.removeItem("pending_email");
-          toast.success("🎉 Account activated successfully!");
+          toast.success("🎉 Account activated and logged in!");
           navigate(user.is_staff ? "/admin/dashboard" : "/chat");
 
         } catch (error) {
@@ -39,18 +44,20 @@ export default function EmailVerifyPage() {
           toast.error("Activation failed. Please try logging in.");
           navigate("/accounts/login");
         }
+      } else if (status === "error" || status === "invalid") {
+        toast.error("Activation link invalid or expired.");
       }
     };
 
     completeActivation();
-  }, [status, navigate]);
+  }, [status, access, refresh, navigate]);
 
   const getMessage = () => {
     switch (status) {
-      case "sent": return "Check your email for the verification link";
+      case "sent": return "Check your email for the verification link.";
       case "success": return "Finalizing your account...";
-      case "invalid": return "Invalid or expired verification link";
-      case "error": return "Activation failed - please try again";
+      case "invalid": return "Invalid or expired verification link.";
+      case "error": return "Activation failed - please try again.";
       default: return "Verifying your account...";
     }
   };
@@ -63,14 +70,14 @@ export default function EmailVerifyPage() {
         </h2>
         <p className="text-[#E7D8C1] mb-6">{getMessage()}</p>
 
-        {status === "invalid" && (
+        {status === "invalid" || status === "error" ? (
           <button
             onClick={() => navigate("/accounts/register")}
             className="w-full py-2 bg-[#D1A75D] text-[#4B1F1F] rounded hover:bg-[#b88b35]"
           >
             Register Again
           </button>
-        )}
+        ) : null}
       </div>
     </div>
   );
