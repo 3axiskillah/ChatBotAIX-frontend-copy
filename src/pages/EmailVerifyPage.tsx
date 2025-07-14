@@ -7,30 +7,17 @@ export default function EmailVerifyPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const status = params.get("status");
-  const accessToken = params.get("access");
-  const refreshToken = params.get("refresh");
 
   useEffect(() => {
     const completeActivation = async () => {
-      if (status === "success" && accessToken && refreshToken) {
+      if (status === "success") {
         try {
-          // Set secure cookies
-          const cookieOptions = [
-            `path=/`,
-            `max-age=${60 * 60 * 24 * 7}`,
-            `secure`,
-            `samesite=None`
-          ].join('; ');
-          
-          document.cookie = `access_token=${accessToken}; ${cookieOptions}`;
-          document.cookie = `refresh_token=${refreshToken}; ${cookieOptions}`;
-
-          // Verify activation
+          // ✅ Cookies are now set server-side via redirect response
           const user = await apiFetch("/api/accounts/me/", { credentials: "include" });
-          
+
           if (!user?.is_active) throw new Error("Account not active");
 
-          // Migrate anonymous chat if needed
+          // ✅ Migrate anonymous chat if flagged
           const migrationFlag = sessionStorage.getItem("anon_migration_needed");
           const anonChat = sessionStorage.getItem("anon_chat");
           if (migrationFlag === "true" && anonChat) {
@@ -43,11 +30,10 @@ export default function EmailVerifyPage() {
             sessionStorage.removeItem("anon_migration_needed");
           }
 
-          // Complete activation
           sessionStorage.removeItem("pending_email");
           toast.success("🎉 Account activated successfully!");
           navigate(user.is_staff ? "/admin/dashboard" : "/chat");
-          
+
         } catch (error) {
           console.error("Activation failed:", error);
           toast.error("Activation failed. Please try logging in.");
@@ -55,8 +41,9 @@ export default function EmailVerifyPage() {
         }
       }
     };
+
     completeActivation();
-  }, [status, accessToken, refreshToken, navigate]);
+  }, [status, navigate]);
 
   const getMessage = () => {
     switch (status) {
@@ -75,7 +62,7 @@ export default function EmailVerifyPage() {
           {status === "success" ? "Almost There!" : "Account Verification"}
         </h2>
         <p className="text-[#E7D8C1] mb-6">{getMessage()}</p>
-        
+
         {status === "invalid" && (
           <button
             onClick={() => navigate("/accounts/register")}
