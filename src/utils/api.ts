@@ -9,7 +9,8 @@ interface ApiFetchOptions extends RequestInit {
 export async function apiFetch(
   endpoint: string,
   options: ApiFetchOptions = {},
-  isAIWorker = false
+  isAIWorker = false,
+  retry = true
 ): Promise<any> {
   const url = `${isAIWorker ? AI_WORKER_URL : API_BASE_URL}${endpoint}`;
 
@@ -47,6 +48,24 @@ export async function apiFetch(
     data = null;
   }
 
+  // ✅ Handle token expiration and auto-refresh
+  if (res.status === 401 && !isAIWorker && retry) {
+    try {
+      const refreshRes = await fetch(`${API_BASE_URL}/api/accounts/refresh/`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (refreshRes.ok) {
+        return apiFetch(endpoint, options, isAIWorker, false);
+      } else {
+        throw new Error("Session expired. Please log in again.");
+      }
+    } catch (refreshErr) {
+      throw new Error("Session expired. Please log in again.");
+    }
+  }
+
   if (!res.ok) {
     const errorMessage =
       typeof data === "string"
@@ -57,21 +76,3 @@ export async function apiFetch(
 
   return data;
 }
-
-// Helper methods
-export const api = {
-  get: (endpoint: string, options: ApiFetchOptions = {}, isAIWorker = false) =>
-    apiFetch(endpoint, { ...options, method: "GET" }, isAIWorker),
-
-  post: (endpoint: string, body: any, options: ApiFetchOptions = {}, isAIWorker = false) =>
-    apiFetch(endpoint, { ...options, method: "POST", body }, isAIWorker),
-
-  put: (endpoint: string, body: any, options: ApiFetchOptions = {}, isAIWorker = false) =>
-    apiFetch(endpoint, { ...options, method: "PUT", body }, isAIWorker),
-
-  patch: (endpoint: string, body: any, options: ApiFetchOptions = {}, isAIWorker = false) =>
-    apiFetch(endpoint, { ...options, method: "PATCH", body }, isAIWorker),
-
-  delete: (endpoint: string, options: ApiFetchOptions = {}, isAIWorker = false) =>
-    apiFetch(endpoint, { ...options, method: "DELETE" }, isAIWorker),
-};
