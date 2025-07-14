@@ -6,6 +6,10 @@ interface ApiFetchOptions extends RequestInit {
   headers?: HeadersInit;
 }
 
+function isAuthenticated(): boolean {
+  return document.cookie.includes("access_token");
+}
+
 export async function apiFetch(
   endpoint: string,
   options: ApiFetchOptions = {},
@@ -48,8 +52,8 @@ export async function apiFetch(
     data = null;
   }
 
-  // ✅ Handle token expiration and auto-refresh
-  if (res.status === 401 && !isAIWorker && retry) {
+  // ✅ Handle 401 only for authenticated users
+  if (res.status === 401 && !isAIWorker && retry && isAuthenticated()) {
     try {
       const refreshRes = await fetch(`${API_BASE_URL}/api/accounts/refresh/`, {
         method: "POST",
