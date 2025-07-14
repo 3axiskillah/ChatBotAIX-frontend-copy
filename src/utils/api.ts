@@ -27,7 +27,6 @@ export async function apiFetch(
     ...options,
   };
 
-  // Ensure body is properly serialized if present
   if (options.body) {
     fetchOptions.body =
       typeof options.body === "string"
@@ -37,25 +36,26 @@ export async function apiFetch(
 
   const res = await fetch(url, fetchOptions);
 
-  // Attempt to parse error message if response is not ok
-  if (!res.ok) {
-    let errorText = await res.text();
-    try {
-      const errorJson = JSON.parse(errorText);
-      errorText = errorJson.message || errorJson.detail || errorText;
-    } catch {
-      // fallback to plain text
-    }
-    throw new Error(errorText || `Request failed with status ${res.status}`);
-  }
-
-  // Handle non-JSON or empty responses
   const contentType = res.headers.get("content-type");
-  if (!contentType || !contentType.includes("application/json")) {
-    return null;
+  const isJson = contentType && contentType.includes("application/json");
+
+  let data = null;
+
+  try {
+    data = isJson ? await res.json() : await res.text();
+  } catch {
+    data = null;
   }
 
-  return res.json();
+  if (!res.ok) {
+    const errorMessage =
+      typeof data === "string"
+        ? data
+        : data?.message || data?.detail || res.statusText;
+    throw new Error(errorMessage || `Request failed with status ${res.status}`);
+  }
+
+  return data;
 }
 
 // Helper methods
