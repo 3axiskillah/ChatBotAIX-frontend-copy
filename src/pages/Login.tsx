@@ -22,6 +22,7 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
+
     if (errors[name as keyof LoginForm]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
@@ -29,16 +30,19 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
 
   const validateForm = (): boolean => {
     const newErrors: Partial<LoginForm> = {};
+
     if (!form.email.trim()) {
       newErrors.email = "Email is required";
     } else if (!/^\S+@\S+\.\S+$/.test(form.email)) {
       newErrors.email = "Please enter a valid email";
     }
+
     if (!form.password) {
       newErrors.password = "Password is required";
     } else if (form.password.length < 8) {
       newErrors.password = "Password must be at least 8 characters";
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -49,41 +53,39 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
     setIsLoading(true);
 
     try {
-      // 1. Try login
-      const loginRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/accounts/login/`, {
+      // 1. Login
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/accounts/login/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(form),
       });
 
-      if (!loginRes.ok) {
-        const errorData = await loginRes.json();
-        throw new Error(errorData.message || "Invalid credentials");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Login failed");
       }
 
       // 2. Fetch user
-      const meRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/accounts/me/`, {
-        method: "GET",
-        credentials: "include",
-      });
+      const user = await apiFetch("/api/accounts/me/", { credentials: "include" });
 
-      if (!meRes.ok) throw new Error("Failed to load user data after login.");
+      // 3. Optional anonymous chat migration
+      try {
+        const migrationFlag = localStorage.getItem("anon_migration_needed");
+        const anonChat = sessionStorage.getItem("anon_chat");
 
-      const user = await meRes.json();
+        if (migrationFlag === "true" && anonChat) {
+          await apiFetch("/api/chat/migrate_anon/", {
+            method: "POST",
+            credentials: "include",
+            body: anonChat,
+          });
 
-      // 3. Optional: Anonymous chat migration
-      const migrationFlag = localStorage.getItem("anon_migration_needed");
-      const anonChat = sessionStorage.getItem("anon_chat");
-      if (migrationFlag === "true" && anonChat) {
-        await apiFetch("/api/chat/migrate_anon/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: anonChat,
-        });
-        sessionStorage.removeItem("anon_chat");
-        localStorage.removeItem("anon_migration_needed");
+          sessionStorage.removeItem("anon_chat");
+          localStorage.removeItem("anon_migration_needed");
+        }
+      } catch (err) {
+        console.warn("Migration failed (non-critical):", err);
       }
 
       toast.success("Logged in successfully!");
@@ -93,15 +95,21 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
         await new Promise(res => setTimeout(res, 50));
       }
 
-      navigate(user.is_admin ? "/admin/dashboard" : "/chat");
-    } catch (err: any) {
-      console.error("Login failed:", err);
-      const msg =
-        err instanceof Error ? err.message : "Login failed, please try again.";
-      toast.error(msg);
+      const targetPath = user?.is_staff ? "/admin/dashboard" : "/chat";
+      navigate(targetPath);
 
-      if (msg.toLowerCase().includes("email")) setErrors({ email: msg });
-      else if (msg.toLowerCase().includes("password")) setErrors({ password: msg });
+    } catch (err: unknown) {
+      console.error("Login error:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Login failed, please try again.";
+
+      toast.error(errorMessage);
+
+      if (errorMessage.toLowerCase().includes("email")) {
+        setErrors({ email: errorMessage });
+      } else if (errorMessage.toLowerCase().includes("password")) {
+        setErrors({ password: errorMessage });
+      }
     } finally {
       setIsLoading(false);
     }
