@@ -32,7 +32,7 @@ export async function logoutUser() {
 
 export async function refreshToken() {
   try {
-    const res = await apiFetch("/api/accounts/token/refresh/", {
+    const res = await apiFetch("/api/accounts/refresh/", {
       method: "POST",
       credentials: "include",
     });
