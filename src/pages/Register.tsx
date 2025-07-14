@@ -1,13 +1,15 @@
+// src/pages/Register.tsx
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { apiFetch } from "../utils/api";
 import { useNavigate } from "react-router-dom";
 
-export default function Register({
-  onSwitchToLogin,
-}: {
+type RegisterProps = {
   onSwitchToLogin: () => void;
-}) {
+  onClose?: () => void; // Make this optional
+};
+
+export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -37,55 +39,45 @@ export default function Register({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!validateForm()) return;
-      setIsLoading(true);
+    e.preventDefault();
+    if (!validateForm()) return;
+    setIsLoading(true);
 
-      try {
-          const payload = {
-              username: form.username.trim(),
-              email: form.email.toLowerCase().trim(),
-              password: form.password,
-              anon_id: sessionStorage.getItem("anon_id"),
-          };
+    try {
+      const payload = {
+        username: form.username.trim(),
+        email: form.email.toLowerCase().trim(),
+        password: form.password,
+        anon_id: sessionStorage.getItem("anon_id"),
+      };
 
-          const response = await apiFetch("/api/accounts/register/", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-              credentials: "include",
-          });
+      const response = await apiFetch("/api/accounts/register/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        credentials: "include",
+      });
 
-          // Handle success (201 Created)
-          if (response.status === 201) {
-              localStorage.setItem("pending_email", form.email);
-              sessionStorage.setItem("anon_migration_needed", "true");
-              toast.success("✅ Account created! Check your email.");
-              navigate("/accounts/email-verify?status=sent");
-              return;
-          }
-
-          // Handle errors
-          const errorData = await response.json();
-          
-          if (response.status === 409) {
-              toast.error("❌ Username or email already exists");
-          } else if (response.status === 400) {
-              // Field-specific errors (e.g., "Username too short")
-              const firstError = Object.values(errorData)[0] as string;
-              toast.error(`❌ ${firstError}`);
-          } else {
-              toast.error("❌ Registration failed. Try again.");
-          }
-
-      } catch (err) {
-          console.error("Network error:", err);
-          toast.error("❌ Server error. Try again later.");
-      } finally {
-          setIsLoading(false);
+      if (response.status === 201) {
+        localStorage.setItem("pending_email", form.email);
+        sessionStorage.setItem("anon_migration_needed", "true");
+        toast.success("✅ Account created! Check your email.");
+        
+        // Close modal if onClose exists
+        if (onClose) onClose();
+        
+        navigate("/accounts/email-verify?status=sent");
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.detail || "Registration failed");
       }
+    } catch (err) {
+      console.error("Registration error:", err);
+      toast.error("Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
-
   return (
     <form
       onSubmit={handleSubmit}
