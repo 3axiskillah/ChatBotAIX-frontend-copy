@@ -8,6 +8,8 @@ interface Message {
   sender: "user" | "ai";
   image_url?: string;
   timestamp?: string;
+  blurred?: boolean;
+  upsell?: boolean;
 }
 
 export default function ChatUI() {
@@ -20,6 +22,7 @@ export default function ChatUI() {
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [user, setUser] = useState<{ id: number; is_premium: boolean } | null>(null);
+  const [imagesSent, setImagesSent] = useState(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -61,6 +64,7 @@ export default function ChatUI() {
         );
         const imgs = formatted.filter((m) => m.image_url).map((m) => m.image_url!);
         setGalleryImages(imgs);
+        setImagesSent(imgs.length);
       } catch {
         setMessages([{ id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" }]);
       }
@@ -130,13 +134,15 @@ export default function ChatUI() {
           body: JSON.stringify({
             user_id: user.id,
             prompt: message,
+            user_type: user.is_premium ? "premium" : "free",
+            images_sent: imagesSent,
             history: updated.map((m) => ({
               role: m.sender === "user" ? "user" : "assistant",
               content: m.text,
             })),
           }),
         },
-        true // isAIWorker = true
+        true
       );
 
       const fullImageUrl =
@@ -147,7 +153,7 @@ export default function ChatUI() {
       setTimeout(async () => {
         const aiReplyText: Message = {
           id: Date.now() + 1,
-          text: data.response || "No response.",
+          text: data.reply || "No response.",
           sender: "ai",
         };
         setMessages((prev) => [...prev, aiReplyText]);
@@ -158,11 +164,17 @@ export default function ChatUI() {
             text: "",
             sender: "ai",
             image_url: fullImageUrl,
+            blurred: data.blurred || false,
           };
           setMessages((prev) => [...prev, aiReplyImage]);
           if (!galleryImages.includes(fullImageUrl)) {
             setGalleryImages((prev) => [...prev, fullImageUrl]);
           }
+          setImagesSent((prev) => prev + 1);
+        }
+
+        if (data.upsell) {
+          setShowUpgradePrompt(true);
         }
 
         await apiFetch("/api/chat/submit/", {
@@ -170,7 +182,7 @@ export default function ChatUI() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             prompt: message,
-            reply: data.response,
+            reply: data.reply,
             image_url: fullImageUrl || null,
           }),
         });
@@ -192,6 +204,7 @@ export default function ChatUI() {
       setTyping(false);
     }
   };
+
 
 return (
   <div className="w-screen h-screen flex bg-[#4B1F1F] text-[#E7D8C1] overflow-hidden">
