@@ -153,7 +153,7 @@ export default function ChatUI() {
       setTimeout(async () => {
         const aiReplyText: Message = {
           id: Date.now() + 1,
-          text: data.reply || "No response.",
+          text: data.response || "No response.",
           sender: "ai",
         };
         setMessages((prev) => [...prev, aiReplyText]);
@@ -182,7 +182,7 @@ export default function ChatUI() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             prompt: message,
-            reply: data.reply,
+            reply: data.response,
             image_url: fullImageUrl || null,
           }),
         });
