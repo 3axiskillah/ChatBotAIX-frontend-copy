@@ -8,7 +8,7 @@ interface RegisterData {
   anon_id?: string | null;
 }
 
-export const registerUser = async (data: RegisterData) => {
+export const Register = async (data: RegisterData) => {
   try {
     // ============== SIMPLIFIED API CALL ==============
     const response = await apiFetch('/api/accounts/register/', {
