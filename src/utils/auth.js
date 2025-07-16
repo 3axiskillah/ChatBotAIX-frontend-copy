@@ -1,45 +1,29 @@
+// auth.js
 import { apiFetch } from "./api";
 
-export async function fetchCurrentUser() {
-  try {
-    const data = await apiFetch("/api/auth/me/", {
-      credentials: "include",
-    });
-    return data;
-  } catch {
-    return null;
-  }
-}
-
 export async function loginUser(email, password) {
-  const res = await apiFetch(
-    "/api/auth/login/",
-    {
-      method: "POST",
-      credentials: "include",
-      body: JSON.stringify({ email, password }),
-    }
-  );
-  return res;
+  return await apiFetch("/api/accounts/login/", {
+    method: "POST",
+    body: { email, password },
+  });
 }
 
-export async function logoutUser() {
-  await apiFetch("/api/auth/logout/", {
+export async function registerUser(email, password) {
+  return await apiFetch("/api/accounts/register/", {
     method: "POST",
-    credentials: "include",
+    body: { email, password },
   });
 }
 
 export async function refreshToken() {
   try {
-    const res = await apiFetch("/api/accounts/refresh/", {
+    await apiFetch("/api/accounts/refresh/", {
       method: "POST",
-      credentials: "include",
     });
     console.log("Token refreshed");
     return true;
-  } catch (e) {
-    console.error("Refresh failed", e);
+  } catch (err) {
+    console.error("Refresh failed:", err);
     return false;
   }
 }

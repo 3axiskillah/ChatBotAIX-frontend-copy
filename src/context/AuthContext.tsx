@@ -3,6 +3,9 @@ import { apiFetch } from "../utils/api";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
+// -----------------------------
+// Types
+// -----------------------------
 type User = {
   id: number;
   email: string;
@@ -18,8 +21,14 @@ type AuthContextType = {
   logout: () => Promise<void>;
 };
 
+// -----------------------------
+// Context
+// -----------------------------
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// -----------------------------
+// Provider
+// -----------------------------
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,8 +36,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchUser = async (): Promise<void> => {
     try {
-      const user = await apiFetch("/api/accounts/me/");
-      setUser(user);
+      const userData = await apiFetch("/api/accounts/me/");
+      setUser(userData);
     } catch (error) {
       setUser(null);
     }
@@ -39,7 +48,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await apiFetch("/api/accounts/logout/", { method: "POST" });
       setUser(null);
       toast.success("Logged out successfully");
-      navigate("/");
+      navigate("/"); // ✅ ensure redirect goes home, not /accounts/login
     } catch (error) {
       console.error("Logout failed:", error);
       toast.error("Logout failed");
@@ -49,11 +58,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const user = await fetchUser();
-        
-        // If coming from activation, redirect to chat
-        if (window.location.pathname.includes('activate') && user) {
-          navigate('/chat');
+        const userData = await apiFetch("/api/accounts/me/");
+        setUser(userData);
+
+        // ✅ Redirect if on activation page
+        if (window.location.pathname.includes("activate")) {
+          navigate("/chat");
         }
       } catch (error) {
         setUser(null);
@@ -72,6 +82,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// -----------------------------
+// Hook
+// -----------------------------
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within AuthProvider");

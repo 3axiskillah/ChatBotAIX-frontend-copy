@@ -18,21 +18,20 @@ export async function apiFetch(
 ): Promise<any> {
   const url = `${isAIWorker ? AI_WORKER_URL : API_BASE_URL}${endpoint}`;
 
-  const defaultHeaders: HeadersInit = {
-    "Content-Type": "application/json",
-  };
+  const isFormData = options.body instanceof FormData;
 
   const fetchOptions: RequestInit = {
     method: options.method || "GET",
     headers: {
-      ...defaultHeaders,
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(options.headers || {}),
     },
     credentials: isAIWorker ? "omit" : "include",
     ...options,
   };
 
-  if (options.body) {
+  // Handle JSON body
+  if (options.body && !isFormData) {
     fetchOptions.body =
       typeof options.body === "string"
         ? options.body
@@ -44,15 +43,14 @@ export async function apiFetch(
   const contentType = res.headers.get("content-type");
   const isJson = contentType && contentType.includes("application/json");
 
-  let data = null;
-
+  let data: any = null;
   try {
     data = isJson ? await res.json() : await res.text();
-  } catch {
+  } catch (e) {
     data = null;
   }
 
-  // ✅ Handle 401 only for authenticated users
+  // 🔁 Try refreshing access token if unauthorized
   if (res.status === 401 && !isAIWorker && retry && isAuthenticated()) {
     try {
       const refreshRes = await fetch(`${API_BASE_URL}/api/accounts/refresh/`, {
@@ -61,21 +59,22 @@ export async function apiFetch(
       });
 
       if (refreshRes.ok) {
-        return apiFetch(endpoint, options, isAIWorker, false);
+        return apiFetch(endpoint, options, isAIWorker, false); // Retry once
       } else {
+        // Clear session (optionally) or redirect
         throw new Error("Session expired. Please log in again.");
       }
-    } catch (refreshErr) {
+    } catch (err) {
       throw new Error("Session expired. Please log in again.");
     }
   }
 
   if (!res.ok) {
-    const errorMessage =
+    const message =
       typeof data === "string"
         ? data
         : data?.message || data?.detail || res.statusText;
-    throw new Error(errorMessage || `Request failed with status ${res.status}`);
+    throw new Error(message || `Request failed with status ${res.status}`);
   }
 
   return data;
