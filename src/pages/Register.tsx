@@ -1,4 +1,4 @@
-import { apiFetch } from './api';
+import { apiFetch } from '../utils/api';
 import { toast } from 'react-toastify';
 
 interface RegisterData {
