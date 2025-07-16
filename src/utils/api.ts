@@ -18,74 +18,77 @@ export async function apiFetch(
 ): Promise<any> {
   const url = `${isAIWorker ? AI_WORKER_URL : API_BASE_URL}${endpoint}`;
 
-  const isFormData = options.body instanceof FormData;
+  // 1. Force GET if no method specified (safer defaults)
+  const method = options.method || "GET";
+  
+  // 2. Simplified header handling
+  const headers = new Headers({
+    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+    ...options.headers,
+  });
 
-  const fetchOptions: RequestInit = {
-    method: options.method || "GET",
-    headers: {
-      ...(isFormData ? {} : { "Content-Type": "application/json" }),
-      ...(options.headers || {}),
-    },
-    credentials: isAIWorker ? "omit" : "include",
-    ...options,
-  };
-
-  if (options.body && !isFormData) {
-    fetchOptions.body =
-      typeof options.body === "string"
+  // 3. Stringify body only if it exists and isn't already a string
+  let body: BodyInit | null = null;
+  if (options.body) {
+    body = typeof options.body === "string" 
+      ? options.body 
+      : options.body instanceof FormData
         ? options.body
         : JSON.stringify(options.body);
   }
 
-  const res = await fetch(url, fetchOptions);
-
-  // ================== CRITICAL CHANGES START HERE ================== //
+  // 4. Essential fetch call with timeout
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
   
-  // 1. Handle empty responses (204 No Content)
-  if (res.status === 204 || res.headers.get("content-length") === "0") {
-    return null;
-  }
-
-  // 2. More robust content-type checking
-  const contentType = res.headers.get("content-type");
-  const isJson = contentType?.includes("application/json");
-
-  let data: any;
   try {
-    data = isJson ? await res.json() : await res.text();
-  } catch (e) {
-    console.error("Response parsing failed, but continuing:", e);
-    data = null;
-  }
+    const res = await fetch(url, {
+      method,
+      headers,
+      body,
+      credentials: isAIWorker ? "omit" : "include",
+      signal: controller.signal,
+      ...options,
+    });
 
-  // 3. Skip token refresh for auth-related endpoints
-  const isAuthEndpoint = endpoint.includes("/accounts/");
-  if (res.status === 401 && !isAIWorker && retry && !isAuthEndpoint && isAuthenticated()) {
-    try {
-      const refreshRes = await fetch(`${API_BASE_URL}/api/accounts/refresh/`, {
-        method: "POST",
-        credentials: "include",
-      });
+    clearTimeout(timeout);
 
-      if (refreshRes.ok) {
-        return apiFetch(endpoint, options, isAIWorker, false);
-      }
-    } catch (err) {
-      /* empty */
-    }
-  }
-
-  // 4. Improved error message extraction
-  if (!res.ok) {
-    const message = 
-      data?.detail ||              // Django REST Framework style
-      data?.message ||            // Common alternative
-      (typeof data === "string" ? data : res.statusText);
+    // 5. Absolutely bulletproof response handling
+    if (res.status === 204) return null; // No Content
     
-    throw new Error(message || `Request failed with status ${res.status}`);
+    const clone = res.clone(); // Clone for safe fallback
+    let data: any;
+
+    try {
+      data = await res.json();
+    } catch (jsonError) {
+      console.warn("JSON parse failed, trying text:", jsonError);
+      try {
+        data = await clone.text();
+        if (data === "") data = null;
+      } catch (textError) {
+        console.error("Complete response parse failure:", textError);
+        data = null;
+      }
+    }
+
+    // 6. Explicit success/failure handling
+    if (!res.ok) {
+      const message = data?.detail || data?.message || 
+                     (typeof data === "string" ? data : res.statusText);
+      throw new Error(message || `HTTP ${res.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    clearTimeout(timeout);
+    if (error instanceof Error) {
+      // 7. Special handling for fetch errors
+      if (error.name === "AbortError") {
+        throw new Error("Request timeout");
+      }
+      throw error;
+    }
+    throw new Error("Unknown fetch error");
   }
-
-  // ================== CHANGES END HERE ================== //
-
-  return data;
 }
