@@ -40,6 +40,12 @@ export async function apiFetch(
 
   const res = await fetch(url, fetchOptions);
 
+  //  Critical Change: Handle empty responses (begin change)
+  if (res.status === 204 || res.headers.get("content-length") === "0") {
+    return null; // No content to parse
+  }
+  // End change
+
   const contentType = res.headers.get("content-type");
   const isJson = contentType && contentType.includes("application/json");
 
@@ -51,6 +57,9 @@ export async function apiFetch(
   }
 
   // 🔁 Try refreshing access token if unauthorized
+  //being change
+  const isAuthEndpoint = endpoint.includes("/accounts/");
+  //end change
   if (res.status === 401 && !isAIWorker && retry && isAuthenticated()) {
     try {
       const refreshRes = await fetch(`${API_BASE_URL}/api/accounts/refresh/`, {
