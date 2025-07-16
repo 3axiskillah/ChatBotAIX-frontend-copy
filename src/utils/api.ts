@@ -6,88 +6,93 @@ interface ApiFetchOptions extends RequestInit {
   headers?: HeadersInit;
 }
 
+// Safe cookie check that works in SSR environments too
 function isAuthenticated(): boolean {
+  if (typeof document === 'undefined') return false; // SSR fallback
   return document.cookie.includes("access_token");
 }
 
 export async function apiFetch(
   endpoint: string,
   options: ApiFetchOptions = {},
-  isAIWorker = false
+  isAIWorker = false,
+  retry = true
 ): Promise<any> {
   const url = `${isAIWorker ? AI_WORKER_URL : API_BASE_URL}${endpoint}`;
 
-  // 1. Force GET if no method specified (safer defaults)
-  const method = options.method || "GET";
-  
-  // 2. Simplified header handling
-  const headers = new Headers({
-    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
-    ...options.headers,
-  });
+  const isFormData = options.body instanceof FormData;
 
-  // 3. Stringify body only if it exists and isn't already a string
-  let body: BodyInit | null = null;
-  if (options.body) {
-    body = typeof options.body === "string" 
-      ? options.body 
-      : options.body instanceof FormData
+  const fetchOptions: RequestInit = {
+    method: options.method || "GET",
+    headers: {
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      ...(options.headers || {}),
+    },
+    credentials: isAIWorker ? "omit" : "include",
+    ...options,
+  };
+
+  // Handle JSON body
+  if (options.body && !isFormData) {
+    fetchOptions.body =
+      typeof options.body === "string"
         ? options.body
         : JSON.stringify(options.body);
   }
 
-  // 4. Essential fetch call with timeout
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  
-  try {
-    const res = await fetch(url, {
-      method,
-      headers,
-      body,
-      credentials: isAIWorker ? "omit" : "include",
-      signal: controller.signal,
-      ...options,
-    });
+  const res = await fetch(url, fetchOptions);
 
-    clearTimeout(timeout);
-
-    // 5. Absolutely bulletproof response handling
-    if (res.status === 204) return null; // No Content
-    
-    const clone = res.clone(); // Clone for safe fallback
-    let data: any;
-
-    try {
-      data = await res.json();
-    } catch (jsonError) {
-      console.warn("JSON parse failed, trying text:", jsonError);
-      try {
-        data = await clone.text();
-        if (data === "") data = null;
-      } catch (textError) {
-        console.error("Complete response parse failure:", textError);
-        data = null;
-      }
-    }
-
-    // 6. Explicit success/failure handling
-    if (!res.ok) {
-      const message = data?.detail || data?.message || 
-                     (typeof data === "string" ? data : res.statusText);
-      throw new Error(message || `HTTP ${res.status}`);
-    }
-
-    return data;
-  } catch (error) {
-    clearTimeout(timeout);
-    if (error instanceof Error) {
-      // 7. Special handling for fetch errors
-      if (error.name === "AbortError") {
-        throw new Error("Request timeout");
-      }
-      throw error;
-    }
-    throw new Error("Unknown fetch error");
+  // Handle empty responses
+  if (res.status === 204 || res.headers.get("content-length") === "0") {
+    return null;
   }
+
+  // Robust response parsing
+  const contentType = res.headers.get("content-type");
+  const isJson = contentType?.includes("application/json");
+
+  let data: any;
+  try {
+    // First try to read as text (safer than direct .json())
+    const text = await res.text();
+    data = isJson && text ? JSON.parse(text) : text;
+  } catch (e) {
+    console.error("Response parsing failed:", e);
+    data = null;
+  }
+
+  // Skip token refresh for auth endpoints and AI worker
+  const isAuthEndpoint = endpoint.includes("/accounts/");
+  if (
+    res.status === 401 && 
+    !isAIWorker && 
+    retry && 
+    !isAuthEndpoint && 
+    isAuthenticated()
+  ) {
+    try {
+      const refreshRes = await apiFetch("/api/accounts/refresh/", {
+        method: "POST",
+      }, false, false); // Prevent infinite retry loops
+
+      if (refreshRes) {
+        return apiFetch(endpoint, options, isAIWorker, false); // Retry once
+      }
+      throw new Error("Refresh failed");
+    } catch (err) {
+      throw new Error("Session expired. Please log in again.");
+    }
+  }
+
+  // Handle errors
+  if (!res.ok) {
+    const message = 
+      data?.detail ||              // Django REST Framework style
+      data?.message ||            // Common alternative
+      (typeof data === "string" ? data : res.statusText);
+    
+    throw new Error(message || `Request failed with status ${res.status}`);
+  }
+
+  return data;
 }
