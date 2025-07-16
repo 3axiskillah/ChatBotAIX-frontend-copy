@@ -58,29 +58,59 @@ export default function LandingChatPreview({
   }, [showRegisterPrompt, setTimeLeft, setShowRegisterPrompt]);
 
   useEffect(() => {
-    if (!sessionStorage.getItem("amber_chat_initialized") && messages.length === 0) {
-      const initialMessages: Message[] = [
-        { id: 1, text: "Hey there 👋 I'm Amber...", sender: "ai" },
-        { id: 2, text: "Let's dive into your wildest fantasies...", sender: "ai" },
-      ];
-      let index = 0;
+    const fetchInitialGreeting = async () => {
+      if (sessionStorage.getItem("amber_chat_initialized") || messages.length > 0) return;
 
-      const showNext = () => {
-        if (index < initialMessages.length) {
-          setIsTyping(true);
-          setTimeout(() => {
-            setMessages((prev) => [...prev, initialMessages[index]]);
-            index += 1;
-            setIsTyping(false);
-            showNext();
-          }, 1500);
-        } else {
-          sessionStorage.setItem("amber_chat_initialized", "true");
-        }
-      };
-      showNext();
-    }
-  }, [messages, setMessages]);
+      setIsTyping(true);
+
+      try {
+        const res = await apiFetch("/chat/respond", {
+          method: "POST",
+          body: JSON.stringify({
+            user_id: 0,
+            anon_id: anonId,
+            prompt: "Greet the user sexily",
+            history: [],
+          }),
+        }, true); // useAI = true
+
+        const data = await res;
+
+        const fullImageUrl =
+          data.image_url && !data.image_url.startsWith("https")
+            ? `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
+            : data.image_url;
+
+        const greetingMessage: Message = {
+          id: Date.now(),
+          text: data.response || "Hey there... 😘",
+          sender: "ai",
+          image_url: fullImageUrl || undefined,
+        };
+
+        setMessages([greetingMessage]);
+        sessionStorage.setItem("amber_chat_initialized", "true");
+        sessionStorage.setItem("anon_chat", JSON.stringify([greetingMessage]));
+
+        await apiFetch("/api/chat/submit/", {
+          method: "POST",
+          body: JSON.stringify({
+            prompt: "Greet the user sexily",
+            reply: greetingMessage.text,
+            anon_id: anonId,
+            image_url: fullImageUrl || null,
+          }),
+        });
+      } catch (err) {
+        console.error("Initial greeting error:", err);
+      } finally {
+        setIsTyping(false);
+      }
+    };
+
+    fetchInitialGreeting();
+  }, [anonId, messages.length, setMessages]);
+
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -117,7 +147,7 @@ export default function LandingChatPreview({
       const data = await respondRes;
 
       const fullImageUrl =
-        data.image_url && !data.image_url.startsWith("http")
+        data.image_url && !data.image_url.startsWith("https")
           ? `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
           : data.image_url;
 
