@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext"; // Import the AuthProvider
 import ChatUI from "./pages/ChatUI";
 import Landing from "./Landing";
-import Register from "./pages/Register";
+import { Register } from "./pages/Register";
 import Login from "./pages/Login";
 import Modal from "./components/Modal";
 import { ToastContainer } from "react-toastify";

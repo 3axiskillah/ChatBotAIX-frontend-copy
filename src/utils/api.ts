@@ -13,8 +13,7 @@ function isAuthenticated(): boolean {
 export async function apiFetch(
   endpoint: string,
   options: ApiFetchOptions = {},
-  isAIWorker = false,
-  retry = true
+  isAIWorker = false
 ): Promise<any> {
   const url = `${isAIWorker ? AI_WORKER_URL : API_BASE_URL}${endpoint}`;
 
