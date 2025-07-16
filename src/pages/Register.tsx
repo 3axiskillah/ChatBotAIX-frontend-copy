@@ -8,38 +8,43 @@ interface RegisterData {
   anon_id?: string | null;
 }
 
-export async function registerUser(data: RegisterData): Promise<boolean> {
+export const registerUser = async (data: RegisterData) => {
   try {
+    // ============== SIMPLIFIED API CALL ==============
     const response = await apiFetch('/api/accounts/register/', {
       method: 'POST',
-      body: data,
+      body: data
     });
 
-    // Handle both possible success responses:
-    // 1. Explicit success message from backend
-    if (response?.detail) {
-      toast.success(response.detail);
-    } 
-    // 2. Empty response (204)
-    else {
-      toast.success('Registration successful! Check your email.');
+    // ============== EXPLICIT SUCCESS HANDLING ==============
+    if (response === null || response?.detail) {
+      toast.success(response?.detail || 'Registration successful! Check your email.');
+      return true;
     }
 
-    return true;
+    throw new Error('Unexpected response format');
+
   } catch (error) {
-    // Handle both Error objects and string messages
-    const message = error instanceof Error ? error.message : String(error);
-    toast.error(message || 'Registration failed');
+    // ============== ERROR HANDLING ==============
+    const message = error instanceof Error 
+      ? error.message 
+      : 'Registration failed';
+
+    toast.error(message.includes('JSON') 
+      ? 'Server response error' 
+      : message);
+
     return false;
   }
-}
+};
 
-// Example usage in a component:
+// ============== USAGE EXAMPLE ==============
 /*
-const handleSubmit = async (formData: RegisterData) => {
-  const success = await registerUser(formData);
+const handleSubmit = async (data: RegisterData) => {
+  const success = await registerUser(data);
   if (success) {
     // Redirect or clear form
+    navigate('/verify-email');
   }
 }
 */
