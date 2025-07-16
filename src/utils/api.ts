@@ -30,7 +30,6 @@ export async function apiFetch(
     ...options,
   };
 
-  // Handle JSON body
   if (options.body && !isFormData) {
     fetchOptions.body =
       typeof options.body === "string"
@@ -40,27 +39,28 @@ export async function apiFetch(
 
   const res = await fetch(url, fetchOptions);
 
-  //  Critical Change: Handle empty responses (begin change)
+  // ================== CRITICAL CHANGES START HERE ================== //
+  
+  // 1. Handle empty responses (204 No Content)
   if (res.status === 204 || res.headers.get("content-length") === "0") {
-    return null; // No content to parse
+    return null;
   }
-  // End change
 
+  // 2. More robust content-type checking
   const contentType = res.headers.get("content-type");
-  const isJson = contentType && contentType.includes("application/json");
+  const isJson = contentType?.includes("application/json");
 
-  let data: any = null;
+  let data: any;
   try {
     data = isJson ? await res.json() : await res.text();
   } catch (e) {
+    console.error("Response parsing failed, but continuing:", e);
     data = null;
   }
 
-  // 🔁 Try refreshing access token if unauthorized
-  //being change
+  // 3. Skip token refresh for auth-related endpoints
   const isAuthEndpoint = endpoint.includes("/accounts/");
-  //end change
-  if (res.status === 401 && !isAIWorker && retry && isAuthenticated()) {
+  if (res.status === 401 && !isAIWorker && retry && !isAuthEndpoint && isAuthenticated()) {
     try {
       const refreshRes = await fetch(`${API_BASE_URL}/api/accounts/refresh/`, {
         method: "POST",
@@ -68,35 +68,24 @@ export async function apiFetch(
       });
 
       if (refreshRes.ok) {
-        return apiFetch(endpoint, options, isAIWorker, false); // Retry once
-      } else {
-        // Clear session (optionally) or redirect
-        throw new Error("Session expired. Please log in again.");
+        return apiFetch(endpoint, options, isAIWorker, false);
       }
     } catch (err) {
-      throw new Error("Session expired. Please log in again.");
+      /* empty */
     }
   }
 
-//   if (!res.ok) {
-//     const message =
-//       typeof data === "string"
-//         ? data
-//         : data?.message || data?.detail || res.statusText;
-//     throw new Error(message || `Request failed with status ${res.status}`);
-//   }
-
-//   return data;
-// }
-
-    // ✅ Modified success/failure handling
+  // 4. Improved error message extraction
   if (!res.ok) {
-    const message =
-      data?.detail || 
-      data?.message || 
+    const message = 
+      data?.detail ||              // Django REST Framework style
+      data?.message ||            // Common alternative
       (typeof data === "string" ? data : res.statusText);
+    
     throw new Error(message || `Request failed with status ${res.status}`);
   }
+
+  // ================== CHANGES END HERE ================== //
 
   return data;
 }
