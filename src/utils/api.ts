@@ -78,11 +78,23 @@ export async function apiFetch(
     }
   }
 
+//   if (!res.ok) {
+//     const message =
+//       typeof data === "string"
+//         ? data
+//         : data?.message || data?.detail || res.statusText;
+//     throw new Error(message || `Request failed with status ${res.status}`);
+//   }
+
+//   return data;
+// }
+
+    // ✅ Modified success/failure handling
   if (!res.ok) {
     const message =
-      typeof data === "string"
-        ? data
-        : data?.message || data?.detail || res.statusText;
+      data?.detail || 
+      data?.message || 
+      (typeof data === "string" ? data : res.statusText);
     throw new Error(message || `Request failed with status ${res.status}`);
   }
 
