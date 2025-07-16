@@ -1,4 +1,3 @@
-// src/Landing.tsx
 import { useState, useEffect, useRef } from "react";
 import LandingChatPreview from "./components/LandingChatPreview";
 
@@ -31,37 +30,17 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
     }
   });
 
-  const [chatTimeLeft, setChatTimeLeft] = useState<number>(() => {
-    try {
-      const savedTime = sessionStorage.getItem("amber_chat_timeLeft");
-      return savedTime ? parseInt(savedTime, 10) : 600;
-    } catch {
-      return 600;
-    }
-  });
+  const [chatTimeLeft, setChatTimeLeft] = useState<number>(600);
+  const [showRegisterPrompt, setShowRegisterPrompt] = useState(false);
 
-  const [showRegisterPrompt, setShowRegisterPrompt] = useState<boolean>(() => {
-    try {
-      return sessionStorage.getItem("amber_register_prompt") === "true";
-    } catch {
-      return false;
-    }
-  });
+  // Mobile menu state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     sessionStorage.setItem("amber_chat_messages", JSON.stringify(chatMessages));
-  }, [chatMessages]);
-
-  useEffect(() => {
     sessionStorage.setItem("amber_chat_timeLeft", chatTimeLeft.toString());
-  }, [chatTimeLeft]);
-
-  useEffect(() => {
-    sessionStorage.setItem(
-      "amber_register_prompt",
-      showRegisterPrompt.toString()
-    );
-  }, [showRegisterPrompt]);
+    sessionStorage.setItem("amber_register_prompt", showRegisterPrompt.toString());
+  }, [chatMessages, chatTimeLeft, showRegisterPrompt]);
 
   const validMessages = chatMessages.filter(
     (msg): msg is ChatMessage =>
@@ -81,22 +60,30 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
 
   return (
     <div className="min-h-screen bg-[#4B1F1F] text-[#E7D8C1] flex flex-col">
-      {/* Navbar */}
-      <header className="w-full flex justify-between items-center px-8 py-4 border-b border-[#D1A75D]">
+      {/* Navbar - Mobile First */}
+      <header className="w-full flex justify-between items-center px-4 sm:px-8 py-4 border-b border-[#D1A75D]">
         <h1 className="text-2xl font-bold text-[#D1A75D]">amber</h1>
-        <nav className="flex items-center gap-6 text-sm">
-          <a href="#chat" className="hover:text-[#D1A75D]">
-            Chat
-          </a>
-          <a href="#features" className="hover:text-[#D1A75D]">
-            Features
-          </a>
-          <a href="#reviews" className="hover:text-[#D1A75D]">
-            Reviews
-          </a>
-          <button onClick={onLoginClick} className="hover:text-[#D1A75D]">
-            Login
-          </button>
+        
+        {/* Mobile Menu Button */}
+        <button 
+          className="lg:hidden text-[#E7D8C1]"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {mobileMenuOpen ? (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            )}
+          </svg>
+        </button>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden lg:flex items-center gap-6 text-sm">
+          <a href="#chat" className="hover:text-[#D1A75D]">Chat</a>
+          <a href="#features" className="hover:text-[#D1A75D]">Features</a>
+          <a href="#reviews" className="hover:text-[#D1A75D]">Reviews</a>
+          <button onClick={onLoginClick} className="hover:text-[#D1A75D]">Login</button>
           <button
             onClick={onRegisterClick}
             className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 rounded hover:bg-[#b88e4f] font-semibold"
@@ -106,21 +93,48 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
         </nav>
       </header>
 
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden bg-[#2B1A1A] p-4 border-b border-[#D1A75D]">
+          <div className="flex flex-col space-y-4">
+            <a href="#chat" className="hover:text-[#D1A75D]" onClick={() => setMobileMenuOpen(false)}>Chat</a>
+            <a href="#features" className="hover:text-[#D1A75D]" onClick={() => setMobileMenuOpen(false)}>Features</a>
+            <a href="#reviews" className="hover:text-[#D1A75D]" onClick={() => setMobileMenuOpen(false)}>Reviews</a>
+            <button onClick={() => { onLoginClick(); setMobileMenuOpen(false); }} className="text-left hover:text-[#D1A75D]">Login</button>
+            <button
+              onClick={() => { onRegisterClick(); setMobileMenuOpen(false); }}
+              className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 rounded hover:bg-[#b88e4f] font-semibold text-left"
+            >
+              Start Consultation
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
-      <main className="flex-1 flex flex-col lg:flex-row justify-between px-10 py-16 gap-12 w-full">
+      <main className="flex-1 flex flex-col lg:flex-row justify-between px-4 sm:px-10 py-8 sm:py-16 gap-8 sm:gap-12 w-full">
         <div className="lg:w-1/2">
-          <h2 className="text-4xl font-extrabold text-[#D1A75D] mb-4 leading-tight">
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-[#D1A75D] mb-4 leading-tight">
             Your Personal Companion – Amber's Seductive Journey
           </h2>
           <p className="text-sm text-[#E7D8C1] mb-6">
             4.9/5 ★★★★★ · 1M+ conversations
           </p>
           <ul className="text-md space-y-3 mb-8">
-            <li>💋 Expert Erotic Guidance</li>
-            <li>✨ Personalized Fantasy Scenarios</li>
-            <li>💞 Seductive Companionship Support</li>
+            <li className="flex items-start">
+              <span className="mr-2">💋</span>
+              <span>Expert Erotic Guidance</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">✨</span>
+              <span>Personalized Fantasy Scenarios</span>
+            </li>
+            <li className="flex items-start">
+              <span className="mr-2">💞</span>
+              <span>Seductive Companionship Support</span>
+            </li>
           </ul>
-          <p className="text-[#E7D8C1]">
+          <p className="text-[#E7D8C1] mb-6 sm:mb-0">
             Explore your desires with Amber, trained to fulfill emotional and
             sensual connections.
           </p>
@@ -128,7 +142,7 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
 
         {/* Chat Preview */}
         <div
-          className="lg:w-1/2 bg-[#2B1A1A] rounded-2xl p-6 shadow-xl cursor-pointer hover:scale-105 transition-all flex flex-col"
+          className="lg:w-1/2 bg-[#2B1A1A] rounded-2xl p-4 sm:p-6 shadow-xl cursor-pointer hover:scale-[1.02] transition-transform flex flex-col"
           onClick={() => setShowChatPreview(true)}
           style={{ maxHeight: "calc(100vh - 200px)" }}
         >
@@ -145,7 +159,7 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
             {validMessages.map((msg) => (
               <div
                 key={msg.id}
-                className={`p-3 rounded-lg mb-2 w-fit max-w-[80%] ${
+                className={`p-3 rounded-lg mb-2 w-fit max-w-[90%] sm:max-w-[80%] text-sm sm:text-base ${
                   msg.sender === "user"
                     ? "ml-auto bg-[#E7D8C1] text-[#4B1F1F]"
                     : "bg-[#D14A3C] text-white"
