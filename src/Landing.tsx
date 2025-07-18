@@ -5,6 +5,8 @@ type ChatMessage = {
   id: number;
   text: string;
   sender: "user" | "ai";
+  image_url?: string;
+  blurred?: boolean;
 };
 
 type LandingProps = {
@@ -15,12 +17,15 @@ type LandingProps = {
 export default function Landing({ onRegisterClick, onLoginClick }: LandingProps) {
   const [showChatPreview, setShowChatPreview] = useState(false);
   const chatPreviewRef = useRef<HTMLDivElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Initialize with default messages
   const initialMessages: ChatMessage[] = [
     { id: 1, text: "Hey there 👋 I'm Amber...", sender: "ai" },
     { id: 2, text: "Let's dive into your wildest fantasies...", sender: "ai" },
   ];
 
+  // State management with sessionStorage persistence
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
     try {
       const saved = sessionStorage.getItem("amber_chat_messages");
@@ -30,33 +35,44 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
     }
   });
 
-  const [chatTimeLeft, setChatTimeLeft] = useState<number>(600);
   const [showRegisterPrompt, setShowRegisterPrompt] = useState(false);
 
-  // Mobile menu state
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Timer management - single source of truth
+  const [chatTimeLeft, setChatTimeLeft] = useState<number>(() => {
+    const savedTime = sessionStorage.getItem("amber_chat_timeLeft");
+    return savedTime ? Math.max(0, parseInt(savedTime)) : 600; // 10 minutes default
+  });
 
+  // Persist messages and timer to sessionStorage
   useEffect(() => {
     sessionStorage.setItem("amber_chat_messages", JSON.stringify(chatMessages));
     sessionStorage.setItem("amber_chat_timeLeft", chatTimeLeft.toString());
     sessionStorage.setItem("amber_register_prompt", showRegisterPrompt.toString());
   }, [chatMessages, chatTimeLeft, showRegisterPrompt]);
 
+  // Filter valid messages
   const validMessages = chatMessages.filter(
     (msg): msg is ChatMessage =>
-      msg &&
-      typeof msg === "object" &&
-      "id" in msg &&
-      "text" in msg &&
-      "sender" in msg &&
+      msg && typeof msg === "object" && "id" in msg && 
+      "text" in msg && "sender" in msg &&
       (msg.sender === "user" || msg.sender === "ai")
   );
 
+  // Auto-scroll chat preview
   useEffect(() => {
     if (!showChatPreview && chatPreviewRef.current) {
       chatPreviewRef.current.scrollTop = chatPreviewRef.current.scrollHeight;
     }
   }, [validMessages, showChatPreview]);
+
+  // Cleanup timer on unmount if not migrating
+  useEffect(() => {
+    return () => {
+      if (!sessionStorage.getItem("anon_migration_needed")) {
+        sessionStorage.removeItem("amber_chat_timeLeft");
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#4B1F1F] text-[#E7D8C1] flex flex-col">
