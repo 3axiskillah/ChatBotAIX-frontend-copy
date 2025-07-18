@@ -6,7 +6,7 @@ type Message = {
   text: string;
   sender: "user" | "ai";
   image_url?: string;
-  blurred?: boolean; // Added blurred property
+  blurred?: boolean;
 };
 
 type Props = {
@@ -32,45 +32,34 @@ export default function LandingChatPreview({
 }: Props) {
   const [anonId] = useState<string>(() => {
     const storedId = localStorage.getItem("anon_id");
-    if (storedId) return storedId;
-
-    const newId = "anon_" + Math.random().toString(36).substring(2, 15);
-    localStorage.setItem("anon_id", newId);
-    return newId;
+    return storedId || `anon_${Math.random().toString(36).substring(2, 15)}`;
   });
 
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
-  const [imageCount, setImageCount] = useState(0); // Track number of images sent
+  const [imageCount, setImageCount] = useState(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // 1. Fix timer persistence
+  // Timer countdown - uses parent's timer state
   useEffect(() => {
     if (showRegisterPrompt) return;
 
-    // Check if we have a stored timer value
-    const storedTime = sessionStorage.getItem("amber_chat_timeLeft");
-    if (storedTime && !isNaN(parseInt(storedTime))) {
-      setTimeLeft(parseInt(storedTime));
-    }
-
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        const newTime = prev <= 1 ? 0 : prev - 1;
-        sessionStorage.setItem("amber_chat_timeLeft", newTime.toString());
-        if (newTime <= 0) {
+        if (prev <= 1) {
           setShowRegisterPrompt(true);
+          return 0;
         }
-        return newTime;
+        return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(timer);
   }, [showRegisterPrompt, setTimeLeft, setShowRegisterPrompt]);
 
-  // 2. Improved scroll behavior
+  // Improved scroll behavior
   useEffect(() => {
     if (!autoScroll || !chatContainerRef.current) return;
     
@@ -142,7 +131,6 @@ export default function LandingChatPreview({
             role: msg.sender === "user" ? "user" : "assistant",
             content: msg.text,
           })),
-          // 4. Tell backend if this should be a blurred image (second image)
           should_blur: imageCount === 1,
         }),
       }, true);
@@ -157,7 +145,6 @@ export default function LandingChatPreview({
         text: data.response || "I'm sorry, I can't respond right now.",
         sender: "ai",
         image_url: fullImageUrl || undefined,
-        // 4. Apply blur if this is the second image
         blurred: imageCount === 1 && !!fullImageUrl,
       };
 
@@ -167,7 +154,6 @@ export default function LandingChatPreview({
         setImageCount(prev => prev + 1);
       }
 
-      // Save conversation with blurred state
       sessionStorage.setItem("anon_chat", JSON.stringify([...updated, newAIMessage]));
 
       await apiFetch("/api/chat/submit/", {
@@ -193,12 +179,10 @@ export default function LandingChatPreview({
     }
   };
 
-  // 3. Enhanced migration of conversation history
   const handleRegisterClick = async () => {
     try {
       const anonHistory = sessionStorage.getItem("anon_chat");
       if (anonHistory) {
-        // Include the anonId in the migration request
         await apiFetch("/api/chat/migrate_anon/", {
           method: "POST",
           body: JSON.stringify({
@@ -207,7 +191,6 @@ export default function LandingChatPreview({
           }),
         });
         
-        // Clear the anonymous session data
         sessionStorage.removeItem("anon_chat");
         sessionStorage.removeItem("amber_chat_timeLeft");
         sessionStorage.removeItem("amber_chat_initialized");
