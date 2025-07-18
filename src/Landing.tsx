@@ -35,8 +35,6 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
     }
   });
 
-  const [showRegisterPrompt, setShowRegisterPrompt] = useState(false);
-
   // Timer management - single source of truth
   const [chatTimeLeft, setChatTimeLeft] = useState<number>(() => {
     const savedTime = sessionStorage.getItem("amber_chat_timeLeft");
@@ -47,8 +45,7 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
   useEffect(() => {
     sessionStorage.setItem("amber_chat_messages", JSON.stringify(chatMessages));
     sessionStorage.setItem("amber_chat_timeLeft", chatTimeLeft.toString());
-    sessionStorage.setItem("amber_register_prompt", showRegisterPrompt.toString());
-  }, [chatMessages, chatTimeLeft, showRegisterPrompt]);
+  }, [chatMessages, chatTimeLeft]);
 
   // Filter valid messages
   const validMessages = chatMessages.filter(
@@ -215,8 +212,6 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
           setMessages={setChatMessages}
           timeLeft={chatTimeLeft}
           setTimeLeft={setChatTimeLeft}
-          showRegisterPrompt={showRegisterPrompt}
-          setShowRegisterPrompt={setShowRegisterPrompt}
         />
       )}
     </div>
