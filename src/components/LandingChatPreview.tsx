@@ -16,8 +16,6 @@ type Props = {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   timeLeft: number;
   setTimeLeft: React.Dispatch<React.SetStateAction<number>>;
-  showRegisterPrompt: boolean;
-  setShowRegisterPrompt: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export default function LandingChatPreview({
@@ -27,8 +25,6 @@ export default function LandingChatPreview({
   setMessages,
   timeLeft,
   setTimeLeft,
-  showRegisterPrompt,
-  setShowRegisterPrompt,
 }: Props) {
   const [anonId] = useState<string>(() => {
     const storedId = localStorage.getItem("anon_id");
@@ -39,17 +35,15 @@ export default function LandingChatPreview({
   const [isTyping, setIsTyping] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const [imageCount, setImageCount] = useState(0);
+  const [showImageRegisterModal, setShowImageRegisterModal] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Timer countdown - uses parent's timer state
   useEffect(() => {
-    if (showRegisterPrompt) return;
-
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          setShowRegisterPrompt(true);
           return 0;
         }
         return prev - 1;
@@ -57,7 +51,7 @@ export default function LandingChatPreview({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [showRegisterPrompt, setTimeLeft, setShowRegisterPrompt]);
+  }, [setTimeLeft]);
 
   // Improved scroll behavior
   useEffect(() => {
@@ -108,7 +102,7 @@ export default function LandingChatPreview({
 
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || showRegisterPrompt) return;
+    if (!message.trim()) return;
 
     const newUserMessage: Message = {
       id: Date.now(),
@@ -178,30 +172,7 @@ export default function LandingChatPreview({
       setIsTyping(false);
     }
   };
-
-  const handleRegisterClick = async () => {
-    try {
-      const anonHistory = sessionStorage.getItem("anon_chat");
-      if (anonHistory) {
-        await apiFetch("/api/chat/migrate_anon/", {
-          method: "POST",
-          body: JSON.stringify({
-            conversation: anonHistory,
-            anon_id: anonId,
-          }),
-        });
-        
-        sessionStorage.removeItem("anon_chat");
-        sessionStorage.removeItem("amber_chat_timeLeft");
-        sessionStorage.removeItem("amber_chat_initialized");
-        localStorage.removeItem("anon_id");
-      }
-    } catch (e) {
-      console.error("Failed to migrate anon conversation", e);
-    }
-    onRegisterClick();
-  };
-
+  
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -218,7 +189,9 @@ export default function LandingChatPreview({
             <span className="font-semibold text-lg text-[#D1A75D]">Amber</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className="bg-[#D1A75D]/20 border border-[#D1A75D] px-2 py-1 rounded-md">
+            <div className={`bg-[#D1A75D]/20 border border-[#D1A75D] px-2 py-1 rounded-md ${
+              timeLeft === 0 ? 'animate-pulse' : ''
+            }`}>
               <span className="text-xs font-mono text-[#D1A75D]">{formatTime(timeLeft)}</span>
             </div>
             <button
@@ -251,16 +224,18 @@ export default function LandingChatPreview({
               )}
 
               {msg.image_url && (
-                <div className="max-w-[80%] bg-[#D14A3C] rounded-xl p-2 self-start">
+                <div className="max-w-[80%] bg-[#D14A3C] rounded-xl p-2 self-start relative">
                   <img
                     src={msg.image_url}
                     alt="AI generated"
-                    className={`rounded-xl shadow ${msg.blurred ? 'filter blur-md' : ''}`}
-                    style={msg.blurred ? { cursor: 'pointer' } : {}}
-                    onClick={() => msg.blurred && setShowRegisterPrompt(true)}
+                    className={`rounded-xl shadow ${msg.blurred ? 'filter blur-md cursor-pointer hover:scale-[1.02] transition-transform' : ''}`}
+                    onClick={() => msg.blurred && setShowImageRegisterModal(true)}
                   />
                   {msg.blurred && (
-                    <div className="absolute inset-0 flex items-center justify-center">
+                    <div 
+                      className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                      onClick={() => setShowImageRegisterModal(true)}
+                    >
                       <span className="text-white font-bold bg-black/50 p-2 rounded">
                         Register to view
                       </span>
@@ -288,19 +263,14 @@ export default function LandingChatPreview({
         <form onSubmit={sendMessage} className="p-4 border-t border-[#D1A75D] bg-[#4B1F1F]">
           <div className="relative flex">
             <input
-              disabled={showRegisterPrompt}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder={
-                showRegisterPrompt
-                  ? "Please register to continue..."
-                  : "Ask about your wildest desires..."
-              }
-              className="flex-1 p-3 pr-12 rounded-lg bg-[#4B1F1F] border border-[#D1A75D] text-[#E7D8C1] placeholder-[#E7D8C1]/70 focus:outline-none focus:ring-1 focus:ring-[#D1A75D] disabled:opacity-60"
+              placeholder="Ask about your wildest desires..."
+              className="flex-1 p-3 pr-12 rounded-lg bg-[#4B1F1F] border border-[#D1A75D] text-[#E7D8C1] placeholder-[#E7D8C1]/70 focus:outline-none focus:ring-1 focus:ring-[#D1A75D]"
             />
             <button
               type="submit"
-              disabled={!message.trim() || showRegisterPrompt}
+              disabled={!message.trim()}
               className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-[#D1A75D] text-[#4B1F1F] hover:bg-[#b88e4f] disabled:opacity-50"
             >
               ➤
@@ -308,20 +278,29 @@ export default function LandingChatPreview({
           </div>
         </form>
 
-        {/* Register Prompt */}
-        {showRegisterPrompt && (
+        {/* Image Registration Modal */}
+        {showImageRegisterModal && (
           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 text-center px-6">
             <h2 className="text-2xl font-bold text-[#E7D8C1] mb-4">
-              Your free session has ended 💔
+              Want to see this content? 🔥
             </h2>
             <p className="text-[#E7D8C1] mb-6">
-              To keep chatting with Amber, please create an account. She's waiting for you...
+              Register now to unlock all of Amber's exclusive images...
             </p>
             <button
-              onClick={handleRegisterClick}
+              onClick={() => {
+                setShowImageRegisterModal(false);
+                onRegisterClick();
+              }}
               className="bg-[#D1A75D] text-[#4B1F1F] px-6 py-3 rounded-lg hover:bg-[#b88e4f] font-semibold text-lg"
             >
-              Register to Continue
+              Register Now
+            </button>
+            <button
+              onClick={() => setShowImageRegisterModal(false)}
+              className="mt-4 text-[#E7D8C1] hover:underline"
+            >
+              Continue Chatting
             </button>
           </div>
         )}
