@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, type FormEvent } from "react";
-import { apiFetch } from "../utils/api"; // ✅ adjust path if needed
+import { apiFetch } from "../utils/api";
 
 type Message = {
   id: number;
   text: string;
   sender: "user" | "ai";
   image_url?: string;
+  blurred?: boolean; // Added blurred property
 };
 
 type Props = {
@@ -37,34 +38,68 @@ export default function LandingChatPreview({
     localStorage.setItem("anon_id", newId);
     return newId;
   });
+
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [imageCount, setImageCount] = useState(0); // Track number of images sent
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  // 1. Fix timer persistence
   useEffect(() => {
     if (showRegisterPrompt) return;
 
+    // Check if we have a stored timer value
+    const storedTime = sessionStorage.getItem("amber_chat_timeLeft");
+    if (storedTime && !isNaN(parseInt(storedTime))) {
+      setTimeLeft(parseInt(storedTime));
+    }
+
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) {
+        const newTime = prev <= 1 ? 0 : prev - 1;
+        sessionStorage.setItem("amber_chat_timeLeft", newTime.toString());
+        if (newTime <= 0) {
           setShowRegisterPrompt(true);
-          return 0;
         }
-        return prev - 1;
+        return newTime;
       });
     }, 1000);
 
     return () => clearInterval(timer);
   }, [showRegisterPrompt, setTimeLeft, setShowRegisterPrompt]);
 
+  // 2. Improved scroll behavior
+  useEffect(() => {
+    if (!autoScroll || !chatContainerRef.current) return;
+    
+    const container = chatContainerRef.current;
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+    
+    if (isNearBottom) {
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+  }, [messages, autoScroll]);
+
+  const handleScroll = () => {
+    if (!chatContainerRef.current) return;
+    const container = chatContainerRef.current;
+    const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 10;
+    setAutoScroll(isAtBottom);
+  };
+
+  // Initial messages
   useEffect(() => {
     if (!sessionStorage.getItem("amber_chat_initialized") && messages.length === 0) {
       const initialMessages: Message[] = [
         { id: 1, text: "Hey there 👋 I'm Amber...", sender: "ai" },
         { id: 2, text: "Let's dive into your wildest fantasies...", sender: "ai" },
       ];
+      
       let index = 0;
-
       const showNext = () => {
         if (index < initialMessages.length) {
           setIsTyping(true);
@@ -81,10 +116,6 @@ export default function LandingChatPreview({
       showNext();
     }
   }, [messages, setMessages]);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
 
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault();
@@ -111,24 +142,32 @@ export default function LandingChatPreview({
             role: msg.sender === "user" ? "user" : "assistant",
             content: msg.text,
           })),
+          // 4. Tell backend if this should be a blurred image (second image)
+          should_blur: imageCount === 1,
         }),
-      }, true); // useAI = true
+      }, true);
 
       const data = await respondRes;
-
-      const fullImageUrl =
-        data.image_url && !data.image_url.startsWith("https")
-          ? `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
-          : data.image_url;
+      const fullImageUrl = data.image_url && !data.image_url.startsWith("https")
+        ? `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
+        : data.image_url;
 
       const newAIMessage: Message = {
         id: Date.now() + 1,
         text: data.response || "I'm sorry, I can't respond right now.",
         sender: "ai",
         image_url: fullImageUrl || undefined,
+        // 4. Apply blur if this is the second image
+        blurred: imageCount === 1 && !!fullImageUrl,
       };
-      setMessages((prev) => [...prev, newAIMessage]);
 
+      setMessages((prev) => [...prev, newAIMessage]);
+      
+      if (fullImageUrl) {
+        setImageCount(prev => prev + 1);
+      }
+
+      // Save conversation with blurred state
       sessionStorage.setItem("anon_chat", JSON.stringify([...updated, newAIMessage]));
 
       await apiFetch("/api/chat/submit/", {
@@ -138,6 +177,7 @@ export default function LandingChatPreview({
           reply: newAIMessage.text,
           anon_id: anonId,
           image_url: fullImageUrl || null,
+          blurred: newAIMessage.blurred || false,
         }),
       });
     } catch (err) {
@@ -153,14 +193,25 @@ export default function LandingChatPreview({
     }
   };
 
+  // 3. Enhanced migration of conversation history
   const handleRegisterClick = async () => {
     try {
       const anonHistory = sessionStorage.getItem("anon_chat");
       if (anonHistory) {
+        // Include the anonId in the migration request
         await apiFetch("/api/chat/migrate_anon/", {
           method: "POST",
-          body: anonHistory,
+          body: JSON.stringify({
+            conversation: anonHistory,
+            anon_id: anonId,
+          }),
         });
+        
+        // Clear the anonymous session data
+        sessionStorage.removeItem("anon_chat");
+        sessionStorage.removeItem("amber_chat_timeLeft");
+        sessionStorage.removeItem("amber_chat_initialized");
+        localStorage.removeItem("anon_id");
       }
     } catch (e) {
       console.error("Failed to migrate anon conversation", e);
@@ -196,13 +247,16 @@ export default function LandingChatPreview({
           </div>
         </div>
 
-        {/* Chat */}
-        <div className="flex-1 px-4 py-4 overflow-y-auto space-y-3">
+        {/* Chat with improved scroll behavior */}
+        <div 
+          ref={chatContainerRef}
+          className="flex-1 px-4 py-4 overflow-y-auto space-y-3"
+          onScroll={handleScroll}
+        >
           {messages.map((msg) => (
-            <>
+            <div key={msg.id}>
               {msg.text && (
                 <div
-                  key={msg.id}
                   className={`max-w-[80%] px-4 py-3 rounded-xl text-sm ${
                     msg.sender === "user"
                       ? "bg-[#E7D8C1] text-[#4B1F1F] self-end ml-auto"
@@ -214,18 +268,24 @@ export default function LandingChatPreview({
               )}
 
               {msg.image_url && (
-                <div
-                  key={`${msg.id}-image`}
-                  className="max-w-[80%] bg-[#D14A3C] rounded-xl p-2 self-start"
-                >
+                <div className="max-w-[80%] bg-[#D14A3C] rounded-xl p-2 self-start">
                   <img
                     src={msg.image_url}
                     alt="AI generated"
-                    className="rounded-xl shadow"
+                    className={`rounded-xl shadow ${msg.blurred ? 'filter blur-md' : ''}`}
+                    style={msg.blurred ? { cursor: 'pointer' } : {}}
+                    onClick={() => msg.blurred && setShowRegisterPrompt(true)}
                   />
+                  {msg.blurred && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-white font-bold bg-black/50 p-2 rounded">
+                        Register to view
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
-            </>
+            </div>
           ))}
 
           {isTyping && (
@@ -238,7 +298,6 @@ export default function LandingChatPreview({
               </div>
             </div>
           )}
-
           <div ref={chatEndRef} />
         </div>
 
@@ -273,7 +332,7 @@ export default function LandingChatPreview({
               Your free session has ended 💔
             </h2>
             <p className="text-[#E7D8C1] mb-6">
-              To keep chatting with Amber, please create an account. She’s waiting for you...
+              To keep chatting with Amber, please create an account. She's waiting for you...
             </p>
             <button
               onClick={handleRegisterClick}
