@@ -1,4 +1,3 @@
-// src/pages/Register.tsx
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { apiFetch } from "../utils/api";
@@ -48,7 +47,8 @@ export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
         username: form.username.trim(),
         email: form.email.toLowerCase().trim(),
         password: form.password,
-        anon_id: sessionStorage.getItem("anon_id"),
+        anon_id: localStorage.getItem("anon_id"),
+        chat_history: sessionStorage.getItem("anon_chat")
       };
 
       const response = await apiFetch("/api/accounts/register/", {
@@ -56,18 +56,18 @@ export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
         body: payload,
       });
 
-      // Handle both JSON and empty responses
-      const responseData = response === null ? {} : response;
-
-      if (responseData.detail) {
+      if (response.detail) {
+        // Clear anonymous chat data after successful registration
+        localStorage.removeItem("anon_id");
+        sessionStorage.removeItem("anon_chat");
         localStorage.setItem("pending_email", form.email);
         sessionStorage.setItem("anon_migration_needed", "true");
-        toast.success(responseData.detail || "✅ Account created! Check your email.");
+        toast.success(response.detail || "✅ Account created! Check your email.");
         
         if (onClose) onClose();
         navigate("/accounts/email-verify?status=sent");
       } else {
-        throw new Error(responseData.message || "Registration failed");
+        throw new Error(response.message || "Registration failed");
       }
     } catch (err) {
       console.error("Registration error:", err);

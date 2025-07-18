@@ -39,11 +39,17 @@ export default function LandingChatPreview({
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  // Save anonId to localStorage
+  useEffect(() => {
+    localStorage.setItem("anon_id", anonId);
+  }, [anonId]);
+
   // Timer countdown
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
+          clearInterval(timer);
           return 0;
         }
         return prev - 1;
@@ -99,6 +105,13 @@ export default function LandingChatPreview({
       showNext();
     }
   }, [messages, setMessages]);
+
+  const handleRegisterClick = () => {
+    // Save chat to session storage before navigating to register
+    sessionStorage.setItem("anon_chat", JSON.stringify(messages));
+    sessionStorage.setItem("anon_id", anonId);
+    onRegisterClick();
+  };
 
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault();
@@ -288,10 +301,7 @@ export default function LandingChatPreview({
               Register now to unlock all of Amber's exclusive images...
             </p>
             <button
-              onClick={() => {
-                setShowImageRegisterModal(false);
-                onRegisterClick();
-              }}
+              onClick={handleRegisterClick}
               className="bg-[#D1A75D] text-[#4B1F1F] px-6 py-3 rounded-lg hover:bg-[#b88e4f] font-semibold text-lg"
             >
               Register Now

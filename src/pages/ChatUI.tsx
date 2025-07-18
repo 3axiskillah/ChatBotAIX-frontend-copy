@@ -13,7 +13,7 @@ interface Message {
 }
 
 export default function ChatUI() {
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Closed by default on mobile
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
@@ -39,6 +39,31 @@ export default function ChatUI() {
         const u = await apiFetch("/api/accounts/me/");
         if (!u || !u.email) throw new Error();
         setUser({ id: u.id, is_premium: u.is_premium });
+        
+        // Check if we need to migrate anonymous chat
+        if (sessionStorage.getItem("anon_migration_needed")) {
+          try {
+            const anonId = localStorage.getItem("anon_id");
+            const chatHistory = sessionStorage.getItem("anon_chat");
+            
+            if (anonId || chatHistory) {
+              await apiFetch("/api/chat/migrate/", {
+                method: "POST",
+                body: {
+                  anon_id: anonId,
+                  chat_history: chatHistory ? JSON.parse(chatHistory) : null
+                }
+              });
+              
+              // Clear migration flags
+              localStorage.removeItem("anon_id");
+              sessionStorage.removeItem("anon_chat");
+              sessionStorage.removeItem("anon_migration_needed");
+            }
+          } catch (migrateErr) {
+            console.error("Migration error:", migrateErr);
+          }
+        }
       } catch {
         navigate("/accounts/login");
       }
@@ -56,6 +81,7 @@ export default function ChatUI() {
           sender: msg.is_user ? "user" : "ai",
           image_url: msg.image_url || undefined,
           timestamp: msg.timestamp,
+          blurred: msg.metadata?.blurred || false
         }));
         setMessages(
           formatted.length > 0
@@ -145,52 +171,55 @@ export default function ChatUI() {
         true
       );
 
-      const fullImageUrl =
-        data.image_url && !data.image_url.startsWith("http")
-          ? `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
-          : data.image_url;
+      const fullImageUrl = data.image_url 
+        ? data.image_url.startsWith("http") 
+          ? data.image_url 
+          : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
+        : undefined;
 
-      setTimeout(async () => {
-        const aiReplyText: Message = {
-          id: Date.now() + 1,
-          text: data.response || "No response.",
+      // First add the text response
+      const aiReplyText: Message = {
+        id: Date.now() + 1,
+        text: data.response || "No response.",
+        sender: "ai",
+      };
+      setMessages((prev) => [...prev, aiReplyText]);
+
+      // Then add the image if it exists
+      if (fullImageUrl) {
+        const aiReplyImage: Message = {
+          id: Date.now() + 2,
+          text: "",
           sender: "ai",
+          image_url: fullImageUrl,
+          blurred: data.blurred || false,
         };
-        setMessages((prev) => [...prev, aiReplyText]);
-
-        if (fullImageUrl) {
-          const aiReplyImage: Message = {
-            id: Date.now() + 2,
-            text: "",
-            sender: "ai",
-            image_url: fullImageUrl,
-            blurred: data.blurred || false,
-          };
-          setMessages((prev) => [...prev, aiReplyImage]);
-          if (!galleryImages.includes(fullImageUrl)) {
-            setGalleryImages((prev) => [...prev, fullImageUrl]);
-          }
-          setImagesSent((prev) => prev + 1);
+        setMessages((prev) => [...prev, aiReplyImage]);
+        if (!galleryImages.includes(fullImageUrl)) {
+          setGalleryImages((prev) => [...prev, fullImageUrl]);
         }
+        setImagesSent((prev) => prev + 1);
+      }
 
-        if (data.upsell) {
-          setShowUpgradePrompt(true);
-        }
+      // Submit to backend
+      await apiFetch("/api/chat/submit/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: message,
+          reply: data.response,
+          image_url: fullImageUrl || null,
+          blurred: data.blurred || false,
+        }),
+      });
 
-        await apiFetch("/api/chat/submit/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: message,
-            reply: data.response,
-            image_url: fullImageUrl || null,
-          }),
-        });
+      const durationSec = Math.floor((Date.now() - startTime) / 1000);
+      incrementTimeUsed(durationSec);
+      setTyping(false);
 
-        const durationSec = Math.floor((Date.now() - startTime) / 1000);
-        incrementTimeUsed(durationSec);
-        setTyping(false);
-      }, 1500 + Math.random() * 1000);
+      if (data.upsell) {
+        setShowUpgradePrompt(true);
+      }
     } catch (err) {
       console.error(err);
       setMessages((prev) => [
@@ -358,9 +387,18 @@ export default function ChatUI() {
                     <img 
                       src={msg.image_url} 
                       alt="AI generated" 
-                      className="rounded-lg max-h-64 md:max-h-80 object-contain cursor-pointer hover:opacity-90 transition"
-                      onClick={() => setModalImage(msg.image_url || null)}
+                      className={`rounded-lg max-h-64 md:max-h-80 object-contain cursor-pointer hover:opacity-90 transition ${
+                        msg.blurred ? 'filter blur-md' : ''
+                      }`}
+                      onClick={() => !msg.blurred && setModalImage(msg.image_url || null)}
                     />
+                    {msg.blurred && (
+                      <div className="absolute inset-0 flex items-center justify-center cursor-pointer">
+                        <span className="text-white font-bold bg-black/50 p-2 rounded">
+                          Premium Content
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
