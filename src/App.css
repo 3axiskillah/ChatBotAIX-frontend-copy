@@ -58,3 +58,11 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #b88e4f;
 }
+
+/* Add to your global styles */
+@media (max-width: 640px) {
+  .blur-overlay-text {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
