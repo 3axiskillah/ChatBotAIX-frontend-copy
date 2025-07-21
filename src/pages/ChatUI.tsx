@@ -155,10 +155,13 @@ useEffect(() => {
   loadAllHistory();
 }, []);
 
+// Helper functions
   const handleSignOut = async () => {
     await apiFetch("/api/accounts/logout/", { method: "POST" });
     localStorage.removeItem("access");
     localStorage.removeItem("refresh");
+    localStorage.removeItem("chat_last_used_date");
+    localStorage.removeItem("chat_seconds_used");
     navigate("/");
   };
 
