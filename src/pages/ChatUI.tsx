@@ -65,7 +65,7 @@ export default function ChatUI() {
           }
         }
       } catch {
-        navigate("/accounts/login");
+        navigate("/");
       }
     };
     checkAuth();
