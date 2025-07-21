@@ -71,32 +71,89 @@ export default function ChatUI() {
     checkAuth();
   }, [navigate]);
 
-  useEffect(() => {
-    const loadAllHistory = async () => {
-      try {
-        const data = await apiFetch("/api/chat/history/all/");
-        const formatted: Message[] = data.messages.map((msg: any, index: number) => ({
-          id: index + 1,
-          text: msg.content,
-          sender: msg.is_user ? "user" : "ai",
-          image_url: msg.image_url || undefined,
-          timestamp: msg.timestamp,
-          blurred: msg.metadata?.blurred || false
-        }));
-        setMessages(
-          formatted.length > 0
-            ? formatted
-            : [{ id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" }]
-        );
-        const imgs = formatted.filter((m) => m.image_url).map((m) => m.image_url!);
-        setGalleryImages(imgs);
-        setImagesSent(imgs.length);
-      } catch {
-        setMessages([{ id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" }]);
+useEffect(() => {
+  const loadAllHistory = async () => {
+    try {
+      const data = await apiFetch("/api/chat/history/all/");
+      
+      // Check if this is a new chat (no history)
+      const isNewChat = data.messages.length === 0;
+      
+      // Format existing messages if any
+      const formatted: Message[] = data.messages.map((msg: any) => ({
+        id: msg.id || Date.now(), // Use backend ID if available, otherwise generate one
+        text: msg.content,
+        sender: msg.is_user ? "user" : "ai",
+        image_url: msg.image_url || undefined,
+        timestamp: msg.timestamp,
+        blurred: msg.metadata?.blurred || false
+      }));
+
+      // Set messages - either existing history or initial welcome
+      setMessages(
+        formatted.length > 0
+          ? formatted
+          : [
+              { 
+                id: 1, 
+                text: "Hey there 👋 I'm Amber…", 
+                sender: "ai" 
+              },
+              { 
+                id: 2,
+                text: "Welcome back, sexy! Ready to pick up where we left off? 😘",
+                sender: "ai"
+              },
+              {
+                id: 3,
+                text: "Tell me what's on your mind... or should I guess? 😈",
+                sender: "ai"
+              }
+            ]
+      );
+
+      // Load gallery images from history
+      const galleryImgs = formatted
+        .filter(m => m.image_url)
+        .map(m => m.image_url)
+        .filter(url => url !== undefined) as string[];
+      
+      setGalleryImages(galleryImgs);
+      setImagesSent(galleryImgs.length);
+
+      // If new chat, add a delayed seductive message
+      if (isNewChat) {
+        setTimeout(() => {
+          setMessages(prev => [
+            ...prev,
+            {
+              id: Date.now(),
+              text: "I've been thinking about you... wondering what naughty things we'll do today 💋",
+              sender: "ai"
+            }
+          ]);
+        }, 3000);
       }
-    };
-    loadAllHistory();
-  }, []);
+
+    } catch (err) {
+      console.error("Error loading chat history:", err);
+      setMessages([
+        { 
+          id: 1, 
+          text: "Hey there 👋 I'm Amber…", 
+          sender: "ai" 
+        },
+        {
+          id: 2,
+          text: "Mmm... something went wrong, but I'm still here for you 😉",
+          sender: "ai"
+        }
+      ]);
+    }
+  };
+
+  loadAllHistory();
+}, []);
 
   const handleSignOut = async () => {
     await apiFetch("/api/accounts/logout/", { method: "POST" });
@@ -152,6 +209,7 @@ export default function ChatUI() {
     const startTime = Date.now();
 
     try {
+      // Get AI response
       const data = await apiFetch(
         "/chat/respond",
         {
@@ -177,32 +235,8 @@ export default function ChatUI() {
           : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
         : undefined;
 
-      // First add the text response
-      const aiReplyText: Message = {
-        id: Date.now() + 1,
-        text: data.response || "No response.",
-        sender: "ai",
-      };
-      setMessages((prev) => [...prev, aiReplyText]);
-
-      // Then add the image if it exists
-      if (fullImageUrl) {
-        const aiReplyImage: Message = {
-          id: Date.now() + 2,
-          text: "",
-          sender: "ai",
-          image_url: fullImageUrl,
-          blurred: data.blurred || false,
-        };
-        setMessages((prev) => [...prev, aiReplyImage]);
-        if (!galleryImages.includes(fullImageUrl)) {
-          setGalleryImages((prev) => [...prev, fullImageUrl]);
-        }
-        setImagesSent((prev) => prev + 1);
-      }
-
-      // Submit to backend
-      await apiFetch("/api/chat/submit/", {
+      // First submit to backend to get permanent image URL
+      const submitResponse = await apiFetch("/api/chat/submit/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -212,6 +246,26 @@ export default function ChatUI() {
           blurred: data.blurred || false,
         }),
       });
+
+      // Now use the backend's permanent image URL
+      const permanentImageUrl = submitResponse.image_url || fullImageUrl;
+
+      // Create AI message with permanent URL
+      const aiReply: Message = {
+        id: Date.now() + 1,
+        text: data.response || "No response.",
+        sender: "ai",
+        image_url: permanentImageUrl,
+        blurred: data.blurred || false,
+      };
+
+      setMessages((prev) => [...prev, aiReply]);
+      
+      // Add to gallery if image exists
+      if (permanentImageUrl) {
+        setGalleryImages(prev => [...prev, permanentImageUrl]);
+        setImagesSent(prev => prev + 1);
+      }
 
       const durationSec = Math.floor((Date.now() - startTime) / 1000);
       incrementTimeUsed(durationSec);
