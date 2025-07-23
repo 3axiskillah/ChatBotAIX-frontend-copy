@@ -344,21 +344,18 @@ useEffect(() => {
         </div>
         
         {galleryImages.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pr-2">
+          <div className="grid grid-cols-2 gap-3 pr-2">
             {galleryImages.map((url, i) => (
-              <div key={i} className="aspect-square relative group">
+              <div key={i} className="aspect-square relative">
                 <img
                   src={url}
                   alt={`Generated ${i}`}
-                  className="rounded-lg shadow hover:scale-105 transition cursor-pointer object-cover h-full w-full"
+                  className="rounded-lg shadow object-cover h-full w-full cursor-pointer"
                   onClick={() => {
                     setModalImage(url);
                     setSidebarOpen(false);
                   }}
                 />
-                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition rounded-lg flex items-center justify-center">
-                  <span className="text-white text-sm">View</span>
-                </div>
               </div>
             ))}
           </div>
@@ -424,7 +421,7 @@ useEffect(() => {
         {/* Messages Container */}
         <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4">
           {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+            <div key={msg.id} className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
               {msg.text && (
                 <div className={`max-w-[85%] md:max-w-3xl px-3 py-2 md:px-4 md:py-3 rounded-2xl shadow-lg ${
                   msg.sender === "user"
@@ -435,7 +432,7 @@ useEffect(() => {
                 </div>
               )}
               {msg.image_url && (
-                <div className={`mt-2 max-w-[90%] md:max-w-md ${msg.sender === "user" ? "ml-auto" : "mr-auto"}`}>
+                <div className={`mt-2 max-w-[90%] md:max-w-md`}>
                   <div className={`p-1 md:p-2 rounded-2xl shadow ${
                     msg.sender === "user" 
                       ? "bg-[#D1A75D]/20 border border-[#D1A75D]/30" 
@@ -444,7 +441,7 @@ useEffect(() => {
                     <img 
                       src={msg.image_url} 
                       alt="AI generated" 
-                      className={`rounded-lg max-h-64 md:max-h-80 object-contain cursor-pointer hover:opacity-90 transition ${
+                      className={`rounded-lg w-full max-h-64 md:max-h-80 object-contain cursor-pointer hover:opacity-90 transition ${
                         msg.blurred ? 'filter blur-md' : ''
                       }`}
                       onClick={() => !msg.blurred && setModalImage(msg.image_url || null)}
@@ -497,14 +494,29 @@ useEffect(() => {
 
         {/* Upgrade Prompt */}
         {showUpgradePrompt && (
-          <div className="absolute inset-0 z-50 bg-black bg-opacity-80 flex flex-col items-center justify-center p-4">
-            <h2 className="text-xl md:text-2xl font-bold text-[#E7D8C1] mb-4 text-center">⏳ Your free chat time is up!</h2>
-            <p className="text-[#E7D8C1] mb-6 text-center">Subscribe now to unlock unlimited time with Amber.</p>
-            <button
-              onClick={() => navigate("/subscriptions")}
-              className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#b88e4f] font-semibold transition">
-              Go Premium
-            </button>
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex flex-col items-center justify-center p-4">
+            <div className="bg-[#4B1F1F] p-6 rounded-lg max-w-md w-full">
+              <h2 className="text-xl md:text-2xl font-bold text-[#E7D8C1] mb-4 text-center">
+                {imagesSent >= 4 ? "Image Limit Reached" : "⏳ Your free chat time is up!"}
+              </h2>
+              <p className="text-[#E7D8C1] mb-6 text-center">
+                {imagesSent >= 4 
+                  ? "Subscribe to unlock unlimited images with Amber."
+                  : "Subscribe now to unlock unlimited time with Amber."}
+              </p>
+              <div className="flex flex-col space-y-3">
+                <button
+                  onClick={() => navigate("/subscriptions")}
+                  className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#b88e4f] font-semibold transition">
+                  Go Premium
+                </button>
+                <button
+                  onClick={() => setShowUpgradePrompt(false)}
+                  className="bg-[#3A1A1A] text-[#E7D8C1] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#2e1414] font-semibold transition">
+                  Continue Chatting
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
