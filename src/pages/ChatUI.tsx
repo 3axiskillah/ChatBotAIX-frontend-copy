@@ -293,26 +293,32 @@ useEffect(() => {
 
   return (
     <div className="w-screen h-screen flex flex-col md:flex-row bg-[#4B1F1F] text-[#E7D8C1] overflow-hidden">
-      {/* Mobile Header */}
-      <header className="md:hidden flex justify-between items-center px-4 py-3 border-b border-[#D1A75D] bg-[#4B1F1F]">
+      {/* Mobile Header - Fixed position */}
+      <header className="md:hidden flex justify-between items-center px-4 py-3 border-b border-[#D1A75D] bg-[#4B1F1F] fixed top-0 left-0 right-0 z-50">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={() => {
+              setSidebarOpen(!sidebarOpen);
+              setMenuOpen(false); // Close menu if sidebar opens
+            }}
             className="bg-[#D1A75D] text-[#4B1F1F] p-2 rounded hover:bg-[#b88b35] transition">
             {sidebarOpen ? "✕" : "☰"}
           </button>
           <h1 className="text-lg font-bold text-[#D1A75D]">Amber</h1>
         </div>
         <button
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={() => {
+            setMenuOpen(!menuOpen);
+            setSidebarOpen(false); // Close sidebar if menu opens
+          }}
           className="bg-[#D1A75D] text-[#4B1F1F] p-2 rounded hover:bg-[#c49851] transition">
           ☰
         </button>
       </header>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Menu Dropdown - Fixed below header */}
       {menuOpen && (
-        <div className="md:hidden bg-[#3A1818] border-b border-[#D1A75D]">
+        <div className="md:hidden bg-[#3A1818] border-b border-[#D1A75D] fixed top-16 left-0 right-0 z-40">
           <div className="flex flex-col space-y-2 p-3">
             <button onClick={() => navigate("/settings")}
               className="w-full text-left px-3 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded">
@@ -330,10 +336,10 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Sidebar - Mobile optimized */}
-      <div className={`${sidebarOpen ? 'fixed md:relative inset-0 z-40 md:z-auto' : 'hidden md:flex'} 
+      {/* Sidebar - Fixed position for mobile */}
+      <div className={`${sidebarOpen ? 'fixed md:relative inset-0 z-40 md:z-auto mt-16 md:mt-0' : 'hidden md:flex'} 
         flex-col bg-[#3A1818] border-r border-[#D1A75D] transition-all duration-300 ease-in-out 
-        ${sidebarOpen ? "w-full md:w-64 p-4" : "w-0 p-0"} overflow-y-auto`}>
+        ${sidebarOpen ? "w-full md:w-64 p-4" : "w-0 p-0"} overflow-y-auto h-[calc(100vh-4rem)] md:h-full`}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold">Gallery</h2>
           <button 
@@ -344,9 +350,9 @@ useEffect(() => {
         </div>
         
         {galleryImages.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 pr-2">
+          <div className="grid grid-cols-2 gap-3 pr-2 pb-4">
             {galleryImages.map((url, i) => (
-              <div key={i} className="aspect-square relative">
+              <div key={i} className="aspect-[1/1] relative">
                 <img
                   src={url}
                   alt={`Generated ${i}`}
@@ -370,7 +376,7 @@ useEffect(() => {
           onClick={() => setModalImage(null)}>
           <div className="relative max-w-full max-h-full">
             <img src={modalImage} alt="preview"
-              className="max-w-full max-h-[80vh] rounded-lg shadow-lg"
+              className="max-w-full max-h-[80vh] rounded-lg shadow-lg object-contain"
               onClick={(e) => e.stopPropagation()} />
             <button 
               onClick={() => setModalImage(null)}
@@ -381,8 +387,8 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col relative">
+      {/* Main Chat Area - With proper scrolling */}
+      <div className="flex-1 flex flex-col relative mt-16 md:mt-0">
         {/* Desktop Header */}
         <header className="hidden md:flex justify-between items-center px-6 py-4 border-b border-[#D1A75D] bg-[#4B1F1F]">
           <div className="flex items-center gap-3">
@@ -418,8 +424,8 @@ useEffect(() => {
           </div>
         </header>
 
-        {/* Messages Container */}
-        <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4">
+        {/* Messages Container - Now scrolls independently */}
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4 pt-0 md:pt-0">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
               {msg.text && (
@@ -441,7 +447,7 @@ useEffect(() => {
                     <img 
                       src={msg.image_url} 
                       alt="AI generated" 
-                      className={`rounded-lg w-full max-h-64 md:max-h-80 object-contain cursor-pointer hover:opacity-90 transition ${
+                      className={`rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition ${
                         msg.blurred ? 'filter blur-md' : ''
                       }`}
                       onClick={() => !msg.blurred && setModalImage(msg.image_url || null)}
@@ -473,9 +479,9 @@ useEffect(() => {
           <div ref={chatEndRef} />
         </div>
 
-        {/* Input Area */}
+        {/* Input Area - Fixed on mobile */}
         <form onSubmit={handleSend}
-          className="flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-[#D1A75D] bg-[#4B1F1F]">
+          className="flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-[#D1A75D] bg-[#4B1F1F] sticky bottom-0">
           <input
             type="text"
             value={message}
