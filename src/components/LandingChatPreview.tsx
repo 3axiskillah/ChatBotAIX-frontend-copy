@@ -125,105 +125,87 @@ export default function LandingChatPreview({
   };
 
   const sendMessage = async (e: FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
+  if (!message.trim()) return;
 
-    // Block completely after 2 images (1 clear + 1 blurred)
-    if (!message.trim()) return;
-
-    const newUserMessage: Message = {
-      id: Date.now(),
-      text: message,
-      sender: "user",
-    };
-    const updated = [...messages, newUserMessage];
-    setMessages(updated);
-    setMessage("");
-    setIsTyping(true);
-
-    try {
-      // First check if we've reached image limit
-      if (imageCount >= 2) {
-        const textOnlyResponse: Message = {
-          id: Date.now() + 1,
-          text: "Please register to continue receiving images from Amber.",
-          sender: "ai",
-        };
-        setMessages((prev) => [...prev, textOnlyResponse]);
-        setShowImageRegisterModal(true);
-        return;
-      }
-
-      const respondRes = await apiFetch(
-        "/chat/respond",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            user_id: 0,
-            anon_id: anonId,
-            prompt: newUserMessage.text,
-            history: updated.slice(-10).map((msg) => ({
-              role: msg.sender === "user" ? "user" : "assistant",
-              content: msg.text,
-            })),
-            should_blur: imageCount >= 1, // Blur after first image
-            allow_image: imageCount < 2, // Don't allow images after limit
-          }),
-        },
-        true
-      );
-
-      const data = await respondRes;
-      let fullImageUrl = null;
-
-      // Only process image if under limit
-      if (imageCount < 2 && data.image_url) {
-        fullImageUrl = data.image_url.startsWith("https")
-          ? data.image_url
-          : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`;
-      }
-
-      const newAIMessage: Message = {
-        id: Date.now() + 1,
-        text: data.response || "I'm sorry, I can't respond right now.",
-        sender: "ai",
-        image_url: fullImageUrl || undefined,
-        blurred: imageCount >= 1 && !!fullImageUrl,
-      };
-
-      setMessages((prev) => [...prev, newAIMessage]);
-
-      if (fullImageUrl) {
-        setImageCount((prev) => {
-          const newCount = prev + 1;
-          if (newCount >= 2) {
-            setShowImageRegisterModal(true);
-          }
-          return newCount;
-        });
-      }
-
-      await apiFetch("/api/chat/submit/", {
-        method: "POST",
-        body: JSON.stringify({
-          prompt: newUserMessage.text,
-          reply: newAIMessage.text,
-          anon_id: anonId,
-          image_url: fullImageUrl || null,
-          blurred: newAIMessage.blurred || false,
-        }),
-      });
-    } catch (err) {
-      console.error("Chat error:", err);
-      const errorMessage: Message = {
-        id: Date.now() + 2,
-        text: "Sorry, I'm having trouble connecting. Please try again later.",
-        sender: "ai",
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsTyping(false);
-    }
+  const newUserMessage: Message = {
+    id: Date.now(),
+    text: message,
+    sender: "user",
   };
+  const updated = [...messages, newUserMessage];
+  setMessages(updated);
+  setMessage("");
+  setIsTyping(true);
+
+  try {
+    const respondRes = await apiFetch("/chat/respond", {
+      method: "POST",
+      body: JSON.stringify({
+        user_id: 0,
+        anon_id: anonId,
+        prompt: newUserMessage.text,
+        history: updated.slice(-10).map((msg) => ({
+          role: msg.sender === "user" ? "user" : "assistant",
+          content: msg.text,
+        })),
+        should_blur: imageCount >= 1,
+        allow_image: imageCount < 2 // Tell backend not to send images after limit
+      }),
+    }, true);
+
+    const data = await respondRes;
+    let fullImageUrl = undefined;
+
+    // Only process image if under limit
+    if (imageCount < 2 && data.image_url) {
+      fullImageUrl = data.image_url.startsWith("http") 
+        ? data.image_url 
+        : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`;
+    }
+
+    const newAIMessage: Message = {
+      id: Date.now() + 1,
+      text: data.response || "I'm sorry, I can't respond right now.",
+      sender: "ai",
+      image_url: fullImageUrl,
+      blurred: imageCount >= 1 && !!fullImageUrl,
+    };
+
+    setMessages((prev) => [...prev, newAIMessage]);
+    
+    if (fullImageUrl) {
+      setImageCount(prev => {
+        const newCount = prev + 1;
+        if (newCount >= 2) {
+          setShowImageRegisterModal(true);
+        }
+        return newCount;
+      });
+    }
+
+    await apiFetch("/api/chat/submit/", {
+      method: "POST",
+      body: JSON.stringify({
+        prompt: newUserMessage.text,
+        reply: newAIMessage.text,
+        anon_id: anonId,
+        image_url: fullImageUrl || null,
+        blurred: newAIMessage.blurred || false,
+      }),
+    });
+  } catch (err) {
+    console.error("Chat error:", err);
+    const errorMessage: Message = {
+      id: Date.now() + 2,
+      text: "Sorry, I'm having trouble connecting. Please try again later.",
+      sender: "ai",
+    };
+    setMessages((prev) => [...prev, errorMessage]);
+  } finally {
+    setIsTyping(false);
+  }
+};
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
