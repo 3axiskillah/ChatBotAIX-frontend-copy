@@ -319,19 +319,24 @@ export default function LandingChatPreview({
             <input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Ask about your wildest desires..."
-              className={`flex-1 p-3 pr-12 rounded-lg bg-[#4B1F1F] border border-[#D1A75D] text-[#E7D8C1] 
-          placeholder-[#E7D8C1]/70 focus:outline-none focus:ring-1 focus:ring-[#D1A75D] ${
-                timeLeft <= 0 ? 'opacity-50 cursor-not-allowed' : ''
-              }`} // Add conditional styling
+              placeholder={timeLeft <= 0 ? "Register to continue chatting..." : "Ask about your wildest desires..."}
+              disabled={timeLeft <= 0}
+              className={`flex-1 p-3 pr-12 rounded-lg bg-[#4B1F1F] border ${
+                timeLeft <= 0 ? 'border-red-500' : 'border-[#D1A75D]'
+              } text-[#E7D8C1] placeholder-[#E7D8C1]/70 focus:outline-none focus:ring-1 ${
+                timeLeft <= 0 ? 'focus:ring-red-500' : 'focus:ring-[#D1A75D]'
+              } ${
+                timeLeft <= 0 ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
             />
             <button
               type="submit"
-              disabled={!message.trim() || timeLeft <= 0} // Add timeLeft check
-              className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-[#D1A75D] 
-            text-[#4B1F1F] hover:bg-[#b88e4f] disabled:opacity-50 ${
-              timeLeft <= 0 ? 'cursor-not-allowed' : ''
-            }`} // Add conditional cursor
+              disabled={!message.trim() || timeLeft <= 0}
+              className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full ${
+                timeLeft <= 0 ? 'bg-red-500' : 'bg-[#D1A75D]'
+              } text-[#4B1F1F] hover:bg-[#b88e4f] disabled:opacity-50 ${
+                timeLeft <= 0 ? 'cursor-not-allowed' : ''
+              }`}
             >
               ➤
             </button>
@@ -342,15 +347,17 @@ export default function LandingChatPreview({
         {showImageRegisterModal && (
           <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center z-10 text-center px-6">
             <h2 className="text-2xl font-bold text-[#E7D8C1] mb-4">
-              Want to see this content? 🔥
+                {timeLeft <= 0 ? "⏰ Free Time is Up!" : "Want to see this content? 🔥"}
             </h2>
             <p className="text-[#E7D8C1] mb-6">
-              Register now to unlock all of Amber's exclusive images...
-            </p>
-            <button
-              onClick={handleRegisterClick}
-              className="bg-[#D1A75D] text-[#4B1F1F] px-6 py-3 rounded-lg hover:bg-[#b88e4f] font-semibold text-lg"
-            >
+            {timeLeft <= 0
+            ? "Register now to continue chatting with Amber"
+            : "Register now to unlock all of Amber's exclusive images..."}
+        </p>
+        <button
+          onClick={handleRegisterClick}
+          className="bg-[#D1A75D] text-[#4B1F1F] px-6 py-3 rounded-lg hover:bg-[#b88e4f] font-semibold text-lg"
+          >
               Register Now
             </button>
             {timeLeft > 0 && ( // Only show "Continue Chatting" if time remains
