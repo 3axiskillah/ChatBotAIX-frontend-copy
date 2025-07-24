@@ -115,7 +115,7 @@ export default function LandingChatPreview({
 
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!message.trim()) return;
+    if (!message.trim() || imageCount >=2) return;
 
     const newUserMessage: Message = {
       id: Date.now(),
@@ -138,7 +138,7 @@ export default function LandingChatPreview({
             role: msg.sender === "user" ? "user" : "assistant",
             content: msg.text,
           })),
-          should_blur: imageCount === 1,
+          should_blur: imageCount >= 1,
         }),
       }, true);
 
@@ -152,14 +152,20 @@ export default function LandingChatPreview({
         text: data.response || "I'm sorry, I can't respond right now.",
         sender: "ai",
         image_url: fullImageUrl || undefined,
-        blurred: imageCount === 1 && !!fullImageUrl,
+        blurred: imageCount >= 1 && !!fullImageUrl,
       };
 
       setMessages((prev) => [...prev, newAIMessage]);
       
       if (fullImageUrl) {
-        setImageCount(prev => prev + 1);
-      }
+        setImageCount(prev => {
+          const newCount = prev +1;
+          if (newCount >= 2) {
+            setShowImageRegisterModal(true);
+          }
+          return newCount;
+      });
+    }
 
       sessionStorage.setItem("anon_chat", JSON.stringify([...updated, newAIMessage]));
 
