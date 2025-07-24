@@ -12,6 +12,14 @@ interface Message {
   upsell?: boolean;
 }
 
+interface User {
+  id: number;
+  email: string;
+  is_premium: boolean;
+  premium_until?: string;
+  images_sent_today?: number;
+}
+
 export default function ChatUI() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -21,25 +29,40 @@ export default function ChatUI() {
   const [typing, setTyping] = useState(false);
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
-  const [user, setUser] = useState<{ id: number; is_premium: boolean } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [imagesSent, setImagesSent] = useState(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const DAILY_LIMIT_SECONDS = 40 * 60;
+  const DAILY_LIMIT_SECONDS = 40 * 60; // 40 minutes
 
+  // Scroll to bottom when messages change
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
   useEffect(scrollToBottom, [messages]);
 
+  // Check authentication and load user data
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const u = await apiFetch("/api/accounts/me/");
-        if (!u || !u.email) throw new Error();
-        setUser({ id: u.id, is_premium: u.is_premium });
+        const [userData, subscriptionData] = await Promise.all([
+          apiFetch("/api/accounts/me/"),
+          apiFetch("/api/billing/subscription/status/")
+        ]);
+
+        if (!userData || !userData.email) throw new Error();
         
+        setUser({ 
+          id: userData.id, 
+          email: userData.email,
+          is_premium: userData.is_premium || subscriptionData?.is_premium,
+          premium_until: subscriptionData?.premium_until,
+          images_sent_today: subscriptionData?.images_sent_today || 0
+        });
+
+        setImagesSent(subscriptionData?.images_sent_today || 0);
+
         // Check if we need to migrate anonymous chat
         if (sessionStorage.getItem("anon_migration_needed")) {
           try {
@@ -71,110 +94,79 @@ export default function ChatUI() {
     checkAuth();
   }, [navigate]);
 
-useEffect(() => {
-  const loadAllHistory = async () => {
-    try {
-      const data = await apiFetch("/api/chat/history/all/");
-      
-      // Check if this is a new chat (no history)
-      const isNewChat = data.messages.length === 0;
-      
-      // Format existing messages if any
-      const formatted: Message[] = data.messages.map((msg: any) => ({
-        id: msg.id || Date.now(), // Use backend ID if available, otherwise generate one
-        text: msg.content,
-        sender: msg.is_user ? "user" : "ai",
-        image_url: msg.image_url || undefined,
-        timestamp: msg.timestamp,
-        blurred: msg.metadata?.blurred || false
-      }));
+  // Load chat history
+  useEffect(() => {
+    const loadAllHistory = async () => {
+      try {
+        const data = await apiFetch("/api/chat/history/all/");
+        const isNewChat = data.messages.length === 0;
+        
+        // Format existing messages
+        const formatted: Message[] = data.messages.map((msg: any) => ({
+          id: msg.id || Date.now(),
+          text: msg.content,
+          sender: msg.is_user ? "user" : "ai",
+          image_url: msg.image_url || undefined,
+          timestamp: msg.timestamp,
+          blurred: msg.metadata?.blurred || false
+        }));
 
-      // Set messages - either existing history or initial welcome
-      setMessages(
-        formatted.length > 0
-          ? formatted
-          : [
-              { 
-                id: 1, 
-                text: "Hey there 👋 I'm Amber…", 
-                sender: "ai" 
-              },
-              { 
-                id: 2,
-                text: "Welcome back, sexy! Ready to pick up where we left off? 😘",
-                sender: "ai"
-              },
+        // Set messages - either existing history or initial welcome
+        setMessages(
+          formatted.length > 0
+            ? formatted
+            : [
+                { id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" },
+                { id: 2, text: "Welcome back, sexy! Ready to pick up where we left off? 😘", sender: "ai" },
+                { id: 3, text: "Tell me what's on your mind... or should I guess? 😈", sender: "ai" }
+              ]
+        );
+
+        // Load gallery images
+        const galleryImgs = formatted
+          .filter(m => m.image_url)
+          .map(m => m.image_url)
+          .filter(url => url !== undefined) as string[];
+        
+        setGalleryImages(galleryImgs);
+
+        // If new chat, add delayed message
+        if (isNewChat) {
+          setTimeout(() => {
+            setMessages(prev => [
+              ...prev,
               {
-                id: 3,
-                text: "Tell me what's on your mind... or should I guess? 😈",
+                id: Date.now(),
+                text: "I've been thinking about you... wondering what naughty things we'll do today 💋",
                 sender: "ai"
               }
-            ]
-      );
-
-      // Load gallery images from history
-      const galleryImgs = formatted
-        .filter(m => m.image_url)
-        .map(m => m.image_url)
-        .filter(url => url !== undefined) as string[];
-      
-      setGalleryImages(galleryImgs);
-      setImagesSent(galleryImgs.length);
-
-      // If new chat, add a delayed seductive message
-      if (isNewChat) {
-        setTimeout(() => {
-          setMessages(prev => [
-            ...prev,
-            {
-              id: Date.now(),
-              text: "I've been thinking about you... wondering what naughty things we'll do today 💋",
-              sender: "ai"
-            }
-          ]);
-        }, 3000);
-      }
-
-    } catch (err) {
-      console.error("Error loading chat history:", err);
-      setMessages([
-        { 
-          id: 1, 
-          text: "Hey there 👋 I'm Amber…", 
-          sender: "ai" 
-        },
-        {
-          id: 2,
-          text: "Mmm... something went wrong, but I'm still here for you 😉",
-          sender: "ai"
+            ]);
+          }, 3000);
         }
-      ]);
-    }
-  };
 
-  loadAllHistory();
-}, []);
+      } catch (err) {
+        console.error("Error loading chat history:", err);
+        setMessages([
+          { id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" },
+          { id: 2, text: "Mmm... something went wrong, but I'm still here for you 😉", sender: "ai" }
+        ]);
+      }
+    };
 
-// Helper functions
-  const handleSignOut = async () => {
-    await apiFetch("/api/accounts/logout/", { method: "POST" });
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    localStorage.removeItem("chat_last_used_date");
-    localStorage.removeItem("chat_seconds_used");
-    navigate("/");
-  };
+    loadAllHistory();
+  }, []);
 
+  // Check daily time limit
   const checkTimeLimit = () => {
     if (user?.is_premium) return true;
 
     const today = new Date().toISOString().slice(0, 10);
     const usedDate = localStorage.getItem("chat_last_used_date");
-    const usedSeconds = parseInt(localStorage.getItem("chat_minutes_used") || "0", 10);
+    const usedSeconds = parseInt(localStorage.getItem("chat_seconds_used") || "0", 10);
 
     if (usedDate !== today) {
       localStorage.setItem("chat_last_used_date", today);
-      localStorage.setItem("chat_minutes_used", "0");
+      localStorage.setItem("chat_seconds_used", "0");
       return true;
     }
 
@@ -186,22 +178,64 @@ useEffect(() => {
     return true;
   };
 
+  // Check daily image limit
+  const checkImageLimit = () => {
+    if (user?.is_premium) return true;
+    
+    const today = new Date().toISOString().slice(0, 10);
+    const lastReset = localStorage.getItem('imageResetDate');
+    const imagesSentToday = parseInt(localStorage.getItem('imagesSentToday') || '0', 10);
+    
+    // Reset counter if it's a new day
+    if (!lastReset || lastReset !== today) {
+      localStorage.setItem('imageResetDate', today);
+      localStorage.setItem('imagesSentToday', '0');
+      return true;
+    }
+    
+    return imagesSentToday < 3; // Free users get 3 images/day
+  };
+
+  // Increment time used
   const incrementTimeUsed = (seconds: number) => {
     const today = new Date().toISOString().slice(0, 10);
     const usedDate = localStorage.getItem("chat_last_used_date");
-    const usedSeconds = parseInt(localStorage.getItem("chat_minutes_used") || "0", 10);
+    const usedSeconds = parseInt(localStorage.getItem("chat_seconds_used") || "0", 10);
 
     if (usedDate !== today) {
       localStorage.setItem("chat_last_used_date", today);
-      localStorage.setItem("chat_minutes_used", String(seconds));
+      localStorage.setItem("chat_seconds_used", String(seconds));
     } else {
-      localStorage.setItem("chat_minutes_used", String(usedSeconds + seconds));
+      localStorage.setItem("chat_seconds_used", String(usedSeconds + seconds));
     }
   };
 
+  // Handle sign out
+  const handleSignOut = async () => {
+    await apiFetch("/api/accounts/logout/", { method: "POST" });
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
+    localStorage.removeItem("chat_last_used_date");
+    localStorage.removeItem("chat_seconds_used");
+    localStorage.removeItem("imagesSentToday");
+    localStorage.removeItem("imageResetDate");
+    navigate("/");
+  };
+
+  // Handle sending messages
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || typing || !checkTimeLimit() || !user) return;
+    
+    // Check limits
+    if (!message.trim() || typing || !user) return;
+    if (!checkTimeLimit()) {
+      setShowUpgradePrompt(true);
+      return;
+    }
+    if (!checkImageLimit()) {
+      setShowUpgradePrompt(true);
+      return;
+    }
 
     const newMsg: Message = { id: Date.now(), text: message, sender: "user" };
     const updated = [...messages, newMsg];
@@ -238,7 +272,7 @@ useEffect(() => {
           : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
         : undefined;
 
-      // First submit to backend to get permanent image URL
+      // Submit to backend
       const submitResponse = await apiFetch("/api/chat/submit/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -250,10 +284,8 @@ useEffect(() => {
         }),
       });
 
-      // Now use the backend's permanent image URL
+      // Create AI message
       const permanentImageUrl = submitResponse.image_url || fullImageUrl;
-
-      // Create AI message with permanent URL
       const aiReply: Message = {
         id: Date.now() + 1,
         text: data.response || "No response.",
@@ -264,16 +296,29 @@ useEffect(() => {
 
       setMessages((prev) => [...prev, aiReply]);
       
-      // Add to gallery if image exists
+      // Update image counters if image was generated
       if (permanentImageUrl) {
+        const today = new Date().toISOString().slice(0, 10);
+        const lastReset = localStorage.getItem('imageResetDate');
+        let imagesSentToday = parseInt(localStorage.getItem('imagesSentToday') || '0', 10);
+        
+        if (!lastReset || lastReset !== today) {
+          localStorage.setItem('imageResetDate', today);
+          imagesSentToday = 0;
+        }
+        
+        imagesSentToday++;
+        localStorage.setItem('imagesSentToday', imagesSentToday.toString());
+        setImagesSent(imagesSentToday);
         setGalleryImages(prev => [...prev, permanentImageUrl]);
-        setImagesSent(prev => prev + 1);
       }
 
+      // Update time used
       const durationSec = Math.floor((Date.now() - startTime) / 1000);
       incrementTimeUsed(durationSec);
       setTyping(false);
 
+      // Show upsell if needed
       if (data.upsell) {
         setShowUpgradePrompt(true);
       }
@@ -281,42 +326,63 @@ useEffect(() => {
       console.error(err);
       setMessages((prev) => [
         ...prev,
-        {
-          id: Date.now() + 3,
-          text: "⚠️ Error reaching Amber.",
-          sender: "ai",
-        },
+        { id: Date.now() + 3, text: "⚠️ Error reaching Amber.", sender: "ai" },
       ]);
       setTyping(false);
     }
   };
 
+  // Calculate remaining time
+  const getRemainingTime = () => {
+    if (user?.is_premium) return "Unlimited";
+    
+    const usedSeconds = parseInt(localStorage.getItem("chat_seconds_used") || "0", 10);
+    const remainingMinutes = Math.floor((DAILY_LIMIT_SECONDS - usedSeconds) / 60);
+    return `${remainingMinutes} mins`;
+  };
+
+  // Calculate remaining images
+  const getRemainingImages = () => {
+    if (user?.is_premium) return "Unlimited";
+    
+    const today = new Date().toISOString().slice(0, 10);
+    const lastReset = localStorage.getItem('imageResetDate');
+    const imagesSentToday = parseInt(localStorage.getItem('imagesSentToday') || '0', 10);
+    
+    if (!lastReset || lastReset !== today) {
+      return "3 images";
+    }
+    
+    return `${3 - imagesSentToday} images`;
+  };
+
   return (
     <div className="w-screen h-screen flex flex-col md:flex-row bg-[#4B1F1F] text-[#E7D8C1] overflow-hidden">
-      {/* Mobile Header - Fixed position */}
+      {/* Mobile Header */}
       <header className="md:hidden flex justify-between items-center px-4 py-3 border-b border-[#D1A75D] bg-[#4B1F1F] fixed top-0 left-0 right-0 z-50">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => {
-              setSidebarOpen(!sidebarOpen);
-              setMenuOpen(false); // Close menu if sidebar opens
-            }}
+            onClick={() => { setSidebarOpen(!sidebarOpen); setMenuOpen(false); }}
             className="bg-[#D1A75D] text-[#4B1F1F] p-2 rounded hover:bg-[#b88b35] transition">
             {sidebarOpen ? "✕" : "☰"}
           </button>
-          <h1 className="text-lg font-bold text-[#D1A75D]">Amber</h1>
+          <div className="flex items-center gap-2">
+            {user?.is_premium && (
+              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                PREMIUM
+              </span>
+            )}
+            <h1 className="text-lg font-bold text-[#D1A75D]">Amber</h1>
+          </div>
         </div>
         <button
-          onClick={() => {
-            setMenuOpen(!menuOpen);
-            setSidebarOpen(false); // Close sidebar if menu opens
-          }}
+          onClick={() => { setMenuOpen(!menuOpen); setSidebarOpen(false); }}
           className="bg-[#D1A75D] text-[#4B1F1F] p-2 rounded hover:bg-[#c49851] transition">
           ☰
         </button>
       </header>
 
-      {/* Mobile Menu Dropdown - Fixed below header */}
+      {/* Mobile Menu Dropdown */}
       {menuOpen && (
         <div className="md:hidden bg-[#3A1818] border-b border-[#D1A75D] fixed top-16 left-0 right-0 z-40">
           <div className="flex flex-col space-y-2 p-3">
@@ -336,7 +402,7 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Sidebar - Fixed position for mobile */}
+      {/* Sidebar */}
       <div className={`${sidebarOpen ? 'fixed md:relative inset-0 z-40 md:z-auto mt-16 md:mt-0' : 'hidden md:flex'} 
         flex-col bg-[#3A1818] border-r border-[#D1A75D] transition-all duration-300 ease-in-out 
         ${sidebarOpen ? "w-full md:w-64 p-4" : "w-0 p-0"} overflow-y-auto h-[calc(100vh-4rem)] md:h-full`}>
@@ -368,6 +434,20 @@ useEffect(() => {
         ) : (
           <p className="text-sm text-[#E7D8C1]/70">No images yet</p>
         )}
+
+        {/* Free user limits */}
+        {!user?.is_premium && (
+          <div className="mt-4 p-3 bg-[#4B1F1F]/50 rounded-lg text-sm">
+            <div className="flex justify-between mb-1">
+              <span>Time left:</span>
+              <span>{getRemainingTime()}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Images left:</span>
+              <span>{getRemainingImages()}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Image Preview Modal */}
@@ -387,7 +467,7 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Main Chat Area - With proper scrolling */}
+      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative mt-16 md:mt-0">
         {/* Desktop Header */}
         <header className="hidden md:flex justify-between items-center px-6 py-4 border-b border-[#D1A75D] bg-[#4B1F1F]">
@@ -397,7 +477,14 @@ useEffect(() => {
               className="bg-[#D1A75D] text-[#4B1F1F] px-3 py-1 rounded hover:bg-[#b88b35] transition">
               {sidebarOpen ? "←" : "→"}
             </button>
-            <h1 className="text-xl font-bold text-[#D1A75D]">Amber</h1>
+            <div className="flex items-center gap-2">
+              {user?.is_premium && (
+                <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                  PREMIUM
+                </span>
+              )}
+              <h1 className="text-xl font-bold text-[#D1A75D]">Amber</h1>
+            </div>
           </div>
           <div className="relative">
             <button
@@ -424,7 +511,7 @@ useEffect(() => {
           </div>
         </header>
 
-        {/* Messages Container - Now scrolls independently */}
+        {/* Messages Container */}
         <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4 pt-0 md:pt-0">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
@@ -479,7 +566,7 @@ useEffect(() => {
           <div ref={chatEndRef} />
         </div>
 
-        {/* Input Area - Fixed on mobile */}
+        {/* Input Area */}
         <form onSubmit={handleSend}
           className="flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-[#D1A75D] bg-[#4B1F1F] sticky bottom-0">
           <input
@@ -503,23 +590,26 @@ useEffect(() => {
           <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex flex-col items-center justify-center p-4">
             <div className="bg-[#4B1F1F] p-6 rounded-lg max-w-md w-full">
               <h2 className="text-xl md:text-2xl font-bold text-[#E7D8C1] mb-4 text-center">
-                {imagesSent >= 4 ? "Image Limit Reached" : "⏳ Your free chat time is up!"}
+                {imagesSent >= 3 ? "🚫 Image Limit Reached" : "⏳ Time Limit Reached"}
               </h2>
               <p className="text-[#E7D8C1] mb-6 text-center">
-                {imagesSent >= 4 
-                  ? "Subscribe to unlock unlimited images with Amber."
-                  : "Subscribe now to unlock unlimited time with Amber."}
+                {imagesSent >= 3 
+                  ? "Free users get 3 images per day. Upgrade for unlimited access!"
+                  : "Free users get 40 minutes per day. Upgrade for unlimited chat!"}
               </p>
               <div className="flex flex-col space-y-3">
                 <button
-                  onClick={() => navigate("/subscriptions")}
+                  onClick={() => {
+                    navigate("/subscriptions");
+                    setShowUpgradePrompt(false);
+                  }}
                   className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#b88e4f] font-semibold transition">
-                  Go Premium
+                  Upgrade to Premium
                 </button>
                 <button
                   onClick={() => setShowUpgradePrompt(false)}
                   className="bg-[#3A1A1A] text-[#E7D8C1] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#2e1414] font-semibold transition">
-                  Continue Chatting
+                  {imagesSent >= 3 ? "Continue Without Images" : "Continue With Remaining Time"}
                 </button>
               </div>
             </div>
