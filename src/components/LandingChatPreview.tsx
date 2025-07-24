@@ -126,7 +126,14 @@ export default function LandingChatPreview({
 
   const sendMessage = async (e: FormEvent) => {
   e.preventDefault();
-  if (!message.trim()) return;
+  
+  // Block completely if time is up
+  if (!message.trim() || timeLeft <= 0) {
+    if (timeLeft <= 0) {
+      setShowImageRegisterModal(true);
+    }
+    return;
+  }
 
   const newUserMessage: Message = {
     id: Date.now(),
@@ -150,15 +157,15 @@ export default function LandingChatPreview({
           content: msg.text,
         })),
         should_blur: imageCount >= 1,
-        allow_image: imageCount < 2 // Tell backend not to send images after limit
+        allow_image: imageCount < 2 && timeLeft > 0
       }),
     }, true);
 
     const data = await respondRes;
     let fullImageUrl = undefined;
 
-    // Only process image if under limit
-    if (imageCount < 2 && data.image_url) {
+    // Only process image if under limit and time remains
+    if (imageCount < 2 && timeLeft > 0 && data.image_url) {
       fullImageUrl = data.image_url.startsWith("http") 
         ? data.image_url 
         : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`;
@@ -313,12 +320,18 @@ export default function LandingChatPreview({
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Ask about your wildest desires..."
-              className="flex-1 p-3 pr-12 rounded-lg bg-[#4B1F1F] border border-[#D1A75D] text-[#E7D8C1] placeholder-[#E7D8C1]/70 focus:outline-none focus:ring-1 focus:ring-[#D1A75D]"
+              className={`flex-1 p-3 pr-12 rounded-lg bg-[#4B1F1F] border border-[#D1A75D] text-[#E7D8C1] 
+          placeholder-[#E7D8C1]/70 focus:outline-none focus:ring-1 focus:ring-[#D1A75D] ${
+                timeLeft <= 0 ? 'opacity-50 cursor-not-allowed' : ''
+              }`} // Add conditional styling
             />
             <button
               type="submit"
-              disabled={!message.trim()}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-[#D1A75D] text-[#4B1F1F] hover:bg-[#b88e4f] disabled:opacity-50"
+              disabled={!message.trim() || timeLeft <= 0} // Add timeLeft check
+              className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-[#D1A75D] 
+            text-[#4B1F1F] hover:bg-[#b88e4f] disabled:opacity-50 ${
+              timeLeft <= 0 ? 'cursor-not-allowed' : ''
+            }`} // Add conditional cursor
             >
               ➤
             </button>
@@ -340,12 +353,14 @@ export default function LandingChatPreview({
             >
               Register Now
             </button>
+            {timeLeft > 0 && ( // Only show "Continue Chatting" if time remains
             <button
-              onClick={() => setShowImageRegisterModal(false)}
-              className="mt-4 text-[#E7D8C1] hover:underline"
+        onClick={() => setShowImageRegisterModal(false)}
+        className="mt-4 text-[#E7D8C1] hover:underline"
             >
               Continue Chatting
             </button>
+        )}
           </div>
         )}
       </div>
