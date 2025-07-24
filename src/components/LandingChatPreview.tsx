@@ -62,10 +62,12 @@ export default function LandingChatPreview({
   // Improved scroll behavior
   useEffect(() => {
     if (!autoScroll || !chatContainerRef.current) return;
-    
+
     const container = chatContainerRef.current;
-    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
-    
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      100;
+
     if (isNearBottom) {
       setTimeout(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -76,18 +78,27 @@ export default function LandingChatPreview({
   const handleScroll = () => {
     if (!chatContainerRef.current) return;
     const container = chatContainerRef.current;
-    const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 10;
+    const isAtBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      10;
     setAutoScroll(isAtBottom);
   };
 
   // Initial messages
   useEffect(() => {
-    if (!sessionStorage.getItem("amber_chat_initialized") && messages.length === 0) {
+    if (
+      !sessionStorage.getItem("amber_chat_initialized") &&
+      messages.length === 0
+    ) {
       const initialMessages: Message[] = [
         { id: 1, text: "Hey there 👋 I'm Amber...", sender: "ai" },
-        { id: 2, text: "Let's dive into your wildest fantasies...", sender: "ai" },
+        {
+          id: 2,
+          text: "Let's dive into your wildest fantasies...",
+          sender: "ai",
+        },
       ];
-      
+
       let index = 0;
       const showNext = () => {
         if (index < initialMessages.length) {
@@ -115,7 +126,9 @@ export default function LandingChatPreview({
 
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || imageCount >=2) return;
+
+    // Block completely after 2 images (1 clear + 1 blurred)
+    if (!message.trim()) return;
 
     const newUserMessage: Message = {
       id: Date.now(),
@@ -128,46 +141,66 @@ export default function LandingChatPreview({
     setIsTyping(true);
 
     try {
-      const respondRes = await apiFetch("/chat/respond", {
-        method: "POST",
-        body: JSON.stringify({
-          user_id: 0,
-          anon_id: anonId,
-          prompt: newUserMessage.text,
-          history: updated.slice(-10).map((msg) => ({
-            role: msg.sender === "user" ? "user" : "assistant",
-            content: msg.text,
-          })),
-          should_blur: imageCount >= 1,
-        }),
-      }, true);
+      // First check if we've reached image limit
+      if (imageCount >= 2) {
+        const textOnlyResponse: Message = {
+          id: Date.now() + 1,
+          text: "Please register to continue receiving images from Amber.",
+          sender: "ai",
+        };
+        setMessages((prev) => [...prev, textOnlyResponse]);
+        setShowImageRegisterModal(true);
+        return;
+      }
+
+      const respondRes = await apiFetch(
+        "/chat/respond",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            user_id: 0,
+            anon_id: anonId,
+            prompt: newUserMessage.text,
+            history: updated.slice(-10).map((msg) => ({
+              role: msg.sender === "user" ? "user" : "assistant",
+              content: msg.text,
+            })),
+            should_blur: imageCount >= 1, // Blur after first image
+            allow_image: imageCount < 2, // Don't allow images after limit
+          }),
+        },
+        true
+      );
 
       const data = await respondRes;
-      const fullImageUrl = data.image_url && !data.image_url.startsWith("https")
-        ? `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
-        : data.image_url;
+      let fullImageUrl = null;
+
+      // Only process image if under limit
+      if (imageCount < 2 && data.image_url) {
+        fullImageUrl = data.image_url.startsWith("https")
+          ? data.image_url
+          : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`;
+      }
 
       const newAIMessage: Message = {
         id: Date.now() + 1,
         text: data.response || "I'm sorry, I can't respond right now.",
         sender: "ai",
         image_url: fullImageUrl || undefined,
-        blurred: imageCount >= 1,
+        blurred: imageCount >= 1 && !!fullImageUrl,
       };
 
       setMessages((prev) => [...prev, newAIMessage]);
-      
+
       if (fullImageUrl) {
-        setImageCount(prev => {
-          const newCount = prev +1;
+        setImageCount((prev) => {
+          const newCount = prev + 1;
           if (newCount >= 2) {
             setShowImageRegisterModal(true);
           }
           return newCount;
-      });
-    }
-
-      sessionStorage.setItem("anon_chat", JSON.stringify([...updated, newAIMessage]));
+        });
+      }
 
       await apiFetch("/api/chat/submit/", {
         method: "POST",
@@ -208,10 +241,14 @@ export default function LandingChatPreview({
             <span className="font-semibold text-lg text-[#D1A75D]">Amber</span>
           </div>
           <div className="flex items-center space-x-2">
-            <div className={`bg-[#D1A75D]/20 border border-[#D1A75D] px-2 py-1 rounded-md ${
-              timeLeft === 0 ? 'animate-pulse' : ''
-            }`}>
-              <span className="text-xs font-mono text-[#D1A75D]">{formatTime(timeLeft)}</span>
+            <div
+              className={`bg-[#D1A75D]/20 border border-[#D1A75D] px-2 py-1 rounded-md ${
+                timeLeft === 0 ? "animate-pulse" : ""
+              }`}
+            >
+              <span className="text-xs font-mono text-[#D1A75D]">
+                {formatTime(timeLeft)}
+              </span>
             </div>
             <button
               onClick={onClose}
@@ -223,7 +260,7 @@ export default function LandingChatPreview({
         </div>
 
         {/* Chat with improved scroll behavior */}
-        <div 
+        <div
           ref={chatContainerRef}
           className="flex-1 px-4 py-4 overflow-y-auto space-y-3"
           onScroll={handleScroll}
@@ -247,11 +284,17 @@ export default function LandingChatPreview({
                   <img
                     src={msg.image_url}
                     alt="AI generated"
-                    className={`rounded-xl shadow ${msg.blurred ? 'filter blur-md cursor-pointer hover:scale-[1.02] transition-transform' : ''}`}
-                    onClick={() => msg.blurred && setShowImageRegisterModal(true)}
+                    className={`rounded-xl shadow ${
+                      msg.blurred
+                        ? "filter blur-md cursor-pointer hover:scale-[1.02] transition-transform"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      msg.blurred && setShowImageRegisterModal(true)
+                    }
                   />
                   {msg.blurred && (
-                    <div 
+                    <div
                       className="absolute inset-0 flex items-center justify-center cursor-pointer"
                       onClick={() => setShowImageRegisterModal(true)}
                     >
@@ -279,7 +322,10 @@ export default function LandingChatPreview({
         </div>
 
         {/* Input */}
-        <form onSubmit={sendMessage} className="p-4 border-t border-[#D1A75D] bg-[#4B1F1F]">
+        <form
+          onSubmit={sendMessage}
+          className="p-4 border-t border-[#D1A75D] bg-[#4B1F1F]"
+        >
           <div className="relative flex">
             <input
               value={message}
