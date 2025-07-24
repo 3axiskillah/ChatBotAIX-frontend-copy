@@ -152,7 +152,7 @@ export default function LandingChatPreview({
         text: data.response || "I'm sorry, I can't respond right now.",
         sender: "ai",
         image_url: fullImageUrl || undefined,
-        blurred: imageCount >= 1 && !!fullImageUrl,
+        blurred: imageCount >= 1,
       };
 
       setMessages((prev) => [...prev, newAIMessage]);
