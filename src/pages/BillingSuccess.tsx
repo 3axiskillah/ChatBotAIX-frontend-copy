@@ -26,8 +26,14 @@ export default function BillingSuccess() {
           setIsSuccess(true);
           setMessage("✅ Subscription activated! Enjoy chatting with Amber.");
           
-          // Refresh user data
-          await apiFetch("/api/accounts/me/");
+          // Force refresh user data by clearing cache and reloading
+          localStorage.removeItem('user_data_cache'); // Clear any cached user data
+          await apiFetch("/api/accounts/me/", {}, false); // Force fresh fetch
+          
+          // Add small delay to ensure backend processes webhook
+          setTimeout(() => {
+            navigate("/chat", { replace: true });
+          }, 1500);
         } else {
           setMessage("⚠️ There was an issue confirming your payment.");
         }
@@ -37,7 +43,7 @@ export default function BillingSuccess() {
     };
 
     confirmSubscription();
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#4B1F1F] text-[#E7D8C1] p-8">
@@ -49,16 +55,10 @@ export default function BillingSuccess() {
       {isSuccess ? (
         <div className="flex flex-col space-y-3 w-full max-w-xs">
           <button
-            onClick={() => navigate("/chat")}
+            onClick={() => navigate("/chat", { replace: true })}
             className="bg-[#D1A75D] text-[#4B1F1F] px-6 py-3 rounded hover:bg-[#c49851] font-bold"
           >
             Start Chatting
-          </button>
-          <button
-            onClick={() => navigate("/subscriptions")}
-            className="bg-[#3A1A1A] text-[#E7D8C1] px-6 py-3 rounded hover:bg-[#2e1414] font-bold"
-          >
-            View Subscription Details
           </button>
         </div>
       ) : (

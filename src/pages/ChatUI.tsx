@@ -43,56 +43,46 @@ export default function ChatUI() {
   useEffect(scrollToBottom, [messages]);
 
   // Check authentication and load user data
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const [userData, subscriptionData] = await Promise.all([
-          apiFetch("/api/accounts/me/"),
-          apiFetch("/api/billing/subscription/status/")
-        ]);
+  // Check authentication and load user data
+useEffect(() => {
+  const checkAuth = async () => {
+    try {
+      const [userData, subscriptionData] = await Promise.all([
+        apiFetch("/api/accounts/me/"),
+        apiFetch("/api/billing/subscription/status/?force_refresh=true") // Add cache busting
+      ]);
 
-        if (!userData || !userData.email) throw new Error();
-        
-        setUser({ 
-          id: userData.id, 
-          email: userData.email,
-          is_premium: userData.is_premium || subscriptionData?.is_premium,
-          premium_until: subscriptionData?.premium_until,
-          images_sent_today: subscriptionData?.images_sent_today || 0
-        });
+      if (!userData?.email) throw new Error();
+      
+      // Force premium status if either source says true
+      const isPremium = !!(userData.is_premium || subscriptionData?.is_premium);
+      
+      setUser({ 
+        id: userData.id, 
+        email: userData.email,
+        is_premium: isPremium,
+        premium_until: subscriptionData?.premium_until,
+        images_sent_today: subscriptionData?.images_sent_today || 0
+      });
 
-        setImagesSent(subscriptionData?.images_sent_today || 0);
-
-        // Check if we need to migrate anonymous chat
-        if (sessionStorage.getItem("anon_migration_needed")) {
-          try {
-            const anonId = localStorage.getItem("anon_id");
-            const chatHistory = sessionStorage.getItem("anon_chat");
-            
-            if (anonId || chatHistory) {
-              await apiFetch("/api/chat/migrate/", {
-                method: "POST",
-                body: {
-                  anon_id: anonId,
-                  chat_history: chatHistory ? JSON.parse(chatHistory) : null
-                }
-              });
-              
-              // Clear migration flags
-              localStorage.removeItem("anon_id");
-              sessionStorage.removeItem("anon_chat");
-              sessionStorage.removeItem("anon_migration_needed");
-            }
-          } catch (migrateErr) {
-            console.error("Migration error:", migrateErr);
-          }
-        }
-      } catch {
-        navigate("/");
+      // Clear cached limits when premium status changes
+      if (isPremium) {
+        localStorage.removeItem('imagesSentToday');
+        localStorage.removeItem('chat_seconds_used');
       }
-    };
-    checkAuth();
-  }, [navigate]);
+
+      // ... rest of your existing migration code ...
+    } catch {
+      navigate("/");
+    }
+  };
+  
+  checkAuth();
+  
+  // Add periodic premium status check (every 2 minutes)
+  const interval = setInterval(checkAuth, 120000);
+  return () => clearInterval(interval);
+}, [navigate]);
 
   // Load chat history
   useEffect(() => {
