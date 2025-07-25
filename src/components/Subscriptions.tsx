@@ -10,7 +10,6 @@ export default function Subscriptions() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
 
   useEffect(() => {
-    // Load user's subscription status
     const loadStatus = async () => {
       try {
         const status = await apiFetch("/api/billing/subscription/status/");
@@ -23,31 +22,31 @@ export default function Subscriptions() {
     };
     loadStatus();
 
-    // Load Stripe pricing table
-    const script = document.createElement("script");
-    script.src = "https://js.stripe.com/v3/pricing-table.js";
-    script.async = true;
+    if (!subscriptionStatus?.is_premium) {
+      const script = document.createElement("script");
+      script.src = "https://js.stripe.com/v3/pricing-table.js";
+      script.async = true;
 
-    script.onload = () => {
-      if (stripeContainerRef.current && !subscriptionStatus?.is_premium) {
-        stripeContainerRef.current.innerHTML = `
-          <stripe-pricing-table
-            pricing-table-id="prctbl_1RfNQ1Rmpew7aCdy7XyxyOF7"
-            publishable-key="pk_test_51RfN83Rmpew7aCdyjEfExfKKJwnfu1WdusdNbdECFskXUHkA2ChiiYzNgRqp4DKkIxQsoppUZHVikvwdefxhxv41003hlgqZu7"
-            client-reference-id="${localStorage.getItem('user_id')}"
-            customer-email="${localStorage.getItem('user_email')}"
-          ></stripe-pricing-table>
-        `;
-      }
-    };
+      script.onload = () => {
+        if (stripeContainerRef.current) {
+          stripeContainerRef.current.innerHTML = `
+            <stripe-pricing-table
+              pricing-table-id="prctbl_1RiuLODGzHpWMy7sJ1ZNtgFz"
+              publishable-key="pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX"
+              client-reference-id="${localStorage.getItem('user_id')}"
+              customer-email="${localStorage.getItem('user_email')}"
+            ></stripe-pricing-table>
+          `;
+        }
+      };
 
-    document.body.appendChild(script);
+      document.body.appendChild(script);
 
-    return () => {
-      document.body.removeChild(script);
-    };
+      return () => {
+        document.body.removeChild(script);
+      };
+    }
   }, [subscriptionStatus?.is_premium]);
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#4B1F1F] text-[#E7D8C1] p-8 flex items-center justify-center">
