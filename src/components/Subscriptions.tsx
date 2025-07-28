@@ -6,7 +6,7 @@ import { loadStripe } from "@stripe/stripe-js";
 const PLANS = {
   monthly: {
     id: 'monthly',
-    stripePriceId: 'price_monthly_12',
+    stripePriceId: 'price_1RiApKDGzHpWMy7sQggiZnRT',
     name: '1 Month',
     price: '$12/month',
     originalPrice: '$15',
@@ -15,7 +15,7 @@ const PLANS = {
   },
   quarterly: {
     id: 'quarterly',
-    stripePriceId: 'price_quarterly_19',
+    stripePriceId: 'price_1RiB19DGzHpWMy7spd8avwxU',
     name: '3 Months',
     price: '$10/month',
     originalPrice: '$30 billed quarterly',
@@ -24,7 +24,7 @@ const PLANS = {
   },
   annual: {
     id: 'annual',
-    stripePriceId: 'price_annual_8',
+    stripePriceId: 'price_1RiB1qDGzHpWMy7sBNJAQ8LY',
     name: '1 Year',
     price: '$8/month',
     originalPrice: '$96 billed yearly',
