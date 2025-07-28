@@ -45,10 +45,17 @@ export default function Subscriptions() {
       const stripe = await loadStripe("pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX");
       const { sessionId } = await apiFetch("/api/billing/create-checkout-session/", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({ price_id: priceId }),
       });
 
-      await stripe?.redirectToCheckout({ sessionId });
+      const { error } = await stripe!.redirectToCheckout({ sessionId });
+
+      if (error) {
+        throw error;
+      }
     } catch (error) {
       alert("Subscription failed. Please try again.");
       console.error("Subscription error:", error);
