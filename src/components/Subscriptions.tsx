@@ -3,24 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import { loadStripe } from "@stripe/stripe-js";
 
-type Plan = {
-  id: string;
-  stripePriceId: string;
-  name: string;
-  price: string;
-  originalPrice: string;
-  description: string;
-  highlight?: boolean;
-};
-
-export const PLANS: { [key: string]: Plan } = {
+const PLANS = {
   monthly: {
     id: 'monthly',
     stripePriceId: 'price_monthly_12',
     name: '1 Month',
     price: '$12/month',
     originalPrice: '$15',
-    description: 'Billed monthly'
+    description: 'Billed monthly',
+    highlight: false
   },
   quarterly: {
     id: 'quarterly',
@@ -28,7 +19,8 @@ export const PLANS: { [key: string]: Plan } = {
     name: '3 Months',
     price: '$10/month',
     originalPrice: '$30 billed quarterly',
-    description: 'Save 17% vs monthly'
+    description: 'Save 17% vs monthly',
+    highlight: false
   },
   annual: {
     id: 'annual',
@@ -161,12 +153,6 @@ export default function Subscriptions() {
                   </div>
                 )}
                 <h3 className="text-xl font-bold">{plan.name}</h3>
-                {planKey === 'quarterly' && (
-                  <p className="text-[#D1A75D] font-bold">Save 17%</p>
-                )}
-                {planKey === 'annual' && (
-                  <p className="text-[#D1A75D] font-bold">Save 33%</p>
-                )}
               </div>
             </div>
             
