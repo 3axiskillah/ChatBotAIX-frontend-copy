@@ -1,12 +1,49 @@
-// Subscriptions.tsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import { loadStripe } from "@stripe/stripe-js";
 
+type Plan = {
+  id: string;
+  stripePriceId: string;
+  name: string;
+  price: string;
+  originalPrice: string;
+  description: string;
+  highlight?: boolean;
+};
+
+export const PLANS: { [key: string]: Plan } = {
+  monthly: {
+    id: 'monthly',
+    stripePriceId: 'price_monthly_12',
+    name: '1 Month',
+    price: '$12/month',
+    originalPrice: '$15',
+    description: 'Billed monthly'
+  },
+  quarterly: {
+    id: 'quarterly',
+    stripePriceId: 'price_quarterly_10',
+    name: '3 Months',
+    price: '$10/month',
+    originalPrice: '$30 billed quarterly',
+    description: 'Save 17% vs monthly'
+  },
+  annual: {
+    id: 'annual',
+    stripePriceId: 'price_annual_8',
+    name: '1 Year',
+    price: '$8/month',
+    originalPrice: '$96 billed yearly',
+    description: 'Best value (33% savings)',
+    highlight: true
+  }
+};
+
 export default function Subscriptions() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState({ page: true, button: false });
   const [subscriptionStatus, setSubscriptionStatus] = useState<any>(null);
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
@@ -18,7 +55,7 @@ export default function Subscriptions() {
       } catch (err) {
         console.error("Failed to load subscription status:", err);
       } finally {
-        setIsLoading(false);
+        setIsLoading(prev => ({ ...prev, page: false }));
       }
     };
     loadStatus();
@@ -26,7 +63,7 @@ export default function Subscriptions() {
 
   const handleSubscribe = async (priceId: string) => {
     try {
-      setIsLoading(true);
+      setIsLoading(prev => ({ ...prev, button: true }));
       const stripe = await loadStripe("pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX");
       
       const { sessionId } = await apiFetch("/api/billing/create-checkout-session/", {
@@ -38,11 +75,11 @@ export default function Subscriptions() {
     } catch (error) {
       console.error("Subscription error:", error);
     } finally {
-      setIsLoading(false);
+      setIsLoading(prev => ({ ...prev, button: false }));
     }
   };
 
-  if (isLoading) {
+  if (isLoading.page) {
     return (
       <div className="min-h-screen bg-[#4B1F1F] text-[#E7D8C1] p-8 flex items-center justify-center">
         <p>Loading subscription information...</p>
@@ -106,89 +143,55 @@ export default function Subscriptions() {
         Get An Exclusive Discount Only Today!
       </h2>
       <p className="text-[#E7D8C1] mb-8 text-center text-lg">
-        Up to <span className="text-[#D1A75D] font-bold">75%</span> off for first subscription
+        Up to <span className="text-[#D1A75D] font-bold">33%</span> off for first subscription
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
-        {/* Annual Plan */}
-        <div 
-          className={`bg-[#3A1818] rounded-lg p-6 border-2 ${selectedPlan === "annual" ? "border-[#D1A75D]" : "border-transparent"} transition-all cursor-pointer`}
-          onClick={() => setSelectedPlan("annual")}
-        >
-          <div className="flex justify-between items-start">
-            <div>
-              <div className="bg-[#D1A75D] text-[#4B1F1F] px-2 py-1 rounded text-xs font-bold inline-block mb-2">
-                BEST CHOICE
+        {Object.entries(PLANS).map(([planKey, plan]) => (
+          <div 
+            key={planKey}
+            className={`bg-[#3A1818] rounded-lg p-6 border-2 ${selectedPlan === planKey ? "border-[#D1A75D]" : "border-transparent"} transition-all cursor-pointer`}
+            onClick={() => setSelectedPlan(planKey)}
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                {plan.highlight && (
+                  <div className="bg-[#D1A75D] text-[#4B1F1F] px-2 py-1 rounded text-xs font-bold inline-block mb-2">
+                    BEST VALUE
+                  </div>
+                )}
+                <h3 className="text-xl font-bold">{plan.name}</h3>
+                {planKey === 'quarterly' && (
+                  <p className="text-[#D1A75D] font-bold">Save 17%</p>
+                )}
+                {planKey === 'annual' && (
+                  <p className="text-[#D1A75D] font-bold">Save 33%</p>
+                )}
               </div>
-              <h3 className="text-xl font-bold">12 months</h3>
-              <p className="text-[#D1A75D] font-bold">75% OFF</p>
             </div>
-          </div>
-          
-          <div className="mt-4">
-            <p className="text-[#E7D8C1]/60 line-through">$12.96</p>
-            <p className="text-2xl font-bold">$3.99<span className="text-base font-normal">/month</span></p>
-            <p className="text-sm mt-2">Annual payment billed as $47.88</p>
-          </div>
-          
-          <button
-            onClick={() => handleSubscribe("price_annual")}
-            disabled={isLoading}
-            className={`w-full mt-6 py-2 rounded font-bold ${selectedPlan === "annual" ? "bg-[#D1A75D] text-[#4B1F1F]" : "bg-[#2e1414] text-[#E7D8C1]"}`}
-          >
-            {isLoading ? "Processing..." : "Select Plan"}
-          </button>
-        </div>
-
-        {/* Quarterly Plan */}
-        <div 
-          className={`bg-[#3A1818] rounded-lg p-6 border-2 ${selectedPlan === "quarterly" ? "border-[#D1A75D]" : "border-transparent"} transition-all cursor-pointer`}
-          onClick={() => setSelectedPlan("quarterly")}
-        >
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-xl font-bold">3 months</h3>
-              <p className="text-[#D1A75D] font-bold">40% OFF</p>
+            
+            <div className="mt-4">
+              {plan.originalPrice && (
+                <p className="text-[#E7D8C1]/60 line-through">{plan.originalPrice}</p>
+              )}
+              <p className="text-2xl font-bold">{plan.price}</p>
+              {plan.description && (
+                <p className="text-sm mt-2">{plan.description}</p>
+              )}
             </div>
+            
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSubscribe(plan.stripePriceId);
+              }}
+              disabled={isLoading.button}
+              className={`w-full mt-6 py-2 rounded font-bold ${selectedPlan === planKey ? "bg-[#D1A75D] text-[#4B1F1F]" : "bg-[#2e1414] text-[#E7D8C1]"}`}
+            >
+              {isLoading.button ? "Processing..." : "Select Plan"}
+            </button>
           </div>
-          
-          <div className="mt-4">
-            <p className="text-[#E7D8C1]/60 line-through">$12.96</p>
-            <p className="text-2xl font-bold">$7.99<span className="text-base font-normal">/month</span></p>
-          </div>
-          
-          <button
-            onClick={() => handleSubscribe("price_quarterly")}
-            disabled={isLoading}
-            className={`w-full mt-6 py-2 rounded font-bold ${selectedPlan === "quarterly" ? "bg-[#D1A75D] text-[#4B1F1F]" : "bg-[#2e1414] text-[#E7D8C1]"}`}
-          >
-            {isLoading ? "Processing..." : "Select Plan"}
-          </button>
-        </div>
-
-        {/* Monthly Plan */}
-        <div 
-          className={`bg-[#3A1818] rounded-lg p-6 border-2 ${selectedPlan === "monthly" ? "border-[#D1A75D]" : "border-transparent"} transition-all cursor-pointer`}
-          onClick={() => setSelectedPlan("monthly")}
-        >
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-xl font-bold">1 month</h3>
-            </div>
-          </div>
-          
-          <div className="mt-4">
-            <p className="text-2xl font-bold">$12.99<span className="text-base font-normal">/month</span></p>
-          </div>
-          
-          <button
-            onClick={() => handleSubscribe("price_monthly")}
-            disabled={isLoading}
-            className={`w-full mt-6 py-2 rounded font-bold ${selectedPlan === "monthly" ? "bg-[#D1A75D] text-[#4B1F1F]" : "bg-[#2e1414] text-[#E7D8C1]"}`}
-          >
-            {isLoading ? "Processing..." : "Select Plan"}
-          </button>
-        </div>
+        ))}
       </div>
 
       <div className="mt-12 text-sm text-[#E7D8C1] text-center space-y-2 max-w-2xl">
