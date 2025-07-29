@@ -43,46 +43,56 @@ export default function ChatUI() {
   useEffect(scrollToBottom, [messages]);
 
   // Check authentication and load user data
-  // Check authentication and load user data
-useEffect(() => {
-  const checkAuth = async () => {
-    try {
-      const [userData, subscriptionData] = await Promise.all([
-        apiFetch("/api/accounts/me/"),
-        apiFetch("/api/billing/subscription/status/?force_refresh=true") // Add cache busting
-      ]);
+  useEffect(() => {
+    const checkAuth = async (forceRefresh = false) => {
+      try {
+        const [userData, subscriptionData] = await Promise.all([
+          apiFetch("/api/accounts/me/"),
+          apiFetch(`/api/billing/subscription/status/?force_refresh=${forceRefresh}`)
+        ]);
 
-      if (!userData?.email) throw new Error();
-      
-      // Force premium status if either source says true
-      const isPremium = !!(userData.is_premium || subscriptionData?.is_premium);
-      
-      setUser({ 
-        id: userData.id, 
-        email: userData.email,
-        is_premium: isPremium,
-        premium_until: subscriptionData?.premium_until,
-        images_sent_today: subscriptionData?.images_sent_today || 0
-      });
+        if (!userData?.email) throw new Error();
+        
+        // Trust backend's premium status completely
+        const isPremium = userData.is_premium || subscriptionData?.is_active;
+        
+        setUser({ 
+          id: userData.id, 
+          email: userData.email,
+          is_premium: isPremium,
+          premium_until: subscriptionData?.current_period_end,
+          images_sent_today: subscriptionData?.images_sent_today || 0
+        });
 
-      // Clear cached limits when premium status changes
-      if (isPremium) {
-        localStorage.removeItem('imagesSentToday');
-        localStorage.removeItem('chat_seconds_used');
+        // Clear limits if premium
+        if (isPremium) {
+          localStorage.removeItem('chat_limits');
+        }
+
+        // Handle post-payment redirect
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('payment_success')) {
+          setMessages(prev => [...prev, {
+            id: Date.now(),
+            text: "🎉 Welcome to Premium! Your full access has been activated.",
+            sender: "ai"
+          }]);
+          navigate(window.location.pathname, { replace: true });
+        }
+
+      } catch {
+        navigate("/");
       }
+    };
+    
+    // Initial check
+    checkAuth(true);
+    
+    // Periodic checks
+    const interval = setInterval(() => checkAuth(false), 120000);
+    return () => clearInterval(interval);
+  }, [navigate]);
 
-      // ... rest of your existing migration code ...
-    } catch {
-      navigate("/");
-    }
-  };
-  
-  checkAuth();
-  
-  // Add periodic premium status check (every 2 minutes)
-  const interval = setInterval(checkAuth, 120000);
-  return () => clearInterval(interval);
-}, [navigate]);
 
   // Load chat history
   useEffect(() => {
