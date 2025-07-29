@@ -93,9 +93,7 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-6 text-sm">
-          <a href="#chat" className="hover:text-[#D1A75D]">Chat</a>
-          <a href="#features" className="hover:text-[#D1A75D]">Features</a>
-          <a href="#reviews" className="hover:text-[#D1A75D]">Reviews</a>
+          
           <button onClick={onLoginClick} className="hover:text-[#D1A75D]">Login</button>
           <button
             onClick={onRegisterClick}
