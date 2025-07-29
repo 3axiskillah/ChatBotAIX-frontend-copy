@@ -140,12 +140,10 @@ export default function Subscriptions() {
         <div className="bg-[#3A1818] p-6 rounded-lg">
           <h3 className="text-xl font-bold mb-4 text-[#D1A75D]">Premium Benefits</h3>
           <ul className="space-y-2">
-            <li>• Create your own AI Girlfriend(s)</li>
+            <li>• Amber All to yourself</li>
             <li>• Unlimited text messages</li>
-            <li>• Get 100 FREE tokens / month</li>
             <li>• Remove image blur</li>
-            <li>• Generate images</li>
-            <li>• Make AI phone calls</li>
+            <li>• unlimited images</li>
             <li>• Fast response time</li>
           </ul>
         </div>
