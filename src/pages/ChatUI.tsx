@@ -248,23 +248,25 @@ export default function ChatUI() {
     try {
       // Get AI response
       const data = await apiFetch(
-        "/chat/respond",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: user.id,
-            prompt: message,
-            user_type: user.is_premium ? "premium" : "free",
-            images_sent: imagesSent,
-            history: updated.map((m) => ({
-              role: m.sender === "user" ? "user" : "assistant",
-              content: m.text,
-            })),
-          }),
-        },
-        true
-      );
+      "/chat/respond",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user.id,
+          prompt: message,
+          user_type: user.is_premium ? "premium" : "free",
+          images_sent: imagesSent,
+          history: updated.map((m) => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.text,
+          })),
+          should_blur: imagesSent >= (user.is_premium ? 999 : 3),
+          allow_image: user.is_premium || imagesSent < 3
+        }),
+      },
+      true
+    );
 
       const fullImageUrl = data.image_url 
         ? data.image_url.startsWith("http") 

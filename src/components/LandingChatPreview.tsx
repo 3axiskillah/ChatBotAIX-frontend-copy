@@ -147,19 +147,21 @@ export default function LandingChatPreview({
 
   try {
     const respondRes = await apiFetch("/chat/respond", {
-      method: "POST",
-      body: JSON.stringify({
-        user_id: 0,
-        anon_id: anonId,
-        prompt: newUserMessage.text,
-        history: updated.slice(-10).map((msg) => ({
-          role: msg.sender === "user" ? "user" : "assistant",
-          content: msg.text,
-        })),
-        should_blur: imageCount >= 1,
-        allow_image: imageCount < 2 && timeLeft > 0
-      }),
-    }, true);
+    method: "POST",
+    body: JSON.stringify({
+      user_id: 0,
+      anon_id: anonId,
+      prompt: newUserMessage.text,
+      user_type: "guest",
+      images_sent: imageCount,
+      should_blur: imageCount >= 1,
+      allow_image: imageCount < 2 && timeLeft > 0,
+      history: updated.slice(-10).map((msg) => ({
+        role: msg.sender === "user" ? "user" : "assistant",
+        content: msg.text,
+      })),
+    }),
+  }, true);
 
     const data = await respondRes;
     let fullImageUrl = undefined;
