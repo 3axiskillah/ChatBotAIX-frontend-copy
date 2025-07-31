@@ -68,7 +68,7 @@ export default function Settings() {
     
     setIsDeleting(true);
     try {
-      await apiFetch("/api/accounts/delete/", { method: "DELETE" });
+      await apiFetch("/api/accounts/delete-account/", { method: "DELETE" });
       toast.success("Account deleted successfully");
       navigate("/");
     } catch (err) {
