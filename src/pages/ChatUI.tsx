@@ -21,6 +21,7 @@ interface User {
 }
 
 export default function ChatUI() {
+  // State management
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -31,18 +32,38 @@ export default function ChatUI() {
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [imagesSent, setImagesSent] = useState(0);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const [lastSignOutTime, setLastSignOutTime] = useState<number | null>(null);
+  const [keepGalleryOpen, setKeepGalleryOpen] = useState(false);
+
+  // Refs
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   const DAILY_LIMIT_SECONDS = 40 * 60; // 40 minutes
 
-  // Scroll to bottom when messages change
-  const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  // Enhanced scrolling
+  const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({
+        behavior,
+        block: "nearest"
+      });
+    }, 100);
   };
-  useEffect(scrollToBottom, [messages]);
 
-  // Check authentication and load user data
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 300;
+    if (isNearBottom) {
+      scrollToBottom("auto");
+    }
+  }, [messages]);
+
+  // Authentication and user data
   useEffect(() => {
     const checkAuth = async (forceRefresh = false) => {
       try {
@@ -53,8 +74,8 @@ export default function ChatUI() {
 
         if (!userData?.email) throw new Error();
         
-        // Trust backend's premium status completely
         const isPremium = userData.is_premium || subscriptionData?.is_active;
+        const shouldWelcomeBack = lastSignOutTime && (Date.now() - lastSignOutTime > 5000);
         
         setUser({ 
           id: userData.id, 
@@ -64,12 +85,24 @@ export default function ChatUI() {
           images_sent_today: subscriptionData?.images_sent_today || 0
         });
 
-        // Clear limits if premium
         if (isPremium) {
           localStorage.removeItem('chat_limits');
         }
 
-        // Handle post-payment redirect
+        // Welcome back message
+        if (shouldWelcomeBack) {
+          const welcomeMessage = isPremium
+            ? `Welcome back, premium member! Ready for more fun? 😘`
+            : `Hey there ${userData.email.split('@')[0]}, I missed you! 😉`;
+          
+          setMessages(prev => [...prev, {
+            id: Date.now(),
+            text: welcomeMessage,
+            sender: "ai"
+          }]);
+        }
+
+        // Handle payment success
         const params = new URLSearchParams(window.location.search);
         if (params.has('payment_success')) {
           setMessages(prev => [...prev, {
@@ -85,14 +118,10 @@ export default function ChatUI() {
       }
     };
     
-    // Initial check
     checkAuth(true);
-    
-    // Periodic checks
     const interval = setInterval(() => checkAuth(false), 120000);
     return () => clearInterval(interval);
-  }, [navigate]);
-
+  }, [navigate, lastSignOutTime]);
 
   // Load chat history
   useEffect(() => {
@@ -101,7 +130,6 @@ export default function ChatUI() {
         const data = await apiFetch("/api/chat/history/all/");
         const isNewChat = data.messages.length === 0;
         
-        // Format existing messages
         const formatted: Message[] = data.messages.map((msg: any) => ({
           id: msg.id || Date.now(),
           text: msg.content,
@@ -111,18 +139,18 @@ export default function ChatUI() {
           blurred: msg.metadata?.blurred || false
         }));
 
-        // Set messages - either existing history or initial welcome
-        setMessages(
-          formatted.length > 0
-            ? formatted
-            : [
-                { id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" },
-                { id: 2, text: "Welcome back, sexy! Ready to pick up where we left off? 😘", sender: "ai" },
-                { id: 3, text: "Tell me what's on your mind... or should I guess? 😈", sender: "ai" }
-              ]
-        );
+        setMessages(prev => {
+          // Preserve welcome back message if exists
+          if (prev.some(m => m.text.includes("welcome back") || m.text.includes("Welcome to Premium"))) {
+            return [...prev, ...formatted];
+          }
+          return formatted.length > 0 ? formatted : [
+            { id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" },
+            { id: 2, text: "Welcome back! Ready to continue? 😘", sender: "ai" },
+            { id: 3, text: "What's on your mind today? 😈", sender: "ai" }
+          ];
+        });
 
-        // Load gallery images
         const galleryImgs = formatted
           .filter(m => m.image_url)
           .map(m => m.image_url)
@@ -130,14 +158,13 @@ export default function ChatUI() {
         
         setGalleryImages(galleryImgs);
 
-        // If new chat, add delayed message
         if (isNewChat) {
           setTimeout(() => {
             setMessages(prev => [
               ...prev,
               {
                 id: Date.now(),
-                text: "I've been thinking about you... wondering what naughty things we'll do today 💋",
+                text: "I've been thinking about you... what naughty things shall we do? 💋",
                 sender: "ai"
               }
             ]);
@@ -148,7 +175,7 @@ export default function ChatUI() {
         console.error("Error loading chat history:", err);
         setMessages([
           { id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" },
-          { id: 2, text: "Mmm... something went wrong, but I'm still here for you 😉", sender: "ai" }
+          { id: 2, text: "Oops, something went wrong, but I'm still here 😉", sender: "ai" }
         ]);
       }
     };
@@ -186,14 +213,13 @@ export default function ChatUI() {
     const lastReset = localStorage.getItem('imageResetDate');
     const imagesSentToday = parseInt(localStorage.getItem('imagesSentToday') || '0', 10);
     
-    // Reset counter if it's a new day
     if (!lastReset || lastReset !== today) {
       localStorage.setItem('imageResetDate', today);
       localStorage.setItem('imagesSentToday', '0');
       return true;
     }
     
-    return imagesSentToday < 3; // Free users get 3 images/day
+    return imagesSentToday < 3;
   };
 
   // Increment time used
@@ -212,27 +238,27 @@ export default function ChatUI() {
 
   // Handle sign out
   const handleSignOut = async () => {
-    await apiFetch("/api/accounts/logout/", { method: "POST" });
-    localStorage.removeItem("access");
-    localStorage.removeItem("refresh");
-    localStorage.removeItem("chat_last_used_date");
-    localStorage.removeItem("chat_seconds_used");
-    localStorage.removeItem("imagesSentToday");
-    localStorage.removeItem("imageResetDate");
-    navigate("/");
+    try {
+      await apiFetch("/api/accounts/logout/", { method: "POST" });
+      localStorage.removeItem("access");
+      localStorage.removeItem("refresh");
+      localStorage.removeItem("chat_last_used_date");
+      localStorage.removeItem("chat_seconds_used");
+      localStorage.removeItem("imagesSentToday");
+      localStorage.removeItem("imageResetDate");
+      setLastSignOutTime(Date.now());
+      navigate("/");
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
   };
 
   // Handle sending messages
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check limits
     if (!message.trim() || typing || !user) return;
-    if (!checkTimeLimit()) {
-      setShowUpgradePrompt(true);
-      return;
-    }
-    if (!checkImageLimit()) {
+    if (!checkTimeLimit() || !checkImageLimit()) {
       setShowUpgradePrompt(true);
       return;
     }
@@ -246,27 +272,26 @@ export default function ChatUI() {
     const startTime = Date.now();
 
     try {
-      // Get AI response
       const data = await apiFetch(
-      "/chat/respond",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: user.id,
-          prompt: message,
-          user_type: user.is_premium ? "premium" : "free",
-          images_sent: imagesSent,
-          history: updated.map((m) => ({
-            role: m.sender === "user" ? "user" : "assistant",
-            content: m.text,
-          })),
-          should_blur: imagesSent >= (user.is_premium ? 999 : 3),
-          allow_image: user.is_premium || imagesSent < 3
-        }),
-      },
-      true
-    );
+        "/chat/respond",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: user.id,
+            prompt: message,
+            user_type: user.is_premium ? "premium" : "free",
+            images_sent: imagesSent,
+            history: updated.map((m) => ({
+              role: m.sender === "user" ? "user" : "assistant",
+              content: m.text,
+            })),
+            should_blur: imagesSent >= (user.is_premium ? 999 : 3),
+            allow_image: user.is_premium || imagesSent < 3
+          }),
+        },
+        true
+      );
 
       const fullImageUrl = data.image_url 
         ? data.image_url.startsWith("http") 
@@ -274,7 +299,6 @@ export default function ChatUI() {
           : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
         : undefined;
 
-      // Submit to backend
       const submitResponse = await apiFetch("/api/chat/submit/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -286,20 +310,17 @@ export default function ChatUI() {
         }),
       });
 
-      // Create AI message
-      const permanentImageUrl = submitResponse.image_url || fullImageUrl;
       const aiReply: Message = {
         id: Date.now() + 1,
-        text: data.response || "No response.",
+        text: data.response || "I'm having trouble responding right now...",
         sender: "ai",
-        image_url: permanentImageUrl,
+        image_url: submitResponse.image_url || fullImageUrl,
         blurred: data.blurred || false,
       };
 
       setMessages((prev) => [...prev, aiReply]);
       
-      // Update image counters if image was generated
-      if (permanentImageUrl) {
+      if (aiReply.image_url) {
         const today = new Date().toISOString().slice(0, 10);
         const lastReset = localStorage.getItem('imageResetDate');
         let imagesSentToday = parseInt(localStorage.getItem('imagesSentToday') || '0', 10);
@@ -312,15 +333,12 @@ export default function ChatUI() {
         imagesSentToday++;
         localStorage.setItem('imagesSentToday', imagesSentToday.toString());
         setImagesSent(imagesSentToday);
-        setGalleryImages(prev => [...prev, permanentImageUrl]);
+        setGalleryImages(prev => [...prev, aiReply.image_url!]);
       }
 
-      // Update time used
-      const durationSec = Math.floor((Date.now() - startTime) / 1000);
-      incrementTimeUsed(durationSec);
+      incrementTimeUsed(Math.floor((Date.now() - startTime) / 1000));
       setTyping(false);
 
-      // Show upsell if needed
       if (data.upsell) {
         setShowUpgradePrompt(true);
       }
@@ -328,9 +346,11 @@ export default function ChatUI() {
       console.error(err);
       setMessages((prev) => [
         ...prev,
-        { id: Date.now() + 3, text: "⚠️ Error reaching Amber.", sender: "ai" },
+        { id: Date.now() + 3, text: "⚠️ Error reaching Amber. Please try again.", sender: "ai" },
       ]);
       setTyping(false);
+    } finally {
+      scrollToBottom();
     }
   };
 
@@ -358,14 +378,34 @@ export default function ChatUI() {
     return `${3 - imagesSentToday} images`;
   };
 
+  // Handle image click in gallery
+  const handleImageClick = (url: string) => {
+    setModalImage(url);
+    setKeepGalleryOpen(true);
+    scrollToBottom();
+  };
+
+  // Close modal
+  const closeModal = () => {
+    setModalImage(null);
+    if (!keepGalleryOpen) {
+      setSidebarOpen(false);
+    }
+    setKeepGalleryOpen(false);
+  };
+
   return (
-    <div className="w-screen h-screen flex flex-col md:flex-row bg-[#4B1F1F] text-[#E7D8C1] overflow-hidden">
+    <div 
+      className="w-screen h-screen flex flex-col md:flex-row bg-[#4B1F1F] text-[#E7D8C1] overflow-hidden"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
       {/* Mobile Header */}
       <header className="md:hidden flex justify-between items-center px-4 py-3 border-b border-[#D1A75D] bg-[#4B1F1F] fixed top-0 left-0 right-0 z-50">
         <div className="flex items-center gap-3">
           <button
             onClick={() => { setSidebarOpen(!sidebarOpen); setMenuOpen(false); }}
-            className="bg-[#D1A75D] text-[#4B1F1F] p-2 rounded hover:bg-[#b88b35] transition">
+            className="bg-[#D1A75D] text-[#4B1F1F] p-2 rounded-lg hover:bg-[#b88b35] transition active:scale-95"
+          >
             {sidebarOpen ? "✕" : "☰"}
           </button>
           <div className="flex items-center gap-2">
@@ -379,32 +419,39 @@ export default function ChatUI() {
         </div>
         <button
           onClick={() => { setMenuOpen(!menuOpen); setSidebarOpen(false); }}
-          className="bg-[#D1A75D] text-[#4B1F1F] p-2 rounded hover:bg-[#c49851] transition">
+          className="bg-[#D1A75D] text-[#4B1F1F] p-2 rounded-lg hover:bg-[#c49851] transition active:scale-95"
+        >
           ☰
         </button>
       </header>
 
       {/* Mobile Menu Dropdown */}
       {menuOpen && (
-        <div className="md:hidden bg-[#3A1818] border-b border-[#D1A75D] fixed top-16 left-0 right-0 z-40">
+        <div className="md:hidden bg-[#3A1818] border-b border-[#D1A75D] fixed top-16 left-0 right-0 z-40 animate-slideDown">
           <div className="flex flex-col space-y-2 p-3">
-            <button onClick={() => navigate("/settings")}
-              className="w-full text-left px-3 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded">
+            <button 
+              onClick={() => { navigate("/settings"); setMenuOpen(false); }}
+              className="w-full text-left px-3 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-lg active:scale-95"
+            >
               Settings
             </button>
-            <button onClick={() => navigate("/subscriptions")}
-              className="w-full text-left px-3 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded">
+            <button 
+              onClick={() => { navigate("/subscriptions"); setMenuOpen(false); }}
+              className="w-full text-left px-3 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-lg active:scale-95"
+            >
               Subscriptions
             </button>
-            <button onClick={handleSignOut}
-              className="w-full text-left px-3 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded">
+            <button 
+              onClick={handleSignOut}
+              className="w-full text-left px-3 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-lg active:scale-95"
+            >
               Sign Out
             </button>
           </div>
         </div>
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar/Gallery */}
       <div className={`${sidebarOpen ? 'fixed md:relative inset-0 z-40 md:z-auto mt-16 md:mt-0' : 'hidden md:flex'} 
         flex-col bg-[#3A1818] border-r border-[#D1A75D] transition-all duration-300 ease-in-out 
         ${sidebarOpen ? "w-full md:w-64 p-4" : "w-0 p-0"} overflow-y-auto h-[calc(100vh-4rem)] md:h-full`}>
@@ -412,7 +459,8 @@ export default function ChatUI() {
           <h2 className="text-lg font-bold">Gallery</h2>
           <button 
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden text-[#E7D8C1] p-1">
+            className="md:hidden text-[#E7D8C1] p-1 hover:text-[#D1A75D] transition"
+          >
             ✕
           </button>
         </div>
@@ -420,16 +468,14 @@ export default function ChatUI() {
         {galleryImages.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 pr-2 pb-4">
             {galleryImages.map((url, i) => (
-              <div key={i} className="aspect-[1/1] relative">
+              <div key={i} className="aspect-[1/1] relative group">
                 <img
                   src={url}
                   alt={`Generated ${i}`}
-                  className="rounded-lg shadow object-cover h-full w-full cursor-pointer"
-                  onClick={() => {
-                    setModalImage(url);
-                    setSidebarOpen(false);
-                  }}
+                  className="rounded-lg shadow object-cover h-full w-full cursor-pointer transition-transform group-hover:scale-105"
+                  onClick={() => handleImageClick(url)}
                 />
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" />
               </div>
             ))}
           </div>
@@ -437,7 +483,6 @@ export default function ChatUI() {
           <p className="text-sm text-[#E7D8C1]/70">No images yet</p>
         )}
 
-        {/* Free user limits */}
         {!user?.is_premium && (
           <div className="mt-4 p-3 bg-[#4B1F1F]/50 rounded-lg text-sm">
             <div className="flex justify-between mb-1">
@@ -454,15 +499,21 @@ export default function ChatUI() {
 
       {/* Image Preview Modal */}
       {modalImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
-          onClick={() => setModalImage(null)}>
+        <div 
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
+          onClick={closeModal}
+        >
           <div className="relative max-w-full max-h-full">
-            <img src={modalImage} alt="preview"
+            <img 
+              src={modalImage} 
+              alt="Preview" 
               className="max-w-full max-h-[80vh] rounded-lg shadow-lg object-contain"
-              onClick={(e) => e.stopPropagation()} />
+              onClick={(e) => e.stopPropagation()}
+            />
             <button 
-              onClick={() => setModalImage(null)}
-              className="absolute -top-10 right-0 text-white text-2xl p-1">
+              onClick={closeModal}
+              className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
+            >
               ✕
             </button>
           </div>
@@ -476,7 +527,8 @@ export default function ChatUI() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="bg-[#D1A75D] text-[#4B1F1F] px-3 py-1 rounded hover:bg-[#b88b35] transition">
+              className="bg-[#D1A75D] text-[#4B1F1F] px-3 py-1 rounded hover:bg-[#b88b35] transition active:scale-95"
+            >
               {sidebarOpen ? "←" : "→"}
             </button>
             <div className="flex items-center gap-2">
@@ -491,21 +543,28 @@ export default function ChatUI() {
           <div className="relative">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 rounded hover:bg-[#c49851] transition">
+              className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 rounded hover:bg-[#c49851] transition active:scale-95"
+            >
               ☰ Menu
             </button>
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-40 bg-[#3A1818] text-[#E7D8C1] border border-[#D1A75D] rounded shadow-md z-10">
-                <button onClick={() => navigate("/settings")}
-                  className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition">
+              <div className="absolute right-0 mt-2 w-40 bg-[#3A1818] text-[#E7D8C1] border border-[#D1A75D] rounded shadow-md z-10 animate-fadeIn">
+                <button 
+                  onClick={() => navigate("/settings")}
+                  className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-t"
+                >
                   Settings
                 </button>
-                <button onClick={() => navigate("/subscriptions")}
-                  className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition">
+                <button 
+                  onClick={() => navigate("/subscriptions")}
+                  className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition"
+                >
                   Subscriptions
                 </button>
-                <button onClick={handleSignOut}
-                  className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition">
+                <button 
+                  onClick={handleSignOut}
+                  className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-b"
+                >
                   Sign Out
                 </button>
               </div>
@@ -514,9 +573,16 @@ export default function ChatUI() {
         </header>
 
         {/* Messages Container */}
-        <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4 pt-0 md:pt-0">
+        <div 
+          ref={messagesContainerRef}
+          className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4 pt-0 md:pt-0 pb-20 md:pb-4"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           {messages.map((msg) => (
-            <div key={msg.id} className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}>
+            <div 
+              key={msg.id} 
+              className={`flex flex-col ${msg.sender === "user" ? "items-end" : "items-start"}`}
+            >
               {msg.text && (
                 <div className={`max-w-[85%] md:max-w-3xl px-3 py-2 md:px-4 md:py-3 rounded-2xl shadow-lg ${
                   msg.sender === "user"
@@ -542,7 +608,10 @@ export default function ChatUI() {
                       onClick={() => !msg.blurred && setModalImage(msg.image_url || null)}
                     />
                     {msg.blurred && (
-                      <div className="absolute inset-0 flex items-center justify-center cursor-pointer">
+                      <div 
+                        className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                        onClick={() => setShowUpgradePrompt(true)}
+                      >
                         <span className="text-white font-bold bg-black/50 p-2 rounded">
                           Premium Content
                         </span>
@@ -565,32 +634,37 @@ export default function ChatUI() {
               </div>
             </div>
           )}
-          <div ref={chatEndRef} />
+          <div ref={messagesEndRef} />
         </div>
 
         {/* Input Area */}
-        <form onSubmit={handleSend}
-          className="flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-[#D1A75D] bg-[#4B1F1F] sticky bottom-0">
+        <form 
+          onSubmit={handleSend}
+          className="fixed md:sticky bottom-0 left-0 right-0 flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-[#D1A75D] bg-[#4B1F1F] z-40"
+        >
           <input
             type="text"
+            ref={inputRef}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask about your wildest desires..."
             className="flex-1 px-3 py-2 md:px-4 md:py-2 rounded-lg border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] placeholder-[#E7D8C1]/70 focus:outline-none focus:ring-1 md:focus:ring-2 focus:ring-[#D1A75D] text-sm md:text-base"
             disabled={showUpgradePrompt}
+            onFocus={() => scrollToBottom()}
           />
           <button
             type="submit"
             disabled={!message.trim() || typing || showUpgradePrompt}
-            className="ml-3 px-3 py-2 md:px-4 md:py-2 bg-[#D1A75D] text-[#4B1F1F] rounded-lg hover:bg-[#c49851] disabled:opacity-50 transition text-sm md:text-base">
+            className="ml-3 px-3 py-2 md:px-4 md:py-2 bg-[#D1A75D] text-[#4B1F1F] rounded-lg hover:bg-[#c49851] disabled:opacity-50 transition active:scale-95 text-sm md:text-base"
+          >
             Send
           </button>
         </form>
 
         {/* Upgrade Prompt */}
         {showUpgradePrompt && (
-          <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex flex-col items-center justify-center p-4">
-            <div className="bg-[#4B1F1F] p-6 rounded-lg max-w-md w-full">
+          <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4">
+            <div className="bg-[#4B1F1F] p-6 rounded-lg max-w-md w-full animate-popIn">
               <h2 className="text-xl md:text-2xl font-bold text-[#E7D8C1] mb-4 text-center">
                 {imagesSent >= 3 ? "🚫 Image Limit Reached" : "⏳ Time Limit Reached"}
               </h2>
@@ -605,12 +679,14 @@ export default function ChatUI() {
                     navigate("/subscriptions");
                     setShowUpgradePrompt(false);
                   }}
-                  className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#b88e4f] font-semibold transition">
+                  className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#b88e4f] font-semibold transition active:scale-95"
+                >
                   Upgrade to Premium
                 </button>
                 <button
                   onClick={() => setShowUpgradePrompt(false)}
-                  className="bg-[#3A1A1A] text-[#E7D8C1] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#2e1414] font-semibold transition">
+                  className="bg-[#3A1A1A] text-[#E7D8C1] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#2e1414] font-semibold transition active:scale-95"
+                >
                   {imagesSent >= 3 ? "Continue Without Images" : "Continue With Remaining Time"}
                 </button>
               </div>

@@ -190,11 +190,8 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
         Don't have an account?{" "}
         <button
           type="button"
+          onClick={onSwitchToRegister}
           className="text-[#D1A75D] hover:underline focus:outline-none"
-          onClick={() => {
-            onClose?.();
-            onSwitchToRegister?.();
-          }}
           disabled={isLoading}
         >
           Sign Up
