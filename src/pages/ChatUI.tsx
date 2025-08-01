@@ -43,7 +43,7 @@ export default function ChatUI() {
 
   const DAILY_LIMIT_SECONDS = 40 * 60; // 40 minutes
 
-  // Enhanced scrolling
+  // Enhanced scrolling with mobile support
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({
@@ -382,7 +382,9 @@ export default function ChatUI() {
   const handleImageClick = (url: string) => {
     setModalImage(url);
     setKeepGalleryOpen(true);
-    scrollToBottom();
+    setTimeout(() => {
+      scrollToBottom();
+    }, 100);
   };
 
   // Close modal
@@ -396,8 +398,11 @@ export default function ChatUI() {
 
   return (
     <div 
-      className="w-screen h-screen flex flex-col md:flex-row bg-[#4B1F1F] text-[#E7D8C1] overflow-hidden"
-      style={{ WebkitOverflowScrolling: 'touch' }}
+      className="w-screen h-screen flex flex-col md:flex-row bg-[#4B1F1F] text-[#E7D8C1] overflow-hidden touch-pan-y"
+      style={{ 
+        WebkitOverflowScrolling: 'touch',
+        overscrollBehaviorY: 'contain'
+      }}
     >
       {/* Mobile Header */}
       <header className="md:hidden flex justify-between items-center px-4 py-3 border-b border-[#D1A75D] bg-[#4B1F1F] fixed top-0 left-0 right-0 z-50">
@@ -454,7 +459,7 @@ export default function ChatUI() {
       {/* Sidebar/Gallery */}
       <div className={`${sidebarOpen ? 'fixed md:relative inset-0 z-40 md:z-auto mt-16 md:mt-0' : 'hidden md:flex'} 
         flex-col bg-[#3A1818] border-r border-[#D1A75D] transition-all duration-300 ease-in-out 
-        ${sidebarOpen ? "w-full md:w-64 p-4" : "w-0 p-0"} overflow-y-auto h-[calc(100vh-4rem)] md:h-full`}>
+        ${sidebarOpen ? "w-full md:w-64 p-4" : "w-0 p-0"} overflow-y-auto h-[calc(100vh-4rem)] md:h-full touch-pan-y`}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-bold">Gallery</h2>
           <button 
@@ -466,14 +471,20 @@ export default function ChatUI() {
         </div>
         
         {galleryImages.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 pr-2 pb-4">
+          <div 
+            className="grid grid-cols-2 gap-3 pr-2 pb-4 touch-pan-y"
+            onClick={(e) => e.stopPropagation()}
+          >
             {galleryImages.map((url, i) => (
               <div key={i} className="aspect-[1/1] relative group">
                 <img
                   src={url}
                   alt={`Generated ${i}`}
-                  className="rounded-lg shadow object-cover h-full w-full cursor-pointer transition-transform group-hover:scale-105"
-                  onClick={() => handleImageClick(url)}
+                  className="rounded-lg shadow object-cover h-full w-full cursor-pointer transition-transform group-hover:scale-105 touch-pan-y"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleImageClick(url);
+                  }}
                 />
                 <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" />
               </div>
@@ -500,19 +511,22 @@ export default function ChatUI() {
       {/* Image Preview Modal */}
       {modalImage && (
         <div 
-          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 touch-none"
           onClick={closeModal}
         >
-          <div className="relative max-w-full max-h-full">
+          <div 
+            className="relative max-w-full max-h-full touch-pan-y"
+            onClick={(e) => e.stopPropagation()}
+          >
             <img 
               src={modalImage} 
               alt="Preview" 
-              className="max-w-full max-h-[80vh] rounded-lg shadow-lg object-contain"
+              className="max-w-full max-h-[80vh] rounded-lg shadow-lg object-contain touch-pan-y"
               onClick={(e) => e.stopPropagation()}
             />
             <button 
               onClick={closeModal}
-              className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
+              className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition touch-pan-y"
             >
               ✕
             </button>
@@ -575,8 +589,13 @@ export default function ChatUI() {
         {/* Messages Container */}
         <div 
           ref={messagesContainerRef}
-          className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4 pt-0 md:pt-0 pb-20 md:pb-4"
-          style={{ WebkitOverflowScrolling: 'touch' }}
+          className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4 pt-0 md:pt-0 pb-20 md:pb-4 touch-pan-y"
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehaviorY: 'contain',
+            height: 'calc(100vh - 4rem)',
+            touchAction: 'pan-y'
+          }}
         >
           {messages.map((msg) => (
             <div 
@@ -599,24 +618,31 @@ export default function ChatUI() {
                       ? "bg-[#D1A75D]/20 border border-[#D1A75D]/30" 
                       : "bg-[#3A1A1A] border border-[#D1A75D]/30"
                   }`}>
-                    <img 
-                      src={msg.image_url} 
-                      alt="AI generated" 
-                      className={`rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition ${
-                        msg.blurred ? 'filter blur-md' : ''
-                      }`}
-                      onClick={() => !msg.blurred && setModalImage(msg.image_url || null)}
-                    />
-                    {msg.blurred && (
-                      <div 
-                        className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                        onClick={() => setShowUpgradePrompt(true)}
-                      >
-                        <span className="text-white font-bold bg-black/50 p-2 rounded">
-                          Premium Content
-                        </span>
-                      </div>
-                    )}
+                    <div className="relative">
+                      <img 
+                        src={msg.image_url} 
+                        alt="AI generated" 
+                        className={`rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y ${
+                          msg.blurred ? 'filter blur-md' : ''
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!msg.blurred) {
+                            setModalImage(msg.image_url || null);
+                          }
+                        }}
+                      />
+                      {msg.blurred && (
+                        <div 
+                          className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                          onClick={() => setShowUpgradePrompt(true)}
+                        >
+                          <span className="text-white font-bold bg-black/50 p-2 rounded">
+                            Premium Content
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -640,7 +666,7 @@ export default function ChatUI() {
         {/* Input Area */}
         <form 
           onSubmit={handleSend}
-          className="fixed md:sticky bottom-0 left-0 right-0 flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-[#D1A75D] bg-[#4B1F1F] z-40"
+          className="fixed md:sticky bottom-0 left-0 right-0 flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-[#D1A75D] bg-[#4B1F1F] z-40 touch-pan-y"
         >
           <input
             type="text"
@@ -663,7 +689,7 @@ export default function ChatUI() {
 
         {/* Upgrade Prompt */}
         {showUpgradePrompt && (
-          <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4 touch-pan-y">
             <div className="bg-[#4B1F1F] p-6 rounded-lg max-w-md w-full animate-popIn">
               <h2 className="text-xl md:text-2xl font-bold text-[#E7D8C1] mb-4 text-center">
                 {imagesSent >= 3 ? "🚫 Image Limit Reached" : "⏳ Time Limit Reached"}
