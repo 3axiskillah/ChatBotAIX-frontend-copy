@@ -21,7 +21,6 @@ interface User {
 }
 
 export default function ChatUI() {
-  // State management
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -35,22 +34,21 @@ export default function ChatUI() {
   const [lastSignOutTime, setLastSignOutTime] = useState<number | null>(null);
   const [keepGalleryOpen, setKeepGalleryOpen] = useState(false);
 
-  // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const DAILY_LIMIT_SECONDS = 40 * 60; // 40 minutes
+  const DAILY_LIMIT_SECONDS = 40 * 60;
 
-  // Enhanced scrolling with mobile support
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({
         behavior,
-        block: "nearest"
+        block: "end",
+        inline: "nearest"
       });
-    }, 100);
+    }, 50);
   };
 
   useEffect(() => {
@@ -62,6 +60,24 @@ export default function ChatUI() {
       scrollToBottom("auto");
     }
   }, [messages]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.visualViewport) {
+        const isKeyboardOpen = window.visualViewport.height < window.innerHeight * 0.8;
+        document.body.classList.toggle('mobile-keyboard-open', isKeyboardOpen);
+        
+        if (isKeyboardOpen && inputRef.current === document.activeElement) {
+          setTimeout(() => {
+            scrollToBottom('auto');
+          }, 300);
+        }
+      }
+    };
+
+    window.visualViewport?.addEventListener('resize', handleResize);
+    return () => window.visualViewport?.removeEventListener('resize', handleResize);
+  }, []);
 
   // Authentication and user data
   useEffect(() => {
@@ -89,7 +105,6 @@ export default function ChatUI() {
           localStorage.removeItem('chat_limits');
         }
 
-        // Welcome back message
         if (shouldWelcomeBack) {
           const welcomeMessage = isPremium
             ? `Welcome back, premium member! Ready for more fun? 😘`
@@ -102,7 +117,6 @@ export default function ChatUI() {
           }]);
         }
 
-        // Handle payment success
         const params = new URLSearchParams(window.location.search);
         if (params.has('payment_success')) {
           setMessages(prev => [...prev, {
@@ -140,7 +154,6 @@ export default function ChatUI() {
         }));
 
         setMessages(prev => {
-          // Preserve welcome back message if exists
           if (prev.some(m => m.text.includes("welcome back") || m.text.includes("Welcome to Premium"))) {
             return [...prev, ...formatted];
           }
@@ -183,7 +196,6 @@ export default function ChatUI() {
     loadAllHistory();
   }, []);
 
-  // Check daily time limit
   const checkTimeLimit = () => {
     if (user?.is_premium) return true;
 
@@ -205,7 +217,6 @@ export default function ChatUI() {
     return true;
   };
 
-  // Check daily image limit
   const checkImageLimit = () => {
     if (user?.is_premium) return true;
     
@@ -222,7 +233,6 @@ export default function ChatUI() {
     return imagesSentToday < 3;
   };
 
-  // Increment time used
   const incrementTimeUsed = (seconds: number) => {
     const today = new Date().toISOString().slice(0, 10);
     const usedDate = localStorage.getItem("chat_last_used_date");
@@ -236,7 +246,6 @@ export default function ChatUI() {
     }
   };
 
-  // Handle sign out
   const handleSignOut = async () => {
     try {
       await apiFetch("/api/accounts/logout/", { method: "POST" });
@@ -253,7 +262,6 @@ export default function ChatUI() {
     }
   };
 
-  // Handle sending messages
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -354,7 +362,6 @@ export default function ChatUI() {
     }
   };
 
-  // Calculate remaining time
   const getRemainingTime = () => {
     if (user?.is_premium) return "Unlimited";
     
@@ -363,7 +370,6 @@ export default function ChatUI() {
     return `${remainingMinutes} mins`;
   };
 
-  // Calculate remaining images
   const getRemainingImages = () => {
     if (user?.is_premium) return "Unlimited";
     
@@ -378,7 +384,6 @@ export default function ChatUI() {
     return `${3 - imagesSentToday} images`;
   };
 
-  // Handle image click in gallery
   const handleImageClick = (url: string) => {
     setModalImage(url);
     setKeepGalleryOpen(true);
@@ -387,7 +392,6 @@ export default function ChatUI() {
     }, 100);
   };
 
-  // Close modal
   const closeModal = () => {
     setModalImage(null);
     if (!keepGalleryOpen) {
@@ -397,13 +401,7 @@ export default function ChatUI() {
   };
 
   return (
-    <div 
-      className="w-screen h-screen flex flex-col md:flex-row bg-[#4B1F1F] text-[#E7D8C1] overflow-hidden touch-pan-y"
-      style={{ 
-        WebkitOverflowScrolling: 'touch',
-        overscrollBehaviorY: 'contain'
-      }}
-    >
+    <div className="w-full h-full flex flex-col md:flex-row bg-[#4B1F1F] text-[#E7D8C1] fixed inset-0 touch-none">
       {/* Mobile Header */}
       <header className="md:hidden flex justify-between items-center px-4 py-3 border-b border-[#D1A75D] bg-[#4B1F1F] fixed top-0 left-0 right-0 z-50">
         <div className="flex items-center gap-3">
@@ -508,32 +506,6 @@ export default function ChatUI() {
         )}
       </div>
 
-      {/* Image Preview Modal */}
-      {modalImage && (
-        <div 
-          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 touch-none"
-          onClick={closeModal}
-        >
-          <div 
-            className="relative max-w-full max-h-full touch-pan-y"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img 
-              src={modalImage} 
-              alt="Preview" 
-              className="max-w-full max-h-[80vh] rounded-lg shadow-lg object-contain touch-pan-y"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <button 
-              onClick={closeModal}
-              className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition touch-pan-y"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative mt-16 md:mt-0">
         {/* Desktop Header */}
@@ -589,13 +561,7 @@ export default function ChatUI() {
         {/* Messages Container */}
         <div 
           ref={messagesContainerRef}
-          className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4 pt-0 md:pt-0 pb-20 md:pb-4 touch-pan-y"
-          style={{ 
-            WebkitOverflowScrolling: 'touch',
-            overscrollBehaviorY: 'contain',
-            height: 'calc(100vh - 4rem)',
-            touchAction: 'pan-y'
-          }}
+          className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4 pt-0 md:pt-0 pb-20 md:pb-4 chat-scroll-container"
         >
           {messages.map((msg) => (
             <div 
@@ -686,6 +652,32 @@ export default function ChatUI() {
             Send
           </button>
         </form>
+
+        {/* Image Preview Modal */}
+        {modalImage && (
+          <div 
+            className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 touch-none"
+            onClick={closeModal}
+          >
+            <div 
+              className="relative max-w-full max-h-full touch-pan-y"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img 
+                src={modalImage} 
+                alt="Preview" 
+                className="max-w-full max-h-[80vh] rounded-lg shadow-lg object-contain touch-pan-y"
+                onClick={(e) => e.stopPropagation()}
+              />
+              <button 
+                onClick={closeModal}
+                className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition touch-pan-y"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Upgrade Prompt */}
         {showUpgradePrompt && (
