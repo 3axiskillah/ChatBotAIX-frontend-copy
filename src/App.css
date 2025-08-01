@@ -7,7 +7,7 @@
   overflow: hidden;
 }
 
-.chat-container {
+.chat-scroll-container {
   height: calc(100vh - 4rem);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
@@ -16,29 +16,29 @@
   scrollbar-color: #D1A75D #2B1A1A;
 }
 
-.chat-container::-webkit-scrollbar {
+.chat-scroll-container::-webkit-scrollbar {
   width: 6px;
 }
 
-.chat-container::-webkit-scrollbar-track {
+.chat-scroll-container::-webkit-scrollbar-track {
   background: #2B1A1A;
   border-radius: 3px;
 }
 
-.chat-container::-webkit-scrollbar-thumb {
+.chat-scroll-container::-webkit-scrollbar-thumb {
   background: #D1A75D;
   border-radius: 3px;
 }
 
-.chat-container::-webkit-scrollbar-thumb:hover {
+.chat-scroll-container::-webkit-scrollbar-thumb:hover {
   background: #b88e4f;
 }
 
-.mobile-keyboard-open {
-  position: fixed;
-  height: 100vh !important;
+.mobile-keyboard-open .chat-scroll-container {
+  height: calc(100vh - 20rem) !important;
 }
 
+/* Logo styles */
 .logo {
   height: 6em;
   padding: 1.5em;
