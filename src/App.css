@@ -4,7 +4,6 @@
   padding: 0;
   height: 100vh;
   width: 100vw;
-  overflow: hidden;
 }
 
 .chat-scroll-container {
@@ -13,7 +12,7 @@
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
   scrollbar-width: thin;
-  scrollbar-color: #D1A75D #2B1A1A;
+  scrollbar-color: #d1a75d #2b1a1a;
 }
 
 .chat-scroll-container::-webkit-scrollbar {
@@ -21,12 +20,12 @@
 }
 
 .chat-scroll-container::-webkit-scrollbar-track {
-  background: #2B1A1A;
+  background: #2b1a1a;
   border-radius: 3px;
 }
 
 .chat-scroll-container::-webkit-scrollbar-thumb {
-  background: #D1A75D;
+  background: #d1a75d;
   border-radius: 3px;
 }
 

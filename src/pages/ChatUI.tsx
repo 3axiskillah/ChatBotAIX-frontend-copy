@@ -553,6 +553,7 @@ export default function ChatUI() {
           <div
             className="grid grid-cols-2 gap-3 pr-2 pb-4 touch-pan-y"
             onClick={(e) => e.stopPropagation()}
+            style={{ pointerEvents: sidebarOpen ? "auto" : "none" }} // Ensure pointer events are enabled when sidebar is open
           >
             {galleryImages.map((url, i) => (
               <div key={i} className="aspect-[1/1] relative group">
@@ -560,6 +561,7 @@ export default function ChatUI() {
                   src={url}
                   alt={`Generated ${i}`}
                   className="rounded-lg shadow object-cover h-full w-full cursor-pointer transition-transform group-hover:scale-105 touch-pan-y"
+                  style={{ pointerEvents: "auto", zIndex: 50 }} // Explicitly enable pointer events and set high z-index
                   onClick={(e) => {
                     e.stopPropagation();
                     handleImageClick(url);
