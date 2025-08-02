@@ -20,6 +20,14 @@ interface User {
   images_sent_today?: number;
 }
 
+interface ApiChatResponse {
+  response: string;
+  image_url?: string;
+  blurred?: boolean;
+  upsell?: boolean;
+  images_remaining?: number;
+}
+
 export default function ChatUI() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -248,7 +256,7 @@ export default function ChatUI() {
   };
 
   const checkImageLimit = () => {
-    if (user?.is_premium) return true;
+    if (user?.is_premium) return { canSend: true, shouldBlur: false };
 
     const today = new Date().toISOString().slice(0, 10);
     const lastReset = localStorage.getItem("imageResetDate");
@@ -260,27 +268,30 @@ export default function ChatUI() {
     if (!lastReset || lastReset !== today) {
       localStorage.setItem("imageResetDate", today);
       localStorage.setItem("imagesSentToday", "0");
-      return true;
+      return { canSend: true, shouldBlur: false };
     }
 
-    return imagesSentToday < 3;
+    return {
+      canSend: imagesSentToday < 3,
+      shouldBlur: imagesSentToday >= 3
+    };
   };
 
-  const incrementTimeUsed = (seconds: number) => {
-    const today = new Date().toISOString().slice(0, 10);
-    const usedDate = localStorage.getItem("chat_last_used_date");
-    const usedSeconds = parseInt(
-      localStorage.getItem("chat_seconds_used") || "0",
-      10
-    );
+const incrementTimeUsed = (seconds: number): void => {
+  const today = new Date().toISOString().slice(0, 10);
+  const usedDate = localStorage.getItem("chat_last_used_date");
+  const usedSeconds = parseInt(
+    localStorage.getItem("chat_seconds_used") || "0",
+    10
+  );
 
-    if (usedDate !== today) {
-      localStorage.setItem("chat_last_used_date", today);
-      localStorage.setItem("chat_seconds_used", String(seconds));
-    } else {
-      localStorage.setItem("chat_seconds_used", String(usedSeconds + seconds));
-    }
-  };
+  if (usedDate !== today) {
+    localStorage.setItem("chat_last_used_date", today);
+    localStorage.setItem("chat_seconds_used", String(seconds));
+  } else {
+    localStorage.setItem("chat_seconds_used", String(usedSeconds + seconds));
+  }
+};
 
   const handleSignOut = async () => {
     try {
@@ -302,40 +313,49 @@ export default function ChatUI() {
     e.preventDefault();
 
     if (!message.trim() || typing || !user) return;
-    if (!checkTimeLimit() || !checkImageLimit()) {
+    
+    const timeAllowed = checkTimeLimit();
+    const { canSend: imagesAllowed, shouldBlur } = checkImageLimit();
+    
+    if (!timeAllowed || !imagesAllowed) {
       setShowUpgradePrompt(true);
       return;
     }
 
-    const newMsg: Message = { id: Date.now(), text: message, sender: "user" };
-    const updated = [...messages, newMsg];
-    setMessages(updated);
+    const newMsg: Message = { 
+      id: Date.now(), 
+      text: message, 
+      sender: "user" 
+    };
+    
+    const updatedMessages = [...messages, newMsg];
+    setMessages(updatedMessages);
     setMessage("");
     setTyping(true);
 
-    const startTime = Date.now();
+    const startTime = Date.now(); // Make sure this is at the very start of the async operation
 
     try {
-      const data = await apiFetch(
-        "/chat/respond",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            user_id: user.id,
-            prompt: message,
-            user_type: user.is_premium ? "premium" : "free",
-            images_sent: imagesSent,
-            history: updated.map((m) => ({
-              role: m.sender === "user" ? "user" : "assistant",
-              content: m.text,
-            })),
-            should_blur: imagesSent >= (user.is_premium ? 999 : 3),
-            allow_image: user.is_premium || imagesSent < 3,
-          }),
-        },
-        true
-      );
+      const payload = {
+        user_id: user.id,
+        prompt: message,
+        user_type: user.is_premium ? "premium" : "free",
+        images_sent: imagesSent,
+        should_blur: shouldBlur,
+        allow_image: imagesAllowed,
+        history: updatedMessages
+          .slice(-10)
+          .map((msg) => ({
+            role: msg.sender === "user" ? "user" : "assistant",
+            content: msg.text,
+          })),
+      };
+
+      const data: ApiChatResponse = await apiFetch("/chat/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       const fullImageUrl = data.image_url
         ? data.image_url.startsWith("http")
@@ -343,26 +363,32 @@ export default function ChatUI() {
           : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
         : undefined;
 
-      const submitResponse = await apiFetch("/api/chat/submit/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: message,
-          reply: data.response,
-          image_url: fullImageUrl || null,
-          blurred: data.blurred || false,
-        }),
-      });
+      // Calculate and increment time used right after successful response
+      const processingTime = Math.floor((Date.now() - startTime) / 1000);
+      incrementTimeUsed(processingTime);
 
       const aiReply: Message = {
         id: Date.now() + 1,
         text: data.response || "I'm having trouble responding right now...",
         sender: "ai",
-        image_url: submitResponse.image_url || fullImageUrl,
+        image_url: fullImageUrl,
         blurred: data.blurred || false,
+        upsell: data.upsell,
       };
 
       setMessages((prev) => [...prev, aiReply]);
+
+      // Rest of your code remains the same...
+      await apiFetch("/api/chat/submit/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: message,
+          reply: aiReply.text,
+          image_url: fullImageUrl || null,
+          blurred: aiReply.blurred || false,
+        }),
+      });
 
       if (aiReply.image_url) {
         const today = new Date().toISOString().slice(0, 10);
@@ -383,24 +409,22 @@ export default function ChatUI() {
         setGalleryImages((prev) => [...prev, aiReply.image_url!]);
       }
 
-      incrementTimeUsed(Math.floor((Date.now() - startTime) / 1000));
-      setTyping(false);
-
       if (data.upsell) {
         setShowUpgradePrompt(true);
       }
+
     } catch (err) {
-      console.error(err);
+      console.error("Chat error:", err);
       setMessages((prev) => [
         ...prev,
         {
-          id: Date.now() + 3,
-          text: "⚠️ Error reaching Amber. Please try again.",
+          id: Date.now() + 2,
+          text: "Sorry, I'm having trouble connecting. Please try again later.",
           sender: "ai",
         },
       ]);
-      setTyping(false);
     } finally {
+      setTyping(false);
       scrollToBottom();
     }
   };
@@ -553,7 +577,7 @@ export default function ChatUI() {
           <div
             className="grid grid-cols-2 gap-3 pr-2 pb-4 touch-pan-y"
             onClick={(e) => e.stopPropagation()}
-            style={{ pointerEvents: "auto" }} // Always allow pointer events for gallery
+            style={{ pointerEvents: "auto" }}
           >
             {galleryImages.map((url, i) => (
               <div key={i} className="aspect-[1/1] relative group">
