@@ -355,7 +355,7 @@ const incrementTimeUsed = (seconds: number): void => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      });
+      }, true);
 
       const fullImageUrl = data.image_url
         ? data.image_url.startsWith("http")
