@@ -59,16 +59,37 @@ export default function ChatUI() {
     }, 50);
   };
 
+  // On initial mount, always scroll to bottom and sync imagesSent from localStorage
+  useEffect(() => {
+    scrollToBottom("auto");
+    // Sync imagesSent from localStorage for correct UI
+    const today = new Date().toISOString().slice(0, 10);
+    const lastReset = localStorage.getItem("imageResetDate");
+    let imagesSentToday = parseInt(
+      localStorage.getItem("imagesSentToday") || "0",
+      10
+    );
+    if (!lastReset || lastReset !== today) {
+      imagesSentToday = 0;
+      localStorage.setItem("imageResetDate", today);
+      localStorage.setItem("imagesSentToday", "0");
+    }
+    setImagesSent(imagesSentToday);
+    // eslint-disable-next-line
+  }, []);
+
+  // On new messages, only scroll if user is already near the bottom
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
-
+    // If user is near the bottom (within 300px), auto-scroll
     const isNearBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight <
       300;
     if (isNearBottom) {
       scrollToBottom("auto");
     }
+    // Otherwise, do nothing (user is reading old messages)
   }, [messages]);
 
   useEffect(() => {
@@ -273,25 +294,25 @@ export default function ChatUI() {
 
     return {
       canSend: imagesSentToday < 3,
-      shouldBlur: imagesSentToday >= 3
+      shouldBlur: imagesSentToday >= 3,
     };
   };
 
-const incrementTimeUsed = (seconds: number): void => {
-  const today = new Date().toISOString().slice(0, 10);
-  const usedDate = localStorage.getItem("chat_last_used_date");
-  const usedSeconds = parseInt(
-    localStorage.getItem("chat_seconds_used") || "0",
-    10
-  );
+  const incrementTimeUsed = (seconds: number): void => {
+    const today = new Date().toISOString().slice(0, 10);
+    const usedDate = localStorage.getItem("chat_last_used_date");
+    const usedSeconds = parseInt(
+      localStorage.getItem("chat_seconds_used") || "0",
+      10
+    );
 
-  if (usedDate !== today) {
-    localStorage.setItem("chat_last_used_date", today);
-    localStorage.setItem("chat_seconds_used", String(seconds));
-  } else {
-    localStorage.setItem("chat_seconds_used", String(usedSeconds + seconds));
-  }
-};
+    if (usedDate !== today) {
+      localStorage.setItem("chat_last_used_date", today);
+      localStorage.setItem("chat_seconds_used", String(seconds));
+    } else {
+      localStorage.setItem("chat_seconds_used", String(usedSeconds + seconds));
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -313,21 +334,29 @@ const incrementTimeUsed = (seconds: number): void => {
     e.preventDefault();
 
     if (!message.trim() || typing || !user) return;
-    
+
     const timeAllowed = checkTimeLimit();
     const { canSend: imagesAllowed, shouldBlur } = checkImageLimit();
-    
-    if (!timeAllowed || !imagesAllowed) {
+
+    if (!timeAllowed) {
       setShowUpgradePrompt(true);
       return;
     }
 
-    const newMsg: Message = { 
-      id: Date.now(), 
-      text: message, 
-      sender: "user" 
+    // If image limit reached, allow chat but set allow_image to false
+    let allowImage = imagesAllowed;
+    let shouldBlurImage = shouldBlur;
+    if (!imagesAllowed) {
+      allowImage = false;
+      shouldBlurImage = false;
+    }
+
+    const newMsg: Message = {
+      id: Date.now(),
+      text: message,
+      sender: "user",
     };
-    
+
     const updatedMessages = [...messages, newMsg];
     setMessages(updatedMessages);
     setMessage("");
@@ -341,21 +370,23 @@ const incrementTimeUsed = (seconds: number): void => {
         prompt: message,
         user_type: user.is_premium ? "premium" : "free",
         images_sent: imagesSent,
-        should_blur: shouldBlur,
-        allow_image: imagesAllowed,
-        history: updatedMessages
-          .slice(-10)
-          .map((msg) => ({
-            role: msg.sender === "user" ? "user" : "assistant",
-            content: msg.text,
-          })),
+        should_blur: shouldBlurImage,
+        allow_image: allowImage,
+        history: updatedMessages.slice(-10).map((msg) => ({
+          role: msg.sender === "user" ? "user" : "assistant",
+          content: msg.text,
+        })),
       };
 
-      const data: ApiChatResponse = await apiFetch("/chat/respond", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }, true);
+      const data: ApiChatResponse = await apiFetch(
+        "/chat/respond",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        },
+        true
+      );
 
       const fullImageUrl = data.image_url
         ? data.image_url.startsWith("http")
@@ -390,7 +421,7 @@ const incrementTimeUsed = (seconds: number): void => {
         }),
       });
 
-      if (aiReply.image_url) {
+      if (aiReply.image_url && allowImage) {
         const today = new Date().toISOString().slice(0, 10);
         const lastReset = localStorage.getItem("imageResetDate");
         let imagesSentToday = parseInt(
@@ -407,12 +438,23 @@ const incrementTimeUsed = (seconds: number): void => {
         localStorage.setItem("imagesSentToday", imagesSentToday.toString());
         setImagesSent(imagesSentToday);
         setGalleryImages((prev) => [...prev, aiReply.image_url!]);
+      } else {
+        // Always update imagesSent from localStorage after sending a message
+        const today = new Date().toISOString().slice(0, 10);
+        const lastReset = localStorage.getItem("imageResetDate");
+        let imagesSentToday = parseInt(
+          localStorage.getItem("imagesSentToday") || "0",
+          10
+        );
+        if (!lastReset || lastReset !== today) {
+          imagesSentToday = 0;
+        }
+        setImagesSent(imagesSentToday);
       }
 
       if (data.upsell) {
         setShowUpgradePrompt(true);
       }
-
     } catch (err) {
       console.error("Chat error:", err);
       setMessages((prev) => [
@@ -581,17 +623,28 @@ const incrementTimeUsed = (seconds: number): void => {
           >
             {galleryImages.map((url, i) => (
               <div key={i} className="aspect-[1/1] relative group">
-                <img
-                  src={url}
-                  alt={`Generated ${i}`}
-                  className="rounded-lg shadow object-cover h-full w-full cursor-pointer transition-transform group-hover:scale-105 touch-pan-y"
-                  style={{ pointerEvents: "auto", zIndex: 50 }}
+                <button
+                  type="button"
+                  style={{
+                    all: "unset",
+                    cursor: "pointer",
+                    display: "block",
+                    width: "100%",
+                    height: "100%",
+                  }}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleImageClick(url);
                   }}
-                />
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" />
+                >
+                  <img
+                    src={url}
+                    alt={`Generated ${i}`}
+                    className="rounded-lg shadow object-cover h-full w-full transition-transform group-hover:scale-105 touch-pan-y"
+                    style={{ pointerEvents: "auto", zIndex: 50 }}
+                  />
+                </button>
+                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg pointer-events-none" />
               </div>
             ))}
           </div>
@@ -720,14 +773,22 @@ const incrementTimeUsed = (seconds: number): void => {
                         }}
                       />
                       {msg.blurred && (
-                        <div
+                        <button
+                          type="button"
                           className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                          style={{
+                            background: "rgba(0,0,0,0.5)",
+                            border: "none",
+                            width: "100%",
+                            height: "100%",
+                            padding: 0,
+                          }}
                           onClick={() => setShowUpgradePrompt(true)}
                         >
                           <span className="text-white font-bold bg-black/50 p-2 rounded">
                             Premium Content
                           </span>
-                        </div>
+                        </button>
                       )}
                     </div>
                   </div>
