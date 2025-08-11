@@ -9,8 +9,8 @@ import Login from "./pages/Login";
 import Modal from "./components/Modal";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Subscriptions from "./components/Subscriptions";
 import Settings from "./components/Settings";
+import Addons from "./pages/Addons";
 
 // Admin Layout + Pages
 import AdminLayout from "./layouts/AdminLayout";
@@ -30,7 +30,9 @@ function App() {
 
   return (
     <BrowserRouter>
-      <AuthProvider> {/* Wrap everything with AuthProvider */}
+      <AuthProvider>
+        {" "}
+        {/* Wrap everything with AuthProvider */}
         <ToastContainer />
         <Routes>
           <Route
@@ -43,12 +45,12 @@ function App() {
             }
           />
           <Route path="/chat" element={<ChatUI />} />
-          <Route path="/subscriptions" element={<Subscriptions />} />
+          <Route path="/addons" element={<Addons />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/accounts/email-verify" element={<EmailVerifyPage />} />
-          <Route 
-            path="/accounts/activate/:uidb64/:token/" 
-            element={<ActivationProcessor />} 
+          <Route
+            path="/accounts/activate/:uidb64/:token/"
+            element={<ActivationProcessor />}
           />
 
           {/* Admin Layout Wrapper */}
@@ -56,13 +58,12 @@ function App() {
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="sessions" element={<ChatSessionsPage />} />
-            <Route path="sessions/:sessionId" element={<ChatSessionDetail />} /> 
+            <Route path="sessions/:sessionId" element={<ChatSessionDetail />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="anonymous" element={<AnonymousActivityPage />} />
             <Route path="billing" element={<BillingPage />} />
           </Route>
         </Routes>
-
         {/* Modals */}
         {showRegister && (
           <Modal onClose={() => setShowRegister(false)}>

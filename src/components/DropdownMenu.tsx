@@ -35,10 +35,10 @@ export default function DropdownMenu() {
             Settings
           </button>
           <button
-            onClick={() => handleNavigate("/subscriptions")}
+            onClick={() => handleNavigate("/addons")}
             className="block w-full px-4 py-2 text-left text-[#E7D8C1] hover:bg-[#4B1F1F]"
           >
-            Subscriptions
+            Add-ons
           </button>
           <button
             onClick={handleLogout}

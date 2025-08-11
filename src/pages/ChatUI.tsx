@@ -583,12 +583,12 @@ export default function ChatUI() {
             </button>
             <button
               onClick={() => {
-                navigate("/subscriptions");
+                navigate("/addons");
                 setMenuOpen(false);
               }}
               className="w-full text-left px-3 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-lg active:scale-95"
             >
-              Subscriptions
+              Add-ons
             </button>
             <button
               onClick={handleSignOut}
@@ -673,31 +673,44 @@ export default function ChatUI() {
           <div className="mt-4 p-3 bg-[#4B1F1F]/50 rounded-lg text-sm">
             <div className="flex justify-between mb-1">
               <span>Time left:</span>
-              <span>{getRemainingTime()}</span>
+              <span
+                className={
+                  timeCreditsSeconds < 300 ? "text-red-400 font-bold" : ""
+                }
+              >
+                {getRemainingTime()}
+              </span>
             </div>
-            <div className="flex justify-between">
-              <span>Images left:</span>
-              <span>{getRemainingImages()}</span>
+            <div className="flex justify-between mb-3">
+              <span>Images:</span>
+              <span className="text-[#D1A75D]">$4.99 each when unlocked</span>
             </div>
-            <div className="flex flex-col gap-2 mt-3">
+
+            {/* Show time purchase buttons when time is low or always show them */}
+            <div className="space-y-2">
+              <div className="text-xs text-[#E7D8C1]/70 mb-2">
+                {timeCreditsSeconds < 300
+                  ? "⚠️ Time running low!"
+                  : "Add more time:"}
+              </div>
               <button
                 disabled={checkoutLoading}
                 onClick={() => handleBuyTime("10_min")}
-                className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50"
+                className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50 font-medium"
               >
                 Add 10 min ($9.99)
               </button>
               <button
                 disabled={checkoutLoading}
                 onClick={() => handleBuyTime("30_min")}
-                className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50"
+                className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50 font-medium"
               >
                 Add 30 min ($19.99)
               </button>
               <button
                 disabled={checkoutLoading}
                 onClick={() => handleBuyTime("60_min")}
-                className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50"
+                className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50 font-medium"
               >
                 Add 60 min ($29.99)
               </button>
@@ -742,10 +755,10 @@ export default function ChatUI() {
                   Settings
                 </button>
                 <button
-                  onClick={() => navigate("/subscriptions")}
+                  onClick={() => navigate("/addons")}
                   className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition"
                 >
-                  Subscriptions
+                  Add-ons
                 </button>
                 <button
                   onClick={handleSignOut}
@@ -956,12 +969,12 @@ export default function ChatUI() {
               <div className="flex flex-col space-y-3">
                 <button
                   onClick={() => {
-                    navigate("/subscriptions");
+                    navigate("/addons");
                     setShowUpgradePrompt(false);
                   }}
                   className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#b88e4f] font-semibold transition active:scale-95"
                 >
-                  Buy Credits
+                  Buy Time Credits
                 </button>
                 <button
                   onClick={() => setShowUpgradePrompt(false)}

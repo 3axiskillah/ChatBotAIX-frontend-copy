@@ -276,10 +276,10 @@ export default function Settings() {
                         <span className="text-sm text-green-400">Active</span>
                       ) : (
                         <button
-                          onClick={() => navigate("/subscriptions")}
+                          onClick={() => navigate("/addons")}
                           className="mt-2 px-4 py-2 bg-[#D1A75D] text-[#4B1F1F] rounded-lg hover:bg-[#c49851] font-medium"
                         >
-                          Upgrade to Premium
+                          Buy Time Credits
                         </button>
                       )}
                     </div>

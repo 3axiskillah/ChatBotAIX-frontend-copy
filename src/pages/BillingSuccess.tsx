@@ -33,7 +33,7 @@ export default function BillingSuccess() {
 
       } catch (err) {
         console.error("Payment verification error:", err);
-        window.location.href = "/subscriptions?payment_error=true";
+        window.location.href = "/addons?payment_error=true";
       } finally {
         document.body.style.overflow = '';
       }
