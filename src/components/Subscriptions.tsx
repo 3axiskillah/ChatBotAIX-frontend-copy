@@ -120,18 +120,18 @@ export default function Subscriptions() {
   return (
     <div className="min-h-screen bg-[#4B1F1F] text-[#E7D8C1] p-8 flex flex-col items-center">
       <h1 className="text-4xl font-bold mb-4 text-[#D1A75D] text-center">
-        Choose your Plan
+        Add-ons & Credits
       </h1>
       <p className="text-[#E7D8C1] mb-2 text-center">
-        100% anonymous. You can cancel anytime.
+        Pay only for what you use. Credits never expire.
       </p>
 
       <h2 className="text-3xl font-bold mt-8 mb-2 text-[#D1A75D] text-center">
-        Get An Exclusive Discount Only Today!
+        Time Credits & Image Unlocks
       </h2>
       <p className="text-[#E7D8C1] mb-8 text-center text-lg">
-        Up to <span className="text-[#D1A75D] font-bold">33%</span> off for
-        first subscription
+        Images are <span className="text-[#D1A75D] font-bold">$4.99 each</span>{" "}
+        when sent
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
@@ -186,24 +186,17 @@ export default function Subscriptions() {
         ))}
         <div className="bg-[#3A1818] rounded-lg p-6 border-2 border-transparent">
           <h3 className="text-xl font-bold text-[#D1A75D] mb-2">
-            Image Credits
+            Image Unlocks
           </h3>
-          <p className="text-sm mb-4">Pay per picture. Credits never expire.</p>
+          <p className="text-sm mb-4">
+            Images are $4.99 each when sent. No pre-purchase needed.
+          </p>
           <div className="space-y-2">
-            <button
-              onClick={() => handleBuyImages(10)}
-              disabled={isLoading.button}
-              className="w-full py-2 rounded bg-[#D1A75D] text-[#4B1F1F] font-bold hover:bg-[#b88e4f] transition"
-            >
-              Buy 10 Images
-            </button>
-            <button
-              onClick={() => handleBuyImages(50)}
-              disabled={isLoading.button}
-              className="w-full py-2 rounded bg-[#2e1414] text-[#E7D8C1] font-bold hover:bg-[#3a1a1a] transition"
-            >
-              Buy 50 Images
-            </button>
+            <div className="text-center p-4 bg-[#4B1F1F] rounded-lg">
+              <p className="text-sm text-[#E7D8C1]/80">
+                Images are automatically charged when you unlock them in chat
+              </p>
+            </div>
           </div>
         </div>
         <div className="bg-[#3A1818] rounded-lg p-6 border-2 border-transparent">
@@ -254,14 +247,14 @@ export default function Subscriptions() {
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
         <div className="bg-[#3A1818] p-6 rounded-lg">
           <h3 className="text-xl font-bold mb-4 text-[#D1A75D]">
-            Premium Benefits
+            How It Works
           </h3>
           <ul className="space-y-2">
-            <li>• Amber All to yourself</li>
-            <li>• Unlimited text messages</li>
-            <li>• Remove image blur</li>
-            <li>• unlimited images</li>
-            <li>• Fast response time</li>
+            <li>• Buy time credits to chat with Amber</li>
+            <li>• Images are $4.99 each when unlocked</li>
+            <li>• No subscriptions - pay only for what you use</li>
+            <li>• Credits never expire</li>
+            <li>• 100% anonymous experience</li>
           </ul>
         </div>
 
@@ -271,10 +264,10 @@ export default function Subscriptions() {
           </h3>
           <ul className="space-y-2">
             <li>• 100% anonymous experience</li>
-            <li>• No personal data required</li>
-            <li>• Cancel anytime with one click</li>
+            <li>• No subscriptions or commitments</li>
+            <li>• Pay only for what you use</li>
             <li>• Secure payment processing</li>
-            <li>• 24/7 customer support</li>
+            <li>• Credits never expire</li>
           </ul>
         </div>
       </div>

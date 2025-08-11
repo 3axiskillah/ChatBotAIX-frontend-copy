@@ -701,13 +701,6 @@ export default function ChatUI() {
               >
                 Add 60 min ($29.99)
               </button>
-              <button
-                disabled={checkoutLoading}
-                onClick={() => handleBuyImages(10)}
-                className="w-full px-2 py-1 bg-[#2e1414] text-[#E7D8C1] rounded text-xs hover:bg-[#3a1a1a] disabled:opacity-50"
-              >
-                Buy 10 images ($49.90)
-              </button>
             </div>
           </div>
         )}
