@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
+import { loadStripe } from "@stripe/stripe-js";
 
 interface Message {
   id: number;
@@ -10,6 +11,8 @@ interface Message {
   timestamp?: string;
   blurred?: boolean;
   upsell?: boolean;
+  serverMessageId?: number;
+  locked?: boolean;
 }
 
 interface User {
@@ -17,7 +20,6 @@ interface User {
   email: string;
   is_premium: boolean;
   premium_until?: string;
-  images_sent_today?: number;
 }
 
 interface ApiChatResponse {
@@ -38,16 +40,18 @@ export default function ChatUI() {
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [imagesSent, setImagesSent] = useState(0);
+  const [imageCredits, setImageCredits] = useState<number>(0);
+  const [timeCreditsSeconds, setTimeCreditsSeconds] = useState<number>(0);
   const [lastSignOutTime, setLastSignOutTime] = useState<number | null>(null);
   const [keepGalleryOpen, setKeepGalleryOpen] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const DAILY_LIMIT_SECONDS = 40 * 60;
+  // no daily limit when using time credits
 
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     setTimeout(() => {
@@ -59,22 +63,9 @@ export default function ChatUI() {
     }, 50);
   };
 
-  // On initial mount, always scroll to bottom and sync imagesSent from localStorage
+  // On initial mount, always scroll to bottom
   useEffect(() => {
     scrollToBottom("auto");
-    // Sync imagesSent from localStorage for correct UI
-    const today = new Date().toISOString().slice(0, 10);
-    const lastReset = localStorage.getItem("imageResetDate");
-    let imagesSentToday = parseInt(
-      localStorage.getItem("imagesSentToday") || "0",
-      10
-    );
-    if (!lastReset || lastReset !== today) {
-      imagesSentToday = 0;
-      localStorage.setItem("imageResetDate", today);
-      localStorage.setItem("imagesSentToday", "0");
-    }
-    setImagesSent(imagesSentToday);
     // eslint-disable-next-line
   }, []);
 
@@ -116,11 +107,12 @@ export default function ChatUI() {
   useEffect(() => {
     const checkAuth = async (forceRefresh = false) => {
       try {
-        const [userData, subscriptionData] = await Promise.all([
+        const [userData, subscriptionData, credits] = await Promise.all([
           apiFetch("/api/accounts/me/"),
           apiFetch(
             `/api/billing/subscription/status/?force_refresh=${forceRefresh}`
           ),
+          apiFetch("/api/billing/credits/status/"),
         ]);
 
         if (!userData?.email) throw new Error();
@@ -134,8 +126,12 @@ export default function ChatUI() {
           email: userData.email,
           is_premium: isPremium,
           premium_until: subscriptionData?.current_period_end,
-          images_sent_today: subscriptionData?.images_sent_today || 0,
         });
+
+        if (credits) {
+          setImageCredits(credits.image_credits || 0);
+          setTimeCreditsSeconds(credits.time_credits_seconds || 0);
+        }
 
         if (isPremium) {
           localStorage.removeItem("chat_limits");
@@ -166,6 +162,36 @@ export default function ChatUI() {
               sender: "ai",
             },
           ]);
+          navigate(window.location.pathname, { replace: true });
+        } else if (params.get("purchase") === "images_success") {
+          try {
+            const newCredits = await apiFetch("/api/billing/credits/status/");
+            setImageCredits(newCredits.image_credits || 0);
+            setTimeCreditsSeconds(newCredits.time_credits_seconds || 0);
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now(),
+                text: "🖼️ Image credits added! Enjoy full images.",
+                sender: "ai",
+              },
+            ]);
+          } catch {}
+          navigate(window.location.pathname, { replace: true });
+        } else if (params.get("purchase") === "time_success") {
+          try {
+            const newCredits = await apiFetch("/api/billing/credits/status/");
+            setImageCredits(newCredits.image_credits || 0);
+            setTimeCreditsSeconds(newCredits.time_credits_seconds || 0);
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now(),
+                text: "⏱️ Time credits added! Let's keep going.",
+                sender: "ai",
+              },
+            ]);
+          } catch {}
           navigate(window.location.pathname, { replace: true });
         }
       } catch {
@@ -254,64 +280,19 @@ export default function ChatUI() {
 
   const checkTimeLimit = () => {
     if (user?.is_premium) return true;
-
-    const today = new Date().toISOString().slice(0, 10);
-    const usedDate = localStorage.getItem("chat_last_used_date");
-    const usedSeconds = parseInt(
-      localStorage.getItem("chat_seconds_used") || "0",
-      10
-    );
-
-    if (usedDate !== today) {
-      localStorage.setItem("chat_last_used_date", today);
-      localStorage.setItem("chat_seconds_used", "0");
-      return true;
-    }
-
-    if (usedSeconds >= DAILY_LIMIT_SECONDS) {
-      setShowUpgradePrompt(true);
-      return false;
-    }
-
-    return true;
+    if (timeCreditsSeconds > 0) return true;
+    setShowUpgradePrompt(true);
+    return false;
   };
 
   const checkImageLimit = () => {
-    if (user?.is_premium) return { canSend: true, shouldBlur: false };
-
-    const today = new Date().toISOString().slice(0, 10);
-    const lastReset = localStorage.getItem("imageResetDate");
-    const imagesSentToday = parseInt(
-      localStorage.getItem("imagesSentToday") || "0",
-      10
-    );
-
-    if (!lastReset || lastReset !== today) {
-      localStorage.setItem("imageResetDate", today);
-      localStorage.setItem("imagesSentToday", "0");
-      return { canSend: true, shouldBlur: false };
-    }
-
-    return {
-      canSend: imagesSentToday < 3,
-      shouldBlur: imagesSentToday >= 3,
-    };
+    // Always allow generating a blurred preview; unblur only if we have credits
+    return { canSend: true, shouldBlur: imageCredits <= 0 };
   };
 
   const incrementTimeUsed = (seconds: number): void => {
-    const today = new Date().toISOString().slice(0, 10);
-    const usedDate = localStorage.getItem("chat_last_used_date");
-    const usedSeconds = parseInt(
-      localStorage.getItem("chat_seconds_used") || "0",
-      10
-    );
-
-    if (usedDate !== today) {
-      localStorage.setItem("chat_last_used_date", today);
-      localStorage.setItem("chat_seconds_used", String(seconds));
-    } else {
-      localStorage.setItem("chat_seconds_used", String(usedSeconds + seconds));
-    }
+    // Update local display only; authoritative usage is reported to backend
+    setTimeCreditsSeconds((prev) => Math.max(0, prev - seconds));
   };
 
   const handleSignOut = async () => {
@@ -344,12 +325,8 @@ export default function ChatUI() {
     }
 
     // If image limit reached, allow chat but set allow_image to false
-    let allowImage = imagesAllowed;
-    let shouldBlurImage = shouldBlur;
-    if (!imagesAllowed) {
-      allowImage = false;
-      shouldBlurImage = false;
-    }
+    let allowImage = imagesAllowed; // always true for preview
+    let shouldBlurImage = shouldBlur; // blur if no credits
 
     const newMsg: Message = {
       id: Date.now(),
@@ -369,9 +346,10 @@ export default function ChatUI() {
         user_id: user.id,
         prompt: message,
         user_type: user.is_premium ? "premium" : "free",
-        images_sent: imagesSent,
+        images_sent: 0,
         should_blur: shouldBlurImage,
         allow_image: allowImage,
+        session_key: `u${user.id}`,
         history: updatedMessages.slice(-10).map((msg) => ({
           role: msg.sender === "user" ? "user" : "assistant",
           content: msg.text,
@@ -396,61 +374,59 @@ export default function ChatUI() {
 
       // Calculate and increment time used right after successful response
       const processingTime = Math.floor((Date.now() - startTime) / 1000);
-      incrementTimeUsed(processingTime);
+      // Report usage to backend (will deduct credits server-side).
+      // Prefer server's remaining balance; fall back to local decrement on error
+      try {
+        const usage = await apiFetch("/api/billing/usage/report/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: { seconds_used: processingTime },
+        });
+        if (usage && typeof usage.time_credits_seconds === "number") {
+          setTimeCreditsSeconds(Math.max(0, usage.time_credits_seconds));
+        } else {
+          incrementTimeUsed(processingTime);
+        }
+      } catch {
+        incrementTimeUsed(processingTime);
+      }
+
+      // Do NOT expose real image URL when locked. Always require explicit unlock.
+      const willHaveImage = Boolean(fullImageUrl);
 
       const aiReply: Message = {
         id: Date.now() + 1,
         text: data.response || "I'm having trouble responding right now...",
         sender: "ai",
-        image_url: fullImageUrl,
-        blurred: data.blurred || false,
+        image_url: willHaveImage ? undefined : undefined,
+        blurred: willHaveImage ? true : false,
+        locked: willHaveImage ? true : false,
         upsell: data.upsell,
       };
 
       setMessages((prev) => [...prev, aiReply]);
 
       // Rest of your code remains the same...
-      await apiFetch("/api/chat/submit/", {
+      const submitRes = await apiFetch("/api/chat/submit/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: message,
           reply: aiReply.text,
           image_url: fullImageUrl || null,
-          blurred: aiReply.blurred || false,
+          blurred: willHaveImage ? true : false,
         }),
       });
 
-      if (aiReply.image_url && allowImage) {
-        const today = new Date().toISOString().slice(0, 10);
-        const lastReset = localStorage.getItem("imageResetDate");
-        let imagesSentToday = parseInt(
-          localStorage.getItem("imagesSentToday") || "0",
-          10
+      // Attach server message id for future unlock
+      const serverMessageId = submitRes?.message_id as number | undefined;
+      if (serverMessageId) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === aiReply.id ? { ...m, serverMessageId } : m))
         );
-
-        if (!lastReset || lastReset !== today) {
-          localStorage.setItem("imageResetDate", today);
-          imagesSentToday = 0;
-        }
-
-        imagesSentToday++;
-        localStorage.setItem("imagesSentToday", imagesSentToday.toString());
-        setImagesSent(imagesSentToday);
-        setGalleryImages((prev) => [...prev, aiReply.image_url!]);
-      } else {
-        // Always update imagesSent from localStorage after sending a message
-        const today = new Date().toISOString().slice(0, 10);
-        const lastReset = localStorage.getItem("imageResetDate");
-        let imagesSentToday = parseInt(
-          localStorage.getItem("imagesSentToday") || "0",
-          10
-        );
-        if (!lastReset || lastReset !== today) {
-          imagesSentToday = 0;
-        }
-        setImagesSent(imagesSentToday);
       }
+
+      // Do not push to gallery until unlocked
 
       if (data.upsell) {
         setShowUpgradePrompt(true);
@@ -473,32 +449,12 @@ export default function ChatUI() {
 
   const getRemainingTime = () => {
     if (user?.is_premium) return "Unlimited";
-
-    const usedSeconds = parseInt(
-      localStorage.getItem("chat_seconds_used") || "0",
-      10
-    );
-    const remainingMinutes = Math.floor(
-      (DAILY_LIMIT_SECONDS - usedSeconds) / 60
-    );
+    const remainingMinutes = Math.floor(timeCreditsSeconds / 60);
     return `${remainingMinutes} mins`;
   };
 
   const getRemainingImages = () => {
-    if (user?.is_premium) return "Unlimited";
-
-    const today = new Date().toISOString().slice(0, 10);
-    const lastReset = localStorage.getItem("imageResetDate");
-    const imagesSentToday = parseInt(
-      localStorage.getItem("imagesSentToday") || "0",
-      10
-    );
-
-    if (!lastReset || lastReset !== today) {
-      return "3 images";
-    }
-
-    return `${3 - imagesSentToday} images`;
+    return `${imageCredits} images`;
   };
 
   const handleImageClick = (url: string) => {
@@ -515,6 +471,67 @@ export default function ChatUI() {
       setSidebarOpen(false);
     }
     setKeepGalleryOpen(false);
+  };
+
+  // In-chat purchases
+  const handleBuyImages = async (quantity: number) => {
+    try {
+      setCheckoutLoading(true);
+      const stripe = await loadStripe(
+        "pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX"
+      );
+      const { sessionId } = await apiFetch(
+        "/api/billing/create-checkout-session/images/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: { quantity },
+        }
+      );
+      const { error } = await stripe!.redirectToCheckout({ sessionId });
+      if (error) throw error;
+    } catch (e) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          text: "Payment failed. Please try again.",
+          sender: "ai",
+        },
+      ]);
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const handleBuyTime = async (tier: string) => {
+    try {
+      setCheckoutLoading(true);
+      const stripe = await loadStripe(
+        "pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX"
+      );
+      const { sessionId } = await apiFetch(
+        "/api/billing/create-checkout-session/time/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: { tier },
+        }
+      );
+      const { error } = await stripe!.redirectToCheckout({ sessionId });
+      if (error) throw error;
+    } catch (e) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          text: "Payment failed. Please try again.",
+          sender: "ai",
+        },
+      ]);
+    } finally {
+      setCheckoutLoading(false);
+    }
   };
 
   return (
@@ -662,6 +679,36 @@ export default function ChatUI() {
               <span>Images left:</span>
               <span>{getRemainingImages()}</span>
             </div>
+            <div className="flex flex-col gap-2 mt-3">
+              <button
+                disabled={checkoutLoading}
+                onClick={() => handleBuyTime("10_min")}
+                className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50"
+              >
+                Add 10 min ($9.99)
+              </button>
+              <button
+                disabled={checkoutLoading}
+                onClick={() => handleBuyTime("30_min")}
+                className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50"
+              >
+                Add 30 min ($19.99)
+              </button>
+              <button
+                disabled={checkoutLoading}
+                onClick={() => handleBuyTime("60_min")}
+                className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50"
+              >
+                Add 60 min ($29.99)
+              </button>
+              <button
+                disabled={checkoutLoading}
+                onClick={() => handleBuyImages(10)}
+                className="w-full px-2 py-1 bg-[#2e1414] text-[#E7D8C1] rounded text-xs hover:bg-[#3a1a1a] disabled:opacity-50"
+              >
+                Buy 10 images ($49.90)
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -783,7 +830,39 @@ export default function ChatUI() {
                             height: "100%",
                             padding: 0,
                           }}
-                          onClick={() => setShowUpgradePrompt(true)}
+                          onClick={async () => {
+                            if (!msg.serverMessageId) {
+                              setShowUpgradePrompt(true);
+                              return;
+                            }
+                            try {
+                              const res = await apiFetch(
+                                `/api/chat/messages/${msg.serverMessageId}/unlock_image/`,
+                                { method: "POST" }
+                              );
+                              if (res?.ok && res.image_url) {
+                                setImageCredits(
+                                  res.image_credits ?? imageCredits
+                                );
+                                setMessages((prev) =>
+                                  prev.map((m) =>
+                                    m.id === msg.id
+                                      ? {
+                                          ...m,
+                                          image_url: res.image_url,
+                                          blurred: false,
+                                          locked: false,
+                                        }
+                                      : m
+                                  )
+                                );
+                              } else if (res?.error === "NO_CREDITS") {
+                                setShowUpgradePrompt(true);
+                              }
+                            } catch {
+                              setShowUpgradePrompt(true);
+                            }
+                          }}
                         >
                           <span className="text-white font-bold bg-black/50 p-2 rounded">
                             Premium Content
@@ -872,14 +951,14 @@ export default function ChatUI() {
           <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4 touch-pan-y">
             <div className="bg-[#4B1F1F] p-6 rounded-lg max-w-md w-full animate-popIn">
               <h2 className="text-xl md:text-2xl font-bold text-[#E7D8C1] mb-4 text-center">
-                {imagesSent >= 3
-                  ? "🚫 Image Limit Reached"
-                  : "⏳ Time Limit Reached"}
+                {imageCredits <= 0
+                  ? "💳 Buy Image Credits"
+                  : "⏳ Add Time Credits"}
               </h2>
               <p className="text-[#E7D8C1] mb-6 text-center">
-                {imagesSent >= 3
-                  ? "Free users get 3 images per day. Upgrade for unlimited access!"
-                  : "Free users get 40 minutes per day. Upgrade for unlimited chat!"}
+                {imageCredits <= 0
+                  ? "You’re out of image credits. Purchase more to unlock full images."
+                  : "You’re out of time credits. Purchase more to continue chatting."}
               </p>
               <div className="flex flex-col space-y-3">
                 <button
@@ -889,15 +968,13 @@ export default function ChatUI() {
                   }}
                   className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#b88e4f] font-semibold transition active:scale-95"
                 >
-                  Upgrade to Premium
+                  Buy Credits
                 </button>
                 <button
                   onClick={() => setShowUpgradePrompt(false)}
                   className="bg-[#3A1A1A] text-[#E7D8C1] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#2e1414] font-semibold transition active:scale-95"
                 >
-                  {imagesSent >= 3
-                    ? "Continue Without Images"
-                    : "Continue With Remaining Time"}
+                  Continue
                 </button>
               </div>
             </div>

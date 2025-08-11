@@ -5,32 +5,32 @@ import { loadStripe } from "@stripe/stripe-js";
 
 const PLANS = {
   monthly: {
-    id: 'monthly',
-    stripePriceId: 'price_1RiApKDGzHpWMy7sQggiZnRT',
-    name: '1 Month',
-    price: '$12/month',
-    originalPrice: '$15',
-    description: 'Billed monthly',
-    highlight: false
+    id: "monthly",
+    stripePriceId: "price_1RiApKDGzHpWMy7sQggiZnRT",
+    name: "1 Month",
+    price: "$12/month",
+    originalPrice: "$15",
+    description: "Billed monthly",
+    highlight: false,
   },
   quarterly: {
-    id: 'quarterly',
-    stripePriceId: 'price_1RiB19DGzHpWMy7spd8avwxU',
-    name: '3 Months',
-    price: '$10/month',
-    originalPrice: '$30 billed quarterly',
-    description: 'Save 17% vs monthly',
-    highlight: false
+    id: "quarterly",
+    stripePriceId: "price_1RiB19DGzHpWMy7spd8avwxU",
+    name: "3 Months",
+    price: "$10/month",
+    originalPrice: "$30 billed quarterly",
+    description: "Save 17% vs monthly",
+    highlight: false,
   },
   annual: {
-    id: 'annual',
-    stripePriceId: 'price_1RiB1qDGzHpWMy7sBNJAQ8LY',
-    name: '1 Year',
-    price: '$8/month',
-    originalPrice: '$96 billed yearly',
-    description: 'Best value (33% savings)',
-    highlight: true
-  }
+    id: "annual",
+    stripePriceId: "price_1RiB1qDGzHpWMy7sBNJAQ8LY",
+    name: "1 Year",
+    price: "$8/month",
+    originalPrice: "$96 billed yearly",
+    description: "Best value (33% savings)",
+    highlight: true,
+  },
 };
 
 export default function Subscriptions() {
@@ -41,15 +41,20 @@ export default function Subscriptions() {
   const handleSubscribe = async (priceId: string) => {
     try {
       setIsLoading({ ...isLoading, button: true });
-      
-      const stripe = await loadStripe("pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX");
-      const { sessionId } = await apiFetch("/api/billing/create-checkout-session/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ price_id: priceId }),
-      });
+
+      const stripe = await loadStripe(
+        "pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX"
+      );
+      const { sessionId } = await apiFetch(
+        "/api/billing/create-checkout-session/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ price_id: priceId }),
+        }
+      );
 
       const { error } = await stripe!.redirectToCheckout({ sessionId });
 
@@ -64,6 +69,54 @@ export default function Subscriptions() {
     }
   };
 
+  const handleBuyImages = async (quantity: number) => {
+    try {
+      setIsLoading({ ...isLoading, button: true });
+      const stripe = await loadStripe(
+        "pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX"
+      );
+      const { sessionId } = await apiFetch(
+        "/api/billing/create-checkout-session/images/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: { quantity },
+        }
+      );
+      const { error } = await stripe!.redirectToCheckout({ sessionId });
+      if (error) throw error;
+    } catch (error) {
+      alert("Checkout failed. Please try again.");
+      console.error("Image credit purchase error:", error);
+    } finally {
+      setIsLoading({ ...isLoading, button: false });
+    }
+  };
+
+  const handleBuyTime = async (tier: string) => {
+    try {
+      setIsLoading({ ...isLoading, button: true });
+      const stripe = await loadStripe(
+        "pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX"
+      );
+      const { sessionId } = await apiFetch(
+        "/api/billing/create-checkout-session/time/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: { tier },
+        }
+      );
+      const { error } = await stripe!.redirectToCheckout({ sessionId });
+      if (error) throw error;
+    } catch (error) {
+      alert("Checkout failed. Please try again.");
+      console.error("Time credit purchase error:", error);
+    } finally {
+      setIsLoading({ ...isLoading, button: false });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#4B1F1F] text-[#E7D8C1] p-8 flex flex-col items-center">
       <h1 className="text-4xl font-bold mb-4 text-[#D1A75D] text-center">
@@ -72,19 +125,24 @@ export default function Subscriptions() {
       <p className="text-[#E7D8C1] mb-2 text-center">
         100% anonymous. You can cancel anytime.
       </p>
-      
+
       <h2 className="text-3xl font-bold mt-8 mb-2 text-[#D1A75D] text-center">
         Get An Exclusive Discount Only Today!
       </h2>
       <p className="text-[#E7D8C1] mb-8 text-center text-lg">
-        Up to <span className="text-[#D1A75D] font-bold">33%</span> off for first subscription
+        Up to <span className="text-[#D1A75D] font-bold">33%</span> off for
+        first subscription
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl w-full">
         {Object.entries(PLANS).map(([planKey, plan]) => (
-          <div 
+          <div
             key={planKey}
-            className={`bg-[#3A1818] rounded-lg p-6 border-2 ${selectedPlan === planKey ? "border-[#D1A75D]" : "border-transparent"} transition-all cursor-pointer`}
+            className={`bg-[#3A1818] rounded-lg p-6 border-2 ${
+              selectedPlan === planKey
+                ? "border-[#D1A75D]"
+                : "border-transparent"
+            } transition-all cursor-pointer`}
             onClick={() => setSelectedPlan(planKey)}
           >
             <div className="flex justify-between items-start">
@@ -97,29 +155,86 @@ export default function Subscriptions() {
                 <h3 className="text-xl font-bold">{plan.name}</h3>
               </div>
             </div>
-            
+
             <div className="mt-4">
               {plan.originalPrice && (
-                <p className="text-[#E7D8C1]/60 line-through">{plan.originalPrice}</p>
+                <p className="text-[#E7D8C1]/60 line-through">
+                  {plan.originalPrice}
+                </p>
               )}
               <p className="text-2xl font-bold">{plan.price}</p>
               {plan.description && (
                 <p className="text-sm mt-2">{plan.description}</p>
               )}
             </div>
-            
+
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 handleSubscribe(plan.stripePriceId);
               }}
               disabled={isLoading.button}
-              className={`w-full mt-6 py-2 rounded font-bold ${selectedPlan === planKey ? "bg-[#D1A75D] text-[#4B1F1F]" : "bg-[#2e1414] text-[#E7D8C1]"}`}
+              className={`w-full mt-6 py-2 rounded font-bold ${
+                selectedPlan === planKey
+                  ? "bg-[#D1A75D] text-[#4B1F1F]"
+                  : "bg-[#2e1414] text-[#E7D8C1]"
+              }`}
             >
               {isLoading.button ? "Processing..." : "Select Plan"}
             </button>
           </div>
         ))}
+        <div className="bg-[#3A1818] rounded-lg p-6 border-2 border-transparent">
+          <h3 className="text-xl font-bold text-[#D1A75D] mb-2">
+            Image Credits
+          </h3>
+          <p className="text-sm mb-4">Pay per picture. Credits never expire.</p>
+          <div className="space-y-2">
+            <button
+              onClick={() => handleBuyImages(10)}
+              disabled={isLoading.button}
+              className="w-full py-2 rounded bg-[#D1A75D] text-[#4B1F1F] font-bold hover:bg-[#b88e4f] transition"
+            >
+              Buy 10 Images
+            </button>
+            <button
+              onClick={() => handleBuyImages(50)}
+              disabled={isLoading.button}
+              className="w-full py-2 rounded bg-[#2e1414] text-[#E7D8C1] font-bold hover:bg-[#3a1a1a] transition"
+            >
+              Buy 50 Images
+            </button>
+          </div>
+        </div>
+        <div className="bg-[#3A1818] rounded-lg p-6 border-2 border-transparent">
+          <h3 className="text-xl font-bold text-[#D1A75D] mb-2">
+            Time Credits
+          </h3>
+          <p className="text-sm mb-4">Only pay for minutes you use.</p>
+          <div className="space-y-2">
+            <button
+              onClick={() => handleBuyTime("10_min")}
+              disabled={isLoading.button}
+              className="w-full py-2 rounded bg-[#D1A75D] text-[#4B1F1F] font-bold hover:bg-[#b88e4f] transition"
+            >
+              Buy 10 Minutes ($9.99)
+            </button>
+            <button
+              onClick={() => handleBuyTime("30_min")}
+              disabled={isLoading.button}
+              className="w-full py-2 rounded bg-[#D1A75D] text-[#4B1F1F] font-bold hover:bg-[#b88e4f] transition"
+            >
+              Buy 30 Minutes ($19.99)
+            </button>
+            <button
+              onClick={() => handleBuyTime("60_min")}
+              disabled={isLoading.button}
+              className="w-full py-2 rounded bg-[#2e1414] text-[#E7D8C1] font-bold hover:bg-[#3a1a1a] transition"
+            >
+              Buy 60 Minutes ($29.99)
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="mt-12 text-sm text-[#E7D8C1] text-center space-y-2 max-w-2xl">
@@ -138,7 +253,9 @@ export default function Subscriptions() {
 
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
         <div className="bg-[#3A1818] p-6 rounded-lg">
-          <h3 className="text-xl font-bold mb-4 text-[#D1A75D]">Premium Benefits</h3>
+          <h3 className="text-xl font-bold mb-4 text-[#D1A75D]">
+            Premium Benefits
+          </h3>
           <ul className="space-y-2">
             <li>• Amber All to yourself</li>
             <li>• Unlimited text messages</li>
@@ -149,7 +266,9 @@ export default function Subscriptions() {
         </div>
 
         <div className="bg-[#3A1818] p-6 rounded-lg">
-          <h3 className="text-xl font-bold mb-4 text-[#D1A75D]">Why Choose Us?</h3>
+          <h3 className="text-xl font-bold mb-4 text-[#D1A75D]">
+            Why Choose Us?
+          </h3>
           <ul className="space-y-2">
             <li>• 100% anonymous experience</li>
             <li>• No personal data required</li>
