@@ -2,6 +2,11 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { apiFetch } from "../utils/api";
 import { useNavigate } from "react-router-dom";
+import {
+  validateEmail,
+  validatePasswordStrength,
+  sanitizeInput,
+} from "../utils/security";
 
 type RegisterProps = {
   onSwitchToLogin: () => void;
@@ -26,12 +31,16 @@ export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
       toast.error("Username must be at least 3 characters");
       return false;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    if (!validateEmail(form.email)) {
       toast.error("Please enter a valid email address");
       return false;
     }
-    if (form.password.length < 8) {
-      toast.error("Password must be at least 8 characters");
+
+    const passwordValidation = validatePasswordStrength(form.password);
+    if (!passwordValidation.isValid) {
+      toast.error(
+        `Password requirements: ${passwordValidation.errors.join(", ")}`
+      );
       return false;
     }
     return true;
@@ -48,7 +57,7 @@ export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
         email: form.email.toLowerCase().trim(),
         password: form.password,
         anon_id: localStorage.getItem("anon_id"),
-        chat_history: sessionStorage.getItem("anon_chat")
+        chat_history: sessionStorage.getItem("anon_chat"),
       };
 
       const response = await apiFetch("/api/accounts/register/", {
@@ -62,8 +71,10 @@ export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
         sessionStorage.removeItem("anon_chat");
         localStorage.setItem("pending_email", form.email);
         sessionStorage.setItem("anon_migration_needed", "true");
-        toast.success(response.detail || "✅ Account created! Check your email.");
-        
+        toast.success(
+          response.detail || "✅ Account created! Check your email."
+        );
+
         if (onClose) onClose();
         navigate("/accounts/email-verify?status=sent");
       } else {
@@ -72,8 +83,8 @@ export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
     } catch (err) {
       console.error("Registration error:", err);
       toast.error(
-        err instanceof Error 
-          ? err.message 
+        err instanceof Error
+          ? err.message
           : "Registration failed. Please try again."
       );
     } finally {

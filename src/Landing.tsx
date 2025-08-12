@@ -1,13 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import LandingChatPreview from "./components/LandingChatPreview";
+import { useState } from "react";
 
-type ChatMessage = {
-  id: number;
-  text: string;
-  sender: "user" | "ai";
-  image_url?: string;
-  blurred?: boolean;
-};
+
 
 type LandingProps = {
   onRegisterClick: () => void;
@@ -15,61 +8,7 @@ type LandingProps = {
 };
 
 export default function Landing({ onRegisterClick, onLoginClick }: LandingProps) {
-  const [showChatPreview, setShowChatPreview] = useState(false);
-  const chatPreviewRef = useRef<HTMLDivElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Initialize with default messages
-  const initialMessages: ChatMessage[] = [
-    { id: 1, text: "Hey there 👋 I'm Amber...", sender: "ai" },
-    { id: 2, text: "Let's dive into your wildest fantasies...", sender: "ai" },
-  ];
-
-  // State management with sessionStorage persistence
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
-    try {
-      const saved = sessionStorage.getItem("amber_chat_messages");
-      return saved ? JSON.parse(saved) : initialMessages;
-    } catch {
-      return initialMessages;
-    }
-  });
-
-  // Timer management - single source of truth
-  const [chatTimeLeft, setChatTimeLeft] = useState<number>(() => {
-    const savedTime = sessionStorage.getItem("amber_chat_timeLeft");
-    return savedTime ? Math.max(0, parseInt(savedTime)) : 600; // 10 minutes default
-  });
-
-  // Persist messages and timer to sessionStorage
-  useEffect(() => {
-    sessionStorage.setItem("amber_chat_messages", JSON.stringify(chatMessages));
-    sessionStorage.setItem("amber_chat_timeLeft", chatTimeLeft.toString());
-  }, [chatMessages, chatTimeLeft]);
-
-  // Filter valid messages
-  const validMessages = chatMessages.filter(
-    (msg): msg is ChatMessage =>
-      msg && typeof msg === "object" && "id" in msg && 
-      "text" in msg && "sender" in msg &&
-      (msg.sender === "user" || msg.sender === "ai")
-  );
-
-  // Auto-scroll chat preview
-  useEffect(() => {
-    if (!showChatPreview && chatPreviewRef.current) {
-      chatPreviewRef.current.scrollTop = chatPreviewRef.current.scrollHeight;
-    }
-  }, [validMessages, showChatPreview]);
-
-  // Cleanup timer on unmount if not migrating
-  useEffect(() => {
-    return () => {
-      if (!sessionStorage.getItem("anon_migration_needed")) {
-        sessionStorage.removeItem("amber_chat_timeLeft");
-      }
-    };
-  }, []);
 
   return (
     <div className="min-h-screen bg-[#4B1F1F] text-[#E7D8C1] flex flex-col">
@@ -154,7 +93,7 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
         {/* Chat Preview */}
         <div
           className="lg:w-1/2 bg-[#2B1A1A] rounded-2xl p-4 sm:p-6 shadow-xl cursor-pointer hover:scale-[1.02] transition-transform flex flex-col"
-          onClick={() => setShowChatPreview(true)}
+          onClick={() => onRegisterClick()}
           style={{ maxHeight: "calc(100vh - 200px)" }}
         >
           <div className="flex justify-between items-center mb-4">
@@ -162,35 +101,22 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
             <span className="text-xs text-green-400">Online</span>
           </div>
 
-          <div
-            ref={chatPreviewRef}
-            className="flex-1 overflow-y-auto mb-4 pr-2 custom-scrollbar"
-            style={{ minHeight: "150px" }}
-          >
-            {validMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`p-3 rounded-lg mb-2 w-fit max-w-[90%] sm:max-w-[80%] text-sm sm:text-base ${
-                  msg.sender === "user"
-                    ? "ml-auto bg-[#E7D8C1] text-[#4B1F1F]"
-                    : "bg-[#D14A3C] text-white"
-                }`}
-              >
-                {msg.text}
-              </div>
-            ))}
-            {validMessages.length > 0 &&
-              validMessages[validMessages.length - 1].sender === "user" && (
-                <div className="text-sm italic text-[#E7D8C1]">
-                  Amber is typing...
-                </div>
-              )}
+          <div className="flex-1 overflow-y-auto mb-4 pr-2 custom-scrollbar" style={{ minHeight: "150px" }}>
+            <div className="p-3 rounded-lg mb-2 w-fit max-w-[90%] sm:max-w-[80%] text-sm sm:text-base bg-[#D14A3C] text-white">
+              Hey there 👋 I'm Amber...
+            </div>
+            <div className="p-3 rounded-lg mb-2 w-fit max-w-[90%] sm:max-w-[80%] text-sm sm:text-base bg-[#D14A3C] text-white">
+              Let's dive into your wildest fantasies...
+            </div>
+            <div className="text-sm italic text-[#E7D8C1]">
+              Amber is typing...
+            </div>
           </div>
 
           <div className="mt-auto">
             <input
               type="text"
-              placeholder="Ask about your wildest desires..."
+              placeholder="Register to start chatting..."
               className="w-full p-2 rounded border text-sm bg-[#4B1F1F] text-[#E7D8C1] placeholder-[#E7D8C1] border-[#D1A75D]"
               disabled
             />
@@ -198,20 +124,7 @@ export default function Landing({ onRegisterClick, onLoginClick }: LandingProps)
         </div>
       </main>
 
-      {/* Chat Preview Modal */}
-      {showChatPreview && (
-        <LandingChatPreview
-          onClose={() => setShowChatPreview(false)}
-          onRegisterClick={() => {
-            setShowChatPreview(false);
-            onRegisterClick();
-          }}
-          messages={validMessages}
-          setMessages={setChatMessages}
-          timeLeft={chatTimeLeft}
-          setTimeLeft={setChatTimeLeft}
-        />
-      )}
+
     </div>
   );
 }

@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 import { loadStripe } from "@stripe/stripe-js";
+import { validateChatMessage, sanitizeInput } from "../utils/security";
+import { toast } from "react-toastify";
 
 interface Message {
   id: number;
@@ -304,6 +306,15 @@ export default function ChatUI() {
 
     if (!message.trim() || typing || !user) return;
 
+    // Validate and sanitize message
+    const validation = validateChatMessage(message);
+    if (!validation.isValid) {
+      toast.error(validation.error || "Invalid message");
+      return;
+    }
+
+    const sanitizedMessage = validation.sanitized || message;
+
     const timeAllowed = checkTimeLimit();
     const { canSend: imagesAllowed, shouldBlur } = checkImageLimit();
 
@@ -332,11 +343,11 @@ export default function ChatUI() {
     try {
       const payload = {
         user_id: user.id,
-        prompt: message,
+        prompt: sanitizedMessage,
         session_key: `u${user.id}`,
         history: updatedMessages.slice(-10).map((msg) => ({
           role: msg.sender === "user" ? "user" : "assistant",
-          content: msg.text,
+          content: sanitizeInput(msg.text),
         })),
       };
 
