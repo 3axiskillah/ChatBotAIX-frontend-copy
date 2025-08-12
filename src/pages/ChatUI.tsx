@@ -18,8 +18,6 @@ interface Message {
 interface User {
   id: number;
   email: string;
-  is_premium: boolean;
-  premium_until?: string;
 }
 
 interface ApiChatResponse {
@@ -117,29 +115,22 @@ export default function ChatUI() {
 
         if (!userData?.email) throw new Error();
 
-        const isPremium = userData.is_premium || subscriptionData?.is_active;
         const shouldWelcomeBack =
           lastSignOutTime && Date.now() - lastSignOutTime > 5000;
 
         setUser({
           id: userData.id,
           email: userData.email,
-          is_premium: isPremium,
-          premium_until: subscriptionData?.current_period_end,
         });
 
         if (credits) {
           setTimeCreditsSeconds(credits.time_credits_seconds || 0);
         }
 
-        if (isPremium) {
-          localStorage.removeItem("chat_limits");
-        }
-
         if (shouldWelcomeBack) {
-          const welcomeMessage = isPremium
-            ? `Welcome back, premium member! Ready for more fun? 😘`
-            : `Hey there ${userData.email.split("@")[0]}, I missed you! 😉`;
+          const welcomeMessage = `Hey there ${
+            userData.email.split("@")[0]
+          }, I missed you! 😉`;
 
           setMessages((prev) => [
             ...prev,
@@ -277,7 +268,6 @@ export default function ChatUI() {
   }, []);
 
   const checkTimeLimit = () => {
-    if (user?.is_premium) return true;
     if (timeCreditsSeconds > 0) return true;
     setShowUpgradePrompt(true);
     return false;
@@ -343,10 +333,6 @@ export default function ChatUI() {
       const payload = {
         user_id: user.id,
         prompt: message,
-        user_type: user.is_premium ? "premium" : "free",
-        images_sent: 0,
-        should_blur: shouldBlurImage,
-        allow_image: allowImage,
         session_key: `u${user.id}`,
         history: updatedMessages.slice(-10).map((msg) => ({
           role: msg.sender === "user" ? "user" : "assistant",
@@ -446,7 +432,6 @@ export default function ChatUI() {
   };
 
   const getRemainingTime = () => {
-    if (user?.is_premium) return "Unlimited";
     const remainingMinutes = Math.floor(timeCreditsSeconds / 60);
     return `${remainingMinutes} mins`;
   };
@@ -512,11 +497,6 @@ export default function ChatUI() {
             {sidebarOpen ? "✕" : "☰"}
           </button>
           <div className="flex items-center gap-2">
-            {user?.is_premium && (
-              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                PREMIUM
-              </span>
-            )}
             <h1 className="text-lg font-bold text-[#D1A75D]">Amber</h1>
           </div>
         </div>
@@ -632,7 +612,7 @@ export default function ChatUI() {
           <p className="text-sm text-[#E7D8C1]/70">No images yet</p>
         )}
 
-        {!user?.is_premium && (
+        {
           <div className="mt-4 p-3 bg-[#4B1F1F]/50 rounded-lg text-sm">
             <div className="flex justify-between mb-1">
               <span>Time left:</span>
@@ -679,7 +659,7 @@ export default function ChatUI() {
               </button>
             </div>
           </div>
-        )}
+        }
       </div>
 
       {/* Main Chat Area */}
@@ -694,11 +674,6 @@ export default function ChatUI() {
               {sidebarOpen ? "←" : "→"}
             </button>
             <div className="flex items-center gap-2">
-              {user?.is_premium && (
-                <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                  PREMIUM
-                </span>
-              )}
               <h1 className="text-xl font-bold text-[#D1A75D]">Amber</h1>
             </div>
           </div>
