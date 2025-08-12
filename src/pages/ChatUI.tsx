@@ -42,6 +42,7 @@ export default function ChatUI() {
   const [user, setUser] = useState<User | null>(null);
 
   const [timeCreditsSeconds, setTimeCreditsSeconds] = useState<number>(0);
+  const [displayTime, setDisplayTime] = useState<number>(0);
   const [lastSignOutTime, setLastSignOutTime] = useState<number | null>(null);
   const [keepGalleryOpen, setKeepGalleryOpen] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -127,6 +128,7 @@ export default function ChatUI() {
 
         if (credits) {
           setTimeCreditsSeconds(credits.time_credits_seconds || 0);
+          setDisplayTime(credits.time_credits_seconds || 0);
         }
 
         if (shouldWelcomeBack) {
@@ -194,6 +196,20 @@ export default function ChatUI() {
     const interval = setInterval(() => checkAuth(false), 120000);
     return () => clearInterval(interval);
   }, [navigate, lastSignOutTime]);
+
+  // Real-time countdown timer
+  useEffect(() => {
+    if (timeCreditsSeconds <= 0) return;
+
+    const interval = setInterval(() => {
+      setDisplayTime((prev) => {
+        const newTime = Math.max(0, prev - 1);
+        return newTime;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timeCreditsSeconds]);
 
   // Load chat history
   useEffect(() => {
@@ -443,8 +459,16 @@ export default function ChatUI() {
   };
 
   const getRemainingTime = () => {
-    const remainingMinutes = Math.floor(timeCreditsSeconds / 60);
-    return `${remainingMinutes} mins`;
+    const remainingMinutes = Math.floor(displayTime / 60);
+    const remainingSeconds = displayTime % 60;
+
+    if (remainingMinutes > 0) {
+      return `${remainingMinutes}:${remainingSeconds
+        .toString()
+        .padStart(2, "0")}`;
+    } else {
+      return `${remainingSeconds}s`;
+    }
   };
 
   const handleImageClick = (url: string) => {
@@ -511,15 +535,32 @@ export default function ChatUI() {
             <h1 className="text-lg font-bold text-[#D1A75D]">Amber</h1>
           </div>
         </div>
-        <button
-          onClick={() => {
-            setMenuOpen(!menuOpen);
-            setSidebarOpen(false);
-          }}
-          className="bg-[#D1A75D] text-[#4B1F1F] p-2 rounded-lg hover:bg-[#c49851] transition active:scale-95"
-        >
-          ☰
-        </button>
+
+        {/* Mobile Time Display */}
+        <div className="flex items-center gap-2">
+          <div
+            className={`flex items-center gap-1 px-2 py-1 rounded border text-xs ${
+              displayTime < 300
+                ? "bg-red-500/20 border-red-400 text-red-200"
+                : displayTime < 600
+                ? "bg-yellow-500/20 border-yellow-400 text-yellow-200"
+                : "bg-green-500/20 border-green-400 text-green-200"
+            }`}
+          >
+            <span>⏱️</span>
+            <span className="font-bold">{getRemainingTime()}</span>
+          </div>
+
+          <button
+            onClick={() => {
+              setMenuOpen(!menuOpen);
+              setSidebarOpen(false);
+            }}
+            className="bg-[#D1A75D] text-[#4B1F1F] p-2 rounded-lg hover:bg-[#c49851] transition active:scale-95"
+          >
+            ☰
+          </button>
+        </div>
       </header>
 
       {/* Mobile Menu Dropdown */}
@@ -623,54 +664,73 @@ export default function ChatUI() {
           <p className="text-sm text-[#E7D8C1]/70">No images yet</p>
         )}
 
-        {
-          <div className="mt-4 p-3 bg-[#4B1F1F]/50 rounded-lg text-sm">
-            <div className="flex justify-between mb-1">
-              <span>Time left:</span>
-              <span
-                className={
-                  timeCreditsSeconds < 300 ? "text-red-400 font-bold" : ""
-                }
-              >
-                {getRemainingTime()}
-              </span>
-            </div>
-            <div className="flex justify-between mb-3">
-              <span>Images:</span>
-              <span className="text-[#D1A75D]">$4.99 each when unlocked</span>
-            </div>
-
-            {/* Show time purchase buttons when time is low or always show them */}
-            <div className="space-y-2">
-              <div className="text-xs text-[#E7D8C1]/70 mb-2">
-                {timeCreditsSeconds < 300
-                  ? "⚠️ Time running low!"
-                  : "Add more time:"}
-              </div>
-              <button
-                disabled={checkoutLoading}
-                onClick={() => handleBuyTime("10_min")}
-                className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50 font-medium"
-              >
-                Add 10 min ($9.99)
-              </button>
-              <button
-                disabled={checkoutLoading}
-                onClick={() => handleBuyTime("30_min")}
-                className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50 font-medium"
-              >
-                Add 30 min ($19.99)
-              </button>
-              <button
-                disabled={checkoutLoading}
-                onClick={() => handleBuyTime("60_min")}
-                className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50 font-medium"
-              >
-                Add 60 min ($29.99)
-              </button>
-            </div>
+        {/* Time Credits Section */}
+        <div className="mt-4 p-4 bg-gradient-to-br from-[#4B1F1F] to-[#3A1818] rounded-lg border border-[#D1A75D]/30">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-lg">⏱️</span>
+            <span className="font-bold text-[#D1A75D]">Time Credits</span>
           </div>
-        }
+
+          <div
+            className={`flex items-center justify-between p-3 rounded-lg mb-3 ${
+              displayTime < 300
+                ? "bg-red-500/20 border border-red-400"
+                : displayTime < 600
+                ? "bg-yellow-500/20 border border-yellow-400"
+                : "bg-green-500/20 border border-green-400"
+            }`}
+          >
+            <span className="text-sm">Remaining:</span>
+            <span
+              className={`font-bold text-lg ${
+                displayTime < 300
+                  ? "text-red-200"
+                  : displayTime < 600
+                  ? "text-yellow-200"
+                  : "text-green-200"
+              }`}
+            >
+              {getRemainingTime()}
+            </span>
+          </div>
+
+          <div className="flex justify-between mb-4 text-sm">
+            <span>Images:</span>
+            <span className="text-[#D1A75D] font-medium">
+              $4.99 each when unlocked
+            </span>
+          </div>
+
+          {/* Time purchase buttons */}
+          <div className="space-y-2">
+            <div className="text-xs text-[#E7D8C1]/70 mb-2">
+              {displayTime < 300
+                ? "⚠️ Time running low! Add more credits:"
+                : "Add more time credits:"}
+            </div>
+            <button
+              disabled={checkoutLoading}
+              onClick={() => handleBuyTime("10_min")}
+              className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50 font-medium"
+            >
+              Add 10 min ($9.99)
+            </button>
+            <button
+              disabled={checkoutLoading}
+              onClick={() => handleBuyTime("30_min")}
+              className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50 font-medium"
+            >
+              Add 30 min ($19.99)
+            </button>
+            <button
+              disabled={checkoutLoading}
+              onClick={() => handleBuyTime("60_min")}
+              className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50 font-medium"
+            >
+              Add 60 min ($29.99)
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Main Chat Area */}
@@ -688,35 +748,55 @@ export default function ChatUI() {
               <h1 className="text-xl font-bold text-[#D1A75D]">Amber</h1>
             </div>
           </div>
-          <div className="relative">
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 rounded hover:bg-[#c49851] transition active:scale-95"
+
+          {/* Time Credits Display */}
+          <div className="flex items-center gap-4">
+            <div
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+                displayTime < 300
+                  ? "bg-red-500/20 border-red-400 text-red-200"
+                  : displayTime < 600
+                  ? "bg-yellow-500/20 border-yellow-400 text-yellow-200"
+                  : "bg-green-500/20 border-green-400 text-green-200"
+              }`}
             >
-              ☰ Menu
-            </button>
-            {menuOpen && (
-              <div className="absolute right-0 mt-2 w-40 bg-[#3A1818] text-[#E7D8C1] border border-[#D1A75D] rounded shadow-md z-10 animate-fadeIn">
-                <button
-                  onClick={() => navigate("/settings")}
-                  className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-t"
-                >
-                  Settings
-                </button>
-                <button
-                  onClick={() => navigate("/addons")}
-                  className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition"
-                >
-                  Add-ons
-                </button>
-                <button
-                  onClick={handleSignOut}
-                  className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-b"
-                >
-                  Sign Out
-                </button>
+              <span className="text-lg">⏱️</span>
+              <div className="flex flex-col">
+                <span className="text-xs opacity-80">Time Credits</span>
+                <span className="font-bold text-sm">{getRemainingTime()}</span>
               </div>
-            )}
+            </div>
+
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 rounded hover:bg-[#c49851] transition active:scale-95"
+              >
+                ☰ Menu
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-[#3A1818] text-[#E7D8C1] border border-[#D1A75D] rounded shadow-md z-10 animate-fadeIn">
+                  <button
+                    onClick={() => navigate("/settings")}
+                    className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-t"
+                  >
+                    Settings
+                  </button>
+                  <button
+                    onClick={() => navigate("/addons")}
+                    className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition"
+                  >
+                    Add-ons
+                  </button>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-b"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
