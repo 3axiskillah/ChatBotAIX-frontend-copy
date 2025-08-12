@@ -106,7 +106,7 @@ export default function ChatUI() {
 
   // Authentication and user data
   useEffect(() => {
-    const checkAuth = async (forceRefresh = false) => {
+    const checkAuth = async () => {
       try {
         const [userData, credits] = await Promise.all([
           apiFetch("/api/accounts/me/"),
@@ -189,8 +189,8 @@ export default function ChatUI() {
       }
     };
 
-    checkAuth(true);
-    const interval = setInterval(() => checkAuth(false), 120000);
+    checkAuth();
+    const interval = setInterval(() => checkAuth(), 120000);
     return () => clearInterval(interval);
   }, [navigate, lastSignOutTime]);
 
@@ -286,11 +286,6 @@ export default function ChatUI() {
     if (timeCreditsSeconds > 0) return true;
     setShowUpgradePrompt(true);
     return false;
-  };
-
-  const checkImageLimit = () => {
-    // Always allow generating a blurred preview; unblur requires payment
-    return { canSend: true, shouldBlur: true };
   };
 
   const incrementTimeUsed = (seconds: number): void => {
