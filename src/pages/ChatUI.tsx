@@ -40,7 +40,7 @@ export default function ChatUI() {
   const [modalImage, setModalImage] = useState<string | null>(null);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [imageCredits, setImageCredits] = useState<number>(0);
+
   const [timeCreditsSeconds, setTimeCreditsSeconds] = useState<number>(0);
   const [lastSignOutTime, setLastSignOutTime] = useState<number | null>(null);
   const [keepGalleryOpen, setKeepGalleryOpen] = useState(false);
@@ -129,7 +129,6 @@ export default function ChatUI() {
         });
 
         if (credits) {
-          setImageCredits(credits.image_credits || 0);
           setTimeCreditsSeconds(credits.time_credits_seconds || 0);
         }
 
@@ -163,25 +162,24 @@ export default function ChatUI() {
             },
           ]);
           navigate(window.location.pathname, { replace: true });
-        } else if (params.get("purchase") === "images_success") {
-          try {
-            const newCredits = await apiFetch("/api/billing/credits/status/");
-            setImageCredits(newCredits.image_credits || 0);
-            setTimeCreditsSeconds(newCredits.time_credits_seconds || 0);
+        } else if (params.get("unlock_success") === "true") {
+          const messageId = params.get("message_id");
+          if (messageId) {
             setMessages((prev) => [
               ...prev,
               {
                 id: Date.now(),
-                text: "🖼️ Image credits added! Enjoy full images.",
+                text: "🖼️ Image unlocked! Enjoy your content.",
                 sender: "ai",
               },
             ]);
-          } catch {}
+            // Refresh the specific message to show unblurred image
+            // The webhook should have already updated the message metadata
+          }
           navigate(window.location.pathname, { replace: true });
         } else if (params.get("purchase") === "time_success") {
           try {
             const newCredits = await apiFetch("/api/billing/credits/status/");
-            setImageCredits(newCredits.image_credits || 0);
             setTimeCreditsSeconds(newCredits.time_credits_seconds || 0);
             setMessages((prev) => [
               ...prev,
@@ -286,8 +284,8 @@ export default function ChatUI() {
   };
 
   const checkImageLimit = () => {
-    // Always allow generating a blurred preview; unblur only if we have credits
-    return { canSend: true, shouldBlur: imageCredits <= 0 };
+    // Always allow generating a blurred preview; unblur requires payment
+    return { canSend: true, shouldBlur: true };
   };
 
   const incrementTimeUsed = (seconds: number): void => {
@@ -391,14 +389,14 @@ export default function ChatUI() {
         incrementTimeUsed(processingTime);
       }
 
-      // Do NOT expose real image URL when locked. Always require explicit unlock.
+      // Always blur images initially - user pays to unlock
       const willHaveImage = Boolean(fullImageUrl);
 
       const aiReply: Message = {
         id: Date.now() + 1,
         text: data.response || "I'm having trouble responding right now...",
         sender: "ai",
-        image_url: willHaveImage ? undefined : undefined,
+        image_url: willHaveImage ? fullImageUrl : undefined, // Store the real URL but it will be blurred
         blurred: willHaveImage ? true : false,
         locked: willHaveImage ? true : false,
         upsell: data.upsell,
@@ -454,7 +452,7 @@ export default function ChatUI() {
   };
 
   const getRemainingImages = () => {
-    return `${imageCredits} images`;
+    return "$4.99 per image unlock";
   };
 
   const handleImageClick = (url: string) => {
@@ -471,37 +469,6 @@ export default function ChatUI() {
       setSidebarOpen(false);
     }
     setKeepGalleryOpen(false);
-  };
-
-  // In-chat purchases
-  const handleBuyImages = async (quantity: number) => {
-    try {
-      setCheckoutLoading(true);
-      const stripe = await loadStripe(
-        "pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX"
-      );
-      const { sessionId } = await apiFetch(
-        "/api/billing/create-checkout-session/images/",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: { quantity },
-        }
-      );
-      const { error } = await stripe!.redirectToCheckout({ sessionId });
-      if (error) throw error;
-    } catch (e) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          text: "Payment failed. Please try again.",
-          sender: "ai",
-        },
-      ]);
-    } finally {
-      setCheckoutLoading(false);
-    }
   };
 
   const handleBuyTime = async (tier: string) => {
@@ -847,9 +814,6 @@ export default function ChatUI() {
                                 { method: "POST" }
                               );
                               if (res?.ok && res.image_url) {
-                                setImageCredits(
-                                  res.image_credits ?? imageCredits
-                                );
                                 setMessages((prev) =>
                                   prev.map((m) =>
                                     m.id === msg.id
@@ -862,6 +826,9 @@ export default function ChatUI() {
                                       : m
                                   )
                                 );
+                              } else if (res?.checkout_url) {
+                                // Redirect to Stripe checkout for payment
+                                window.location.href = res.checkout_url;
                               } else if (res?.error === "NO_CREDITS") {
                                 setShowUpgradePrompt(true);
                               }
@@ -871,7 +838,7 @@ export default function ChatUI() {
                           }}
                         >
                           <span className="text-white font-bold bg-black/50 p-2 rounded">
-                            Premium Content
+                            🔒 Pay $4.99 to Unlock
                           </span>
                         </button>
                       )}
@@ -957,14 +924,10 @@ export default function ChatUI() {
           <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4 touch-pan-y">
             <div className="bg-[#4B1F1F] p-6 rounded-lg max-w-md w-full animate-popIn">
               <h2 className="text-xl md:text-2xl font-bold text-[#E7D8C1] mb-4 text-center">
-                {imageCredits <= 0
-                  ? "💳 Buy Image Credits"
-                  : "⏳ Add Time Credits"}
+                ⏳ Add Time Credits
               </h2>
               <p className="text-[#E7D8C1] mb-6 text-center">
-                {imageCredits <= 0
-                  ? "You’re out of image credits. Purchase more to unlock full images."
-                  : "You’re out of time credits. Purchase more to continue chatting."}
+                You're out of time credits. Purchase more to continue chatting.
               </p>
               <div className="flex flex-col space-y-3">
                 <button
