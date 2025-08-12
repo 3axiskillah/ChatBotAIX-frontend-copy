@@ -108,11 +108,8 @@ export default function ChatUI() {
   useEffect(() => {
     const checkAuth = async (forceRefresh = false) => {
       try {
-        const [userData, subscriptionData, credits] = await Promise.all([
+        const [userData, credits] = await Promise.all([
           apiFetch("/api/accounts/me/"),
-          apiFetch(
-            `/api/billing/subscription/status/?force_refresh=${forceRefresh}`
-          ),
           apiFetch("/api/billing/credits/status/"),
         ]);
 
@@ -332,16 +329,13 @@ export default function ChatUI() {
     const sanitizedMessage = validation.sanitized || message;
 
     const timeAllowed = checkTimeLimit();
-    const { canSend: imagesAllowed, shouldBlur } = checkImageLimit();
 
     if (!timeAllowed) {
       setShowUpgradePrompt(true);
       return;
     }
 
-    // If image limit reached, allow chat but set allow_image to false
-    let allowImage = imagesAllowed; // always true for preview
-    let shouldBlurImage = shouldBlur; // blur if no credits
+    // Images are always allowed but blurred initially
 
     const newMsg: Message = {
       id: Date.now(),

@@ -2,11 +2,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { apiFetch } from "../utils/api";
 import { useNavigate } from "react-router-dom";
-import {
-  validateEmail,
-  validatePasswordStrength,
-  sanitizeInput,
-} from "../utils/security";
+import { validateEmail, validatePasswordStrength } from "../utils/security";
 
 type RegisterProps = {
   onSwitchToLogin: () => void;
