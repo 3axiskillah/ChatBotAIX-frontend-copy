@@ -157,6 +157,28 @@ export default function ChatUI() {
         } else if (params.get("unlock_success") === "true") {
           const messageId = params.get("message_id");
           if (messageId) {
+            // Refresh the specific message to show unblurred image
+            try {
+              const refreshedMessage = await apiFetch(
+                `/api/chat/messages/${messageId}/`
+              );
+              if (refreshedMessage && refreshedMessage.metadata?.unlocked) {
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.serverMessageId === parseInt(messageId)
+                      ? {
+                          ...m,
+                          blurred: false,
+                          locked: false,
+                        }
+                      : m
+                  )
+                );
+              }
+            } catch (error) {
+              console.error("Failed to refresh message:", error);
+            }
+
             setMessages((prev) => [
               ...prev,
               {
@@ -165,8 +187,6 @@ export default function ChatUI() {
                 sender: "ai",
               },
             ]);
-            // Refresh the specific message to show unblurred image
-            // The webhook should have already updated the message metadata
           }
           navigate(window.location.pathname, { replace: true });
         } else if (params.get("purchase") === "time_success") {
@@ -376,6 +396,7 @@ export default function ChatUI() {
       const processingTime = Math.floor((Date.now() - startTime) / 1000);
       // Report usage to backend (will deduct credits server-side).
       // Prefer server's remaining balance; fall back to local decrement on error
+      let updatedTimeCredits = timeCreditsSeconds;
       try {
         const usage = await apiFetch("/api/billing/usage/report/", {
           method: "POST",
@@ -383,11 +404,14 @@ export default function ChatUI() {
           body: { seconds_used: processingTime },
         });
         if (usage && typeof usage.time_credits_seconds === "number") {
-          setTimeCreditsSeconds(Math.max(0, usage.time_credits_seconds));
+          updatedTimeCredits = Math.max(0, usage.time_credits_seconds);
+          setTimeCreditsSeconds(updatedTimeCredits);
         } else {
+          updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
           incrementTimeUsed(processingTime);
         }
       } catch {
+        updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
         incrementTimeUsed(processingTime);
       }
 
@@ -428,7 +452,8 @@ export default function ChatUI() {
 
       // Do not push to gallery until unlocked
 
-      if (data.upsell) {
+      // Only show upgrade prompt if user is actually out of time credits
+      if (updatedTimeCredits <= 0) {
         setShowUpgradePrompt(true);
       }
     } catch (err) {
@@ -864,7 +889,11 @@ export default function ChatUI() {
                                 `/api/chat/messages/${msg.serverMessageId}/unlock_image/`,
                                 { method: "POST" }
                               );
-                              if (res?.ok && res.image_url) {
+                              if (res?.checkout_url) {
+                                // Redirect to Stripe checkout for payment
+                                window.location.href = res.checkout_url;
+                              } else if (res?.ok && res.image_url) {
+                                // Image was already unlocked (shouldn't happen normally)
                                 setMessages((prev) =>
                                   prev.map((m) =>
                                     m.id === msg.id
@@ -877,9 +906,6 @@ export default function ChatUI() {
                                       : m
                                   )
                                 );
-                              } else if (res?.checkout_url) {
-                                // Redirect to Stripe checkout for payment
-                                window.location.href = res.checkout_url;
                               } else if (res?.error === "NO_CREDITS") {
                                 setShowUpgradePrompt(true);
                               }
