@@ -451,10 +451,6 @@ export default function ChatUI() {
     return `${remainingMinutes} mins`;
   };
 
-  const getRemainingImages = () => {
-    return "$4.99 per image unlock";
-  };
-
   const handleImageClick = (url: string) => {
     setModalImage(url);
     setKeepGalleryOpen(true);
