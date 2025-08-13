@@ -6,8 +6,7 @@ type User = {
   id: number;
   username: string;
   email: string;
-  is_premium: boolean;
-  is_admin: boolean;
+  is_staff: boolean;
   last_active?: string;
 };
 
@@ -48,7 +47,9 @@ export default function UsersPage() {
                 key={user.id}
                 onClick={() =>
                   navigate(
-                    `/admin/chat-sessions?user=${user.id}&username=${encodeURIComponent(
+                    `/admin/chat-sessions?user=${
+                      user.id
+                    }&username=${encodeURIComponent(
                       user.username
                     )}&email=${encodeURIComponent(user.email)}`
                   )

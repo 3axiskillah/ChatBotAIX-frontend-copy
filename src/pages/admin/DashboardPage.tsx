@@ -5,7 +5,6 @@ import { apiFetch } from "../../utils/api"; // adjust path if needed
 type User = {
   id: number;
   username: string;
-  is_premium?: boolean;
 };
 
 type ChatSession = {
@@ -38,7 +37,9 @@ export default function DashboardPage() {
             (sess: ChatSession) => !sess.ended_at && sess.user !== null
           ).length
         );
-        setAnonCount(sessions.filter((sess: ChatSession) => sess.user === null).length);
+        setAnonCount(
+          sessions.filter((sess: ChatSession) => sess.user === null).length
+        );
       } catch (error) {
         console.error("Error loading chat sessions:", error);
       }
@@ -73,11 +74,15 @@ export default function DashboardPage() {
         </div>
         <div className="bg-[#3A1818] p-4 rounded text-center">
           <div className="text-[#E7D8C1]">Premium Users</div>
-          <div className="text-2xl font-bold text-[#D1A75D]">{premiumCount}</div>
+          <div className="text-2xl font-bold text-[#D1A75D]">
+            {premiumCount}
+          </div>
         </div>
         <div className="bg-[#3A1818] p-4 rounded text-center">
           <div className="text-[#E7D8C1]">Active Chat Sessions</div>
-          <div className="text-2xl font-bold text-[#D1A75D]">{activeUserSessions}</div>
+          <div className="text-2xl font-bold text-[#D1A75D]">
+            {activeUserSessions}
+          </div>
         </div>
         <div className="bg-[#3A1818] p-4 rounded text-center">
           <div className="text-[#E7D8C1]">Anonymous Chats</div>
@@ -90,7 +95,9 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Chat Sessions */}
-      <h2 className="text-2xl font-bold text-[#D1A75D] mt-8">Recent Chat Sessions</h2>
+      <h2 className="text-2xl font-bold text-[#D1A75D] mt-8">
+        Recent Chat Sessions
+      </h2>
       <div className="mt-4 overflow-x-auto rounded-lg shadow-lg">
         <table className="min-w-full border-collapse">
           <thead>
@@ -110,10 +117,16 @@ export default function DashboardPage() {
                 className="bg-[#3A1818] text-[#E7D8C1] hover:bg-[#c49851] hover:text-[#4B1F1F] cursor-pointer rounded transition-colors"
               >
                 <td className="px-5 py-4">{session.id}</td>
-                <td className="px-5 py-4">{session.user?.username ?? "Anonymous"}</td>
-                <td className="px-5 py-4">{new Date(session.started_at).toLocaleString()}</td>
                 <td className="px-5 py-4">
-                  {session.ended_at ? new Date(session.ended_at).toLocaleString() : "Active"}
+                  {session.user?.username ?? "Anonymous"}
+                </td>
+                <td className="px-5 py-4">
+                  {new Date(session.started_at).toLocaleString()}
+                </td>
+                <td className="px-5 py-4">
+                  {session.ended_at
+                    ? new Date(session.ended_at).toLocaleString()
+                    : "Active"}
                 </td>
                 <td className="px-5 py-4 text-center">
                   <span

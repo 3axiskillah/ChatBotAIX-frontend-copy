@@ -149,12 +149,16 @@ export default function ChatUI() {
             ...prev,
             {
               id: Date.now(),
-              text: "🎉 Welcome to Premium! Your full access has been activated.",
+              text: "🎉 Payment successful! Your time credits have been added.",
               sender: "ai",
             },
           ]);
           navigate(window.location.pathname, { replace: true });
         } else if (params.get("unlock_success") === "true") {
+          console.log(
+            "Unlock success detected, messageId:",
+            params.get("message_id")
+          );
           const messageId = params.get("message_id");
           if (messageId) {
             // Refresh the specific message to show unblurred image
@@ -174,6 +178,14 @@ export default function ChatUI() {
                       : m
                   )
                 );
+
+                // Add the unlocked image to gallery
+                if (refreshedMessage.image_url) {
+                  setGalleryImages((prev) => [
+                    ...prev,
+                    refreshedMessage.image_url,
+                  ]);
+                }
               }
             } catch (error) {
               console.error("Failed to refresh message:", error);
@@ -241,7 +253,8 @@ export default function ChatUI() {
           sender: msg.is_user ? "user" : "ai",
           image_url: msg.image_url || undefined,
           timestamp: msg.timestamp,
-          blurred: msg.metadata?.blurred || false,
+          blurred: msg.metadata?.blurred !== false, // Default to blurred unless explicitly unlocked
+          locked: msg.metadata?.unlocked !== true, // Default to locked unless explicitly unlocked
         }));
 
         setMessages((prev) => {
@@ -249,7 +262,7 @@ export default function ChatUI() {
             prev.some(
               (m) =>
                 m.text.includes("welcome back") ||
-                m.text.includes("Welcome to Premium")
+                m.text.includes("Payment successful")
             )
           ) {
             return [...prev, ...formatted];
@@ -267,8 +280,9 @@ export default function ChatUI() {
               ];
         });
 
+        // Only add images to gallery if they are unlocked (paid for)
         const galleryImgs = formatted
-          .filter((m) => m.image_url)
+          .filter((m) => m.image_url && !m.blurred && !m.locked)
           .map((m) => m.image_url)
           .filter((url) => url !== undefined) as string[];
 
@@ -323,6 +337,7 @@ export default function ChatUI() {
       localStorage.removeItem("imagesSentToday");
       localStorage.removeItem("imageResetDate");
       setLastSignOutTime(Date.now());
+      setGalleryImages([]); // Clear gallery on logout
       navigate("/");
     } catch (err) {
       console.error("Logout error:", err);
@@ -885,29 +900,25 @@ export default function ChatUI() {
                               return;
                             }
                             try {
+                              console.log(
+                                "Attempting to unlock image:",
+                                msg.serverMessageId
+                              );
                               const res = await apiFetch(
                                 `/api/chat/messages/${msg.serverMessageId}/unlock_image/`,
                                 { method: "POST" }
                               );
+                              console.log("Unlock response:", res);
                               if (res?.checkout_url) {
                                 // Redirect to Stripe checkout for payment
                                 window.location.href = res.checkout_url;
-                              } else if (res?.ok && res.image_url) {
-                                // Image was already unlocked (shouldn't happen normally)
-                                setMessages((prev) =>
-                                  prev.map((m) =>
-                                    m.id === msg.id
-                                      ? {
-                                          ...m,
-                                          image_url: res.image_url,
-                                          blurred: false,
-                                          locked: false,
-                                        }
-                                      : m
-                                  )
-                                );
                               } else if (res?.error === "NO_CREDITS") {
                                 setShowUpgradePrompt(true);
+                              } else {
+                                // Any other response means payment failed or error
+                                toast.error(
+                                  "Payment failed. Please try again."
+                                );
                               }
                             } catch {
                               setShowUpgradePrompt(true);

@@ -10,7 +10,6 @@ type User = {
   id: number;
   email: string;
   username: string;
-  is_premium?: boolean;
   is_staff?: boolean;
 };
 
