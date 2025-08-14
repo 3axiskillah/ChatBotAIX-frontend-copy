@@ -43,6 +43,7 @@ export default function ChatUI() {
 
   const [timeCreditsSeconds, setTimeCreditsSeconds] = useState<number>(0);
   const [displayTime, setDisplayTime] = useState<number>(0);
+  const [lastSyncTime, setLastSyncTime] = useState<number>(Date.now());
   const [lastSignOutTime, setLastSignOutTime] = useState<number | null>(null);
   const [keepGalleryOpen, setKeepGalleryOpen] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -127,8 +128,23 @@ export default function ChatUI() {
         });
 
         if (credits) {
-          setTimeCreditsSeconds(credits.time_credits_seconds || 0);
-          setDisplayTime(credits.time_credits_seconds || 0);
+          const currentCredits = credits.time_credits_seconds || 0;
+          const now = Date.now();
+          const elapsedSinceSync = Math.floor((now - lastSyncTime) / 1000);
+          const adjustedCredits = Math.max(
+            0,
+            currentCredits - elapsedSinceSync
+          );
+
+          setTimeCreditsSeconds(currentCredits);
+          setDisplayTime(adjustedCredits);
+          setLastSyncTime(now);
+          console.log(
+            "Synced time credits from backend:",
+            currentCredits,
+            "adjusted for elapsed time:",
+            adjustedCredits
+          );
         }
 
         if (shouldWelcomeBack) {
@@ -165,9 +181,12 @@ export default function ChatUI() {
             scrollToBottom("auto");
           }, 100);
           navigate(window.location.pathname, { replace: true });
-        } else if (params.get("unlock_success") === "true") {
+        } else if (
+          params.get("unlock_success") === "true" &&
+          params.get("payment_completed") === "true"
+        ) {
           console.log(
-            "Unlock success detected, messageId:",
+            "Payment completed and unlock success detected, messageId:",
             params.get("message_id")
           );
           const messageId = params.get("message_id");
@@ -177,7 +196,11 @@ export default function ChatUI() {
               const refreshedMessage = await apiFetch(
                 `/api/chat/messages/${messageId}/`
               );
-              if (refreshedMessage && refreshedMessage.metadata?.unlocked) {
+              if (
+                refreshedMessage &&
+                refreshedMessage.metadata?.unlocked &&
+                refreshedMessage.metadata?.payment_completed
+              ) {
                 setMessages((prev) =>
                   prev.map((m) =>
                     m.serverMessageId === parseInt(messageId)
@@ -197,45 +220,165 @@ export default function ChatUI() {
                     refreshedMessage.image_url,
                   ]);
                 }
+
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now(),
+                    text: "🖼️ Payment successful! Image unlocked and added to your gallery.",
+                    sender: "ai",
+                  },
+                ]);
+                // Scroll to bottom after image unlock message
+                setTimeout(() => {
+                  scrollToBottom("auto");
+                }, 100);
+              } else {
+                // Payment might not have been processed yet
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now(),
+                    text: "⏳ Payment processing... Please wait a moment for your image to unlock.",
+                    sender: "ai",
+                  },
+                ]);
+                // Retry after 3 seconds
+                setTimeout(async () => {
+                  try {
+                    const retryMessage = await apiFetch(
+                      `/api/chat/messages/${messageId}/`
+                    );
+                    if (retryMessage && retryMessage.metadata?.unlocked) {
+                      setMessages((prev) =>
+                        prev.map((m) =>
+                          m.serverMessageId === parseInt(messageId)
+                            ? {
+                                ...m,
+                                blurred: false,
+                                locked: false,
+                              }
+                            : m
+                        )
+                      );
+                      if (retryMessage.image_url) {
+                        setGalleryImages((prev) => [
+                          ...prev,
+                          retryMessage.image_url,
+                        ]);
+                      }
+                    }
+                  } catch (error) {
+                    console.error("Retry failed:", error);
+                  }
+                }, 3000);
               }
             } catch (error) {
               console.error("Failed to refresh message:", error);
               toast.error(
-                "Failed to refresh image status. Please refresh the page."
+                "Payment completed but failed to unlock image. Please refresh the page."
               );
             }
-
+          }
+          navigate(window.location.pathname, { replace: true });
+        } else if (params.get("unlock_cancel") === "true") {
+          const messageId = params.get("message_id");
+          if (messageId) {
             setMessages((prev) => [
               ...prev,
               {
                 id: Date.now(),
-                text: "🖼️ Image unlocked! Enjoy your content.",
+                text: "❌ Payment cancelled. Image remains locked.",
                 sender: "ai",
               },
             ]);
-            // Scroll to bottom after image unlock message
             setTimeout(() => {
               scrollToBottom("auto");
             }, 100);
           }
           navigate(window.location.pathname, { replace: true });
-        } else if (params.get("purchase") === "time_success") {
+        } else if (
+          params.get("purchase") === "time_success" &&
+          params.get("payment_completed") === "true"
+        ) {
+          console.log("Time credit payment completed successfully");
           try {
-            const newCredits = await apiFetch("/api/billing/credits/status/");
-            setTimeCreditsSeconds(newCredits.time_credits_seconds || 0);
+            // Wait a moment for webhook to process
+            setTimeout(async () => {
+              try {
+                const newCredits = await apiFetch(
+                  "/api/billing/credits/status/"
+                );
+                const currentCredits = newCredits.time_credits_seconds || 0;
+                const now = Date.now();
+                setTimeCreditsSeconds(currentCredits);
+                setDisplayTime(currentCredits);
+                setLastSyncTime(now);
+
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now(),
+                    text: "⏱️ Payment successful! Time credits added to your account.",
+                    sender: "ai",
+                  },
+                ]);
+                // Scroll to bottom after time credits message
+                setTimeout(() => {
+                  scrollToBottom("auto");
+                }, 100);
+              } catch (error) {
+                console.error("Failed to refresh credits:", error);
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now(),
+                    text: "⏳ Payment processing... Please wait a moment for your credits to appear.",
+                    sender: "ai",
+                  },
+                ]);
+                // Retry after 3 seconds
+                setTimeout(async () => {
+                  try {
+                    const retryCredits = await apiFetch(
+                      "/api/billing/credits/status/"
+                    );
+                    const retryCurrentCredits =
+                      retryCredits.time_credits_seconds || 0;
+                    const retryNow = Date.now();
+                    setTimeCreditsSeconds(retryCurrentCredits);
+                    setDisplayTime(retryCurrentCredits);
+                    setLastSyncTime(retryNow);
+                  } catch (retryError) {
+                    console.error("Retry failed:", retryError);
+                  }
+                }, 3000);
+              }
+            }, 1000);
+          } catch (error) {
+            console.error("Time credit payment error:", error);
             setMessages((prev) => [
               ...prev,
               {
                 id: Date.now(),
-                text: "⏱️ Time credits added! Let's keep going.",
+                text: "❌ Payment completed but failed to add credits. Please contact support.",
                 sender: "ai",
               },
             ]);
-            // Scroll to bottom after time credits message
-            setTimeout(() => {
-              scrollToBottom("auto");
-            }, 100);
-          } catch {}
+          }
+          navigate(window.location.pathname, { replace: true });
+        } else if (params.get("purchase") === "time_cancel") {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              text: "❌ Time credit purchase cancelled. No credits were added.",
+              sender: "ai",
+            },
+          ]);
+          setTimeout(() => {
+            scrollToBottom("auto");
+          }, 100);
           navigate(window.location.pathname, { replace: true });
         }
       } catch (error) {
@@ -245,13 +388,45 @@ export default function ChatUI() {
     };
 
     checkAuth();
-    const interval = setInterval(() => checkAuth(), 120000);
-    return () => clearInterval(interval);
-  }, [navigate, lastSignOutTime]);
+    const authInterval = setInterval(() => checkAuth(), 120000);
+
+    // Sync time credits every 30 seconds to ensure accuracy
+    const syncInterval = setInterval(async () => {
+      try {
+        const credits = await apiFetch("/api/billing/credits/status/");
+        if (credits && typeof credits.time_credits_seconds === "number") {
+          const currentCredits = credits.time_credits_seconds;
+          const now = Date.now();
+          const elapsedSinceSync = Math.floor((now - lastSyncTime) / 1000);
+          const adjustedCredits = Math.max(
+            0,
+            currentCredits - elapsedSinceSync
+          );
+
+          setTimeCreditsSeconds(currentCredits);
+          setDisplayTime(adjustedCredits);
+          setLastSyncTime(now);
+          console.log(
+            "Periodic sync - backend:",
+            currentCredits,
+            "adjusted:",
+            adjustedCredits
+          );
+        }
+      } catch (error) {
+        console.error("Periodic time credit sync failed:", error);
+      }
+    }, 30000);
+
+    return () => {
+      clearInterval(authInterval);
+      clearInterval(syncInterval);
+    };
+  }, [navigate, lastSignOutTime, lastSyncTime]);
 
   // Real-time countdown timer
   useEffect(() => {
-    if (timeCreditsSeconds <= 0) return;
+    if (displayTime <= 0) return;
 
     const interval = setInterval(() => {
       setDisplayTime((prev) => {
@@ -261,7 +436,7 @@ export default function ChatUI() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timeCreditsSeconds]);
+  }, [displayTime]);
 
   // Load chat history
   useEffect(() => {
@@ -368,11 +543,6 @@ export default function ChatUI() {
     return false;
   };
 
-  const incrementTimeUsed = (seconds: number): void => {
-    // Update local display only; authoritative usage is reported to backend
-    setTimeCreditsSeconds((prev) => Math.max(0, prev - seconds));
-  };
-
   const handleSignOut = async () => {
     try {
       await apiFetch("/api/accounts/logout/", { method: "POST" });
@@ -457,7 +627,7 @@ export default function ChatUI() {
       // Calculate and increment time used right after successful response
       const processingTime = Math.floor((Date.now() - startTime) / 1000);
       // Report usage to backend (will deduct credits server-side).
-      // Prefer server's remaining balance; fall back to local decrement on error
+      // Always use server's authoritative balance
       let updatedTimeCredits = timeCreditsSeconds;
       try {
         const usage = await apiFetch("/api/billing/usage/report/", {
@@ -467,15 +637,50 @@ export default function ChatUI() {
         });
         if (usage && typeof usage.time_credits_seconds === "number") {
           updatedTimeCredits = Math.max(0, usage.time_credits_seconds);
+          const now = Date.now();
           setTimeCreditsSeconds(updatedTimeCredits);
+          setDisplayTime(updatedTimeCredits);
+          setLastSyncTime(now);
+          console.log("Time credits updated from backend:", updatedTimeCredits);
         } else {
+          // Fallback: use local decrement but still sync with backend
           updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
-          incrementTimeUsed(processingTime);
+          setTimeCreditsSeconds(updatedTimeCredits);
+          setDisplayTime(updatedTimeCredits);
+          console.log("Fallback time credits update:", updatedTimeCredits);
         }
       } catch (error) {
         console.error("Time credit usage report failed:", error);
-        updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
-        incrementTimeUsed(processingTime);
+        // On error, still try to sync with backend
+        try {
+          const currentCredits = await apiFetch("/api/billing/credits/status/");
+          if (
+            currentCredits &&
+            typeof currentCredits.time_credits_seconds === "number"
+          ) {
+            updatedTimeCredits = Math.max(
+              0,
+              currentCredits.time_credits_seconds
+            );
+            const now = Date.now();
+            setTimeCreditsSeconds(updatedTimeCredits);
+            setDisplayTime(updatedTimeCredits);
+            setLastSyncTime(now);
+            console.log("Synced time credits after error:", updatedTimeCredits);
+          } else {
+            updatedTimeCredits = Math.max(
+              0,
+              timeCreditsSeconds - processingTime
+            );
+            setTimeCreditsSeconds(updatedTimeCredits);
+            setDisplayTime(updatedTimeCredits);
+          }
+        } catch (syncError) {
+          console.error("Failed to sync time credits:", syncError);
+          updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
+          setTimeCreditsSeconds(updatedTimeCredits);
+          setDisplayTime(updatedTimeCredits);
+        }
       }
 
       // Always blur images initially - user pays to unlock
@@ -947,8 +1152,14 @@ export default function ChatUI() {
                                 msg.serverMessageId
                               );
                               const res = await apiFetch(
-                                `/api/chat/messages/${msg.serverMessageId}/unlock_image/`,
-                                { method: "POST" }
+                                `/api/billing/create-checkout-session/image-unlock/`,
+                                {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: { message_id: msg.serverMessageId },
+                                }
                               );
                               console.log("Unlock response:", res);
                               if (res?.checkout_url) {
