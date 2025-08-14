@@ -66,7 +66,10 @@ export default function ChatUI() {
 
   // On initial mount, always scroll to bottom
   useEffect(() => {
-    scrollToBottom("auto");
+    // Delay scroll to ensure messages are rendered
+    setTimeout(() => {
+      scrollToBottom("auto");
+    }, 100);
     // eslint-disable-next-line
   }, []);
 
@@ -141,6 +144,10 @@ export default function ChatUI() {
               sender: "ai",
             },
           ]);
+          // Scroll to bottom after welcome back message
+          setTimeout(() => {
+            scrollToBottom("auto");
+          }, 100);
         }
 
         const params = new URLSearchParams(window.location.search);
@@ -153,6 +160,10 @@ export default function ChatUI() {
               sender: "ai",
             },
           ]);
+          // Scroll to bottom after payment success message
+          setTimeout(() => {
+            scrollToBottom("auto");
+          }, 100);
           navigate(window.location.pathname, { replace: true });
         } else if (params.get("unlock_success") === "true") {
           console.log(
@@ -189,6 +200,9 @@ export default function ChatUI() {
               }
             } catch (error) {
               console.error("Failed to refresh message:", error);
+              toast.error(
+                "Failed to refresh image status. Please refresh the page."
+              );
             }
 
             setMessages((prev) => [
@@ -199,6 +213,10 @@ export default function ChatUI() {
                 sender: "ai",
               },
             ]);
+            // Scroll to bottom after image unlock message
+            setTimeout(() => {
+              scrollToBottom("auto");
+            }, 100);
           }
           navigate(window.location.pathname, { replace: true });
         } else if (params.get("purchase") === "time_success") {
@@ -213,10 +231,15 @@ export default function ChatUI() {
                 sender: "ai",
               },
             ]);
+            // Scroll to bottom after time credits message
+            setTimeout(() => {
+              scrollToBottom("auto");
+            }, 100);
           } catch {}
           navigate(window.location.pathname, { replace: true });
         }
-      } catch {
+      } catch (error) {
+        console.error("Authentication check failed:", error);
         navigate("/");
       }
     };
@@ -257,6 +280,27 @@ export default function ChatUI() {
           locked: msg.metadata?.unlocked !== true, // Default to locked unless explicitly unlocked
         }));
 
+        const newMessages: Message[] =
+          formatted.length > 0
+            ? formatted
+            : [
+                {
+                  id: 1,
+                  text: "Hey there 👋 I'm Amber…",
+                  sender: "ai" as const,
+                },
+                {
+                  id: 2,
+                  text: "Welcome back! Ready to continue? 😘",
+                  sender: "ai" as const,
+                },
+                {
+                  id: 3,
+                  text: "What's on your mind today? 😈",
+                  sender: "ai" as const,
+                },
+              ];
+
         setMessages((prev) => {
           if (
             prev.some(
@@ -267,17 +311,7 @@ export default function ChatUI() {
           ) {
             return [...prev, ...formatted];
           }
-          return formatted.length > 0
-            ? formatted
-            : [
-                { id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" },
-                {
-                  id: 2,
-                  text: "Welcome back! Ready to continue? 😘",
-                  sender: "ai",
-                },
-                { id: 3, text: "What's on your mind today? 😈", sender: "ai" },
-              ];
+          return newMessages;
         });
 
         // Only add images to gallery if they are unlocked (paid for)
@@ -287,6 +321,11 @@ export default function ChatUI() {
           .filter((url) => url !== undefined) as string[];
 
         setGalleryImages(galleryImgs);
+
+        // Scroll to bottom immediately after setting messages
+        setTimeout(() => {
+          scrollToBottom("auto");
+        }, 50);
 
         if (isNewChat) {
           setTimeout(() => {
@@ -298,15 +337,22 @@ export default function ChatUI() {
                 sender: "ai",
               },
             ]);
+            // Scroll to bottom after adding new chat message
+            setTimeout(() => {
+              scrollToBottom("auto");
+            }, 100);
           }, 3000);
         }
       } catch (err) {
         console.error("Error loading chat history:", err);
+        toast.error(
+          "Failed to load chat history. Starting fresh conversation."
+        );
         setMessages([
           { id: 1, text: "Hey there 👋 I'm Amber…", sender: "ai" },
           {
             id: 2,
-            text: "Oops, something went wrong, but I'm still here 😉",
+            text: "Let's start fresh! What's on your mind? 😘",
             sender: "ai",
           },
         ]);
@@ -341,6 +387,7 @@ export default function ChatUI() {
       navigate("/");
     } catch (err) {
       console.error("Logout error:", err);
+      toast.error("Logout failed. Please try again.");
     }
   };
 
@@ -425,7 +472,8 @@ export default function ChatUI() {
           updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
           incrementTimeUsed(processingTime);
         }
-      } catch {
+      } catch (error) {
+        console.error("Time credit usage report failed:", error);
         updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
         incrementTimeUsed(processingTime);
       }
@@ -533,14 +581,8 @@ export default function ChatUI() {
       const { error } = await stripe!.redirectToCheckout({ sessionId });
       if (error) throw error;
     } catch (e) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now(),
-          text: "Payment failed. Please try again.",
-          sender: "ai",
-        },
-      ]);
+      console.error("Time credit purchase error:", e);
+      toast.error("Payment failed. Please try again.");
     } finally {
       setCheckoutLoading(false);
     }
@@ -920,8 +962,11 @@ export default function ChatUI() {
                                   "Payment failed. Please try again."
                                 );
                               }
-                            } catch {
-                              setShowUpgradePrompt(true);
+                            } catch (error) {
+                              console.error("Image unlock error:", error);
+                              toast.error(
+                                "Failed to unlock image. Please try again."
+                              );
                             }
                           }}
                         >
