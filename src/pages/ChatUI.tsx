@@ -450,6 +450,7 @@ export default function ChatUI() {
           text: msg.content,
           sender: msg.is_user ? "user" : "ai",
           image_url: msg.image_url || undefined,
+          serverMessageId: msg.id, // Add server message ID for unlock functionality
           timestamp: msg.timestamp,
           blurred: msg.metadata?.blurred !== false, // Default to blurred unless explicitly unlocked
           locked: msg.metadata?.unlocked !== true, // Default to locked unless explicitly unlocked
@@ -1165,8 +1166,28 @@ export default function ChatUI() {
                               if (res?.checkout_url) {
                                 // Redirect to Stripe checkout for payment
                                 window.location.href = res.checkout_url;
-                              } else if (res?.error === "NO_CREDITS") {
-                                setShowUpgradePrompt(true);
+                              } else if (res?.ok === true && res?.image_url) {
+                                // Image is already unlocked
+                                setMessages((prev) =>
+                                  prev.map((m) =>
+                                    m.serverMessageId === msg.serverMessageId
+                                      ? { ...m, blurred: false, locked: false }
+                                      : m
+                                  )
+                                );
+                              } else if (res?.error) {
+                                // Handle specific errors
+                                console.error("Image unlock error:", res.error);
+                                if (
+                                  res.error.includes("time") ||
+                                  res.error.includes("credit")
+                                ) {
+                                  setShowUpgradePrompt(true);
+                                } else {
+                                  toast.error(
+                                    "Payment failed. Please try again."
+                                  );
+                                }
                               } else {
                                 // Any other response means payment failed or error
                                 toast.error(
@@ -1175,9 +1196,23 @@ export default function ChatUI() {
                               }
                             } catch (error) {
                               console.error("Image unlock error:", error);
-                              toast.error(
-                                "Failed to unlock image. Please try again."
-                              );
+                              // Check if it's a network error or server error
+                              if (error instanceof Error) {
+                                if (
+                                  error.message.includes("time") ||
+                                  error.message.includes("credit")
+                                ) {
+                                  setShowUpgradePrompt(true);
+                                } else {
+                                  toast.error(
+                                    "Failed to unlock image. Please try again."
+                                  );
+                                }
+                              } else {
+                                toast.error(
+                                  "Failed to unlock image. Please try again."
+                                );
+                              }
                             }
                           }}
                         >
