@@ -15,6 +15,7 @@ interface Message {
   upsell?: boolean;
   serverMessageId?: number;
   locked?: boolean;
+  has_image?: boolean;
 }
 
 interface User {
@@ -1108,7 +1109,7 @@ export default function ChatUI() {
                   </p>
                 </div>
               )}
-              {msg.image_url && (
+                            {msg.has_image && (
                 <div className={`mt-2 max-w-[90%] md:max-w-md`}>
                   <div
                     className={`p-1 md:p-2 rounded-2xl shadow ${
@@ -1118,34 +1119,16 @@ export default function ChatUI() {
                     }`}
                   >
                     <div className="relative">
-                      <img
-                        src={msg.image_url}
-                        alt="AI generated"
-                        className={`rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y ${
-                          msg.blurred ? "filter blur-md" : ""
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!msg.blurred) {
-                            setModalImage(msg.image_url || null);
-                          }
-                        }}
-                      />
-                      {msg.blurred && (
-                        <button
-                          type="button"
-                          className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                          style={{
-                            background: "rgba(0,0,0,0.5)",
-                            border: "none",
-                            width: "100%",
-                            height: "100%",
-                            padding: 0,
-                          }}
+                      {msg.locked ? (
+                        // Show locked image placeholder
+                        <img
+                          src={`/api/chat/messages/${msg.serverMessageId}/locked_image/`}
+                          alt="Locked image"
+                          className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
                           onClick={async (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-
+                            
                             if (!msg.serverMessageId) {
                               setShowUpgradePrompt(true);
                               return;
@@ -1247,12 +1230,23 @@ export default function ChatUI() {
                               }
                             }
                           }}
-                        >
-                          <span className="text-white font-bold bg-black/50 p-2 rounded">
-                            🔒 Pay $4.99 to Unlock
-                          </span>
-                        </button>
+                        />
+                      ) : (
+                        // Show unlocked image
+                        <img
+                          src={msg.image_url}
+                          alt="AI generated"
+                          className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setModalImage(msg.image_url || null);
+                          }}
+                        />
                       )}
+                    </div>
+                  </div>
+                </div>
+              )}
                     </div>
                   </div>
                 </div>
