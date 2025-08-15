@@ -1109,7 +1109,7 @@ export default function ChatUI() {
                   </p>
                 </div>
               )}
-                            {msg.has_image && (
+              {msg.has_image && (
                 <div className={`mt-2 max-w-[90%] md:max-w-md`}>
                   <div
                     className={`p-1 md:p-2 rounded-2xl shadow ${
@@ -1128,7 +1128,7 @@ export default function ChatUI() {
                           onClick={async (e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            
+
                             if (!msg.serverMessageId) {
                               setShowUpgradePrompt(true);
                               return;
@@ -1243,10 +1243,6 @@ export default function ChatUI() {
                           }}
                         />
                       )}
-                    </div>
-                  </div>
-                </div>
-              )}
                     </div>
                   </div>
                 </div>
