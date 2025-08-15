@@ -1142,7 +1142,10 @@ export default function ChatUI() {
                             height: "100%",
                             padding: 0,
                           }}
-                          onClick={async () => {
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+
                             if (!msg.serverMessageId) {
                               setShowUpgradePrompt(true);
                               return;
@@ -1151,6 +1154,9 @@ export default function ChatUI() {
                               console.log(
                                 "Attempting to unlock image:",
                                 msg.serverMessageId
+                              );
+                              console.log(
+                                "Calling endpoint: /api/billing/create-checkout-session/image-unlock/"
                               );
                               const res = await apiFetch(
                                 `/api/billing/create-checkout-session/image-unlock/`,
@@ -1163,6 +1169,11 @@ export default function ChatUI() {
                                 }
                               );
                               console.log("Unlock response:", res);
+                              console.log("Response type:", typeof res);
+                              console.log(
+                                "Response keys:",
+                                Object.keys(res || {})
+                              );
                               if (res?.checkout_url) {
                                 // Redirect to Stripe checkout for payment
                                 window.location.href = res.checkout_url;
@@ -1196,19 +1207,40 @@ export default function ChatUI() {
                               }
                             } catch (error) {
                               console.error("Image unlock error:", error);
+                              console.error("Error type:", typeof error);
+                              console.error(
+                                "Error message:",
+                                error instanceof Error
+                                  ? error.message
+                                  : String(error)
+                              );
+                              console.error(
+                                "Error stack:",
+                                error instanceof Error
+                                  ? error.stack
+                                  : "No stack"
+                              );
+
                               // Check if it's a network error or server error
                               if (error instanceof Error) {
                                 if (
                                   error.message.includes("time") ||
                                   error.message.includes("credit")
                                 ) {
+                                  console.log(
+                                    "Showing time credit prompt due to error message"
+                                  );
                                   setShowUpgradePrompt(true);
                                 } else {
+                                  console.log("Showing generic error toast");
                                   toast.error(
                                     "Failed to unlock image. Please try again."
                                   );
                                 }
                               } else {
+                                console.log(
+                                  "Showing generic error toast for non-Error object"
+                                );
                                 toast.error(
                                   "Failed to unlock image. Please try again."
                                 );
