@@ -1119,12 +1119,30 @@ export default function ChatUI() {
                     }`}
                   >
                     <div className="relative">
-                      {msg.locked ? (
-                        // Show locked image placeholder
-                        <img
-                          src={`/api/chat/messages/${msg.serverMessageId}/locked_image/`}
-                          alt="Locked image"
-                          className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
+                      <img
+                        src={msg.image_url}
+                        alt="AI generated"
+                        className={`rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y ${
+                          msg.blurred ? "filter blur-md" : ""
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!msg.blurred) {
+                            setModalImage(msg.image_url || null);
+                          }
+                        }}
+                      />
+                      {msg.blurred && (
+                        <button
+                          type="button"
+                          className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                          style={{
+                            background: "rgba(0,0,0,0.5)",
+                            border: "none",
+                            width: "100%",
+                            height: "100%",
+                            padding: 0,
+                          }}
                           onClick={async (e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -1230,18 +1248,11 @@ export default function ChatUI() {
                               }
                             }
                           }}
-                        />
-                      ) : (
-                        // Show unlocked image
-                        <img
-                          src={msg.image_url}
-                          alt="AI generated"
-                          className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setModalImage(msg.image_url || null);
-                          }}
-                        />
+                        >
+                          <span className="text-white font-bold bg-black/50 p-2 rounded">
+                            🔒 Pay $4.99 to Unlock
+                          </span>
+                        </button>
                       )}
                     </div>
                   </div>
