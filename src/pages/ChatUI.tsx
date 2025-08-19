@@ -453,8 +453,9 @@ export default function ChatUI() {
           image_url: msg.image_url || undefined,
           serverMessageId: msg.id, // Add server message ID for unlock functionality
           timestamp: msg.timestamp,
-          blurred: msg.metadata?.blurred !== false, // Default to blurred unless explicitly unlocked
-          locked: msg.metadata?.unlocked !== true, // Default to locked unless explicitly unlocked
+          blurred: msg.metadata?.unlocked !== true, // Blurred if NOT unlocked
+          locked: msg.metadata?.unlocked !== true, // Locked if NOT unlocked
+          has_image: msg.metadata?.has_image || false, // Whether message has an image
         }));
 
         const newMessages: Message[] =
@@ -695,6 +696,7 @@ export default function ChatUI() {
         image_url: willHaveImage ? fullImageUrl : undefined, // Store the real URL but it will be blurred
         blurred: willHaveImage ? true : false,
         locked: willHaveImage ? true : false,
+        has_image: willHaveImage,
         upsell: data.upsell,
       };
 
