@@ -5,6 +5,7 @@ import { apiFetch } from "../../utils/api"; // adjust path if needed
 type User = {
   id: number;
   username: string;
+  time_credits_seconds?: number;
 };
 
 type ChatSession = {
@@ -50,7 +51,10 @@ export default function DashboardPage() {
           credentials: "include",
         });
         setUserCount(users.length);
-        setPremiumCount(users.filter((user: User) => user.is_premium).length);
+        setPremiumCount(
+          users.filter((user: User) => (user.time_credits_seconds || 0) > 0)
+            .length
+        );
       } catch (error) {
         console.error("Error loading user stats:", error);
       }

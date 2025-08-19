@@ -7,6 +7,7 @@ type User = {
   username: string;
   email: string;
   is_staff: boolean;
+  time_credits_seconds?: number;
   last_active?: string;
 };
 
@@ -36,8 +37,8 @@ export default function UsersPage() {
             <tr className="bg-[#4B1F1F] text-[#E7D8C1] text-left text-sm font-bold tracking-wide">
               <th className="px-5 py-3">Username</th>
               <th className="px-5 py-3">Email</th>
-              <th className="px-5 py-3 text-center">Premium</th>
-              <th className="px-5 py-3 text-center">Admin</th>
+              <th className="px-5 py-3 text-center">Has Credits</th>
+              <th className="px-5 py-3 text-center">Staff</th>
               <th className="px-5 py-3 text-center">Last Active</th>
             </tr>
           </thead>
@@ -61,23 +62,23 @@ export default function UsersPage() {
                 <td className="px-5 py-4 text-center">
                   <span
                     className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
-                      user.is_premium
+                      (user.time_credits_seconds || 0) > 0
                         ? "bg-green-600 text-white"
                         : "bg-red-600 text-white"
                     }`}
                   >
-                    {user.is_premium ? "Yes" : "No"}
+                    {(user.time_credits_seconds || 0) > 0 ? "Yes" : "No"}
                   </span>
                 </td>
                 <td className="px-5 py-4 text-center">
                   <span
                     className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${
-                      user.is_admin
+                      user.is_staff
                         ? "bg-yellow-600 text-white"
                         : "bg-gray-600 text-white"
                     }`}
                   >
-                    {user.is_admin ? "Yes" : "No"}
+                    {user.is_staff ? "Yes" : "No"}
                   </span>
                 </td>
                 <td className="px-5 py-4 text-center">

@@ -16,7 +16,7 @@ import gridImage8 from "../assets/grid-8.png";
 
 type LandingProps = {
   onRegisterClick: () => void;
-  onLoginClick: () => void;
+  onLoginClick?: () => void; // Make optional since it's not used
 };
 
 export default function Landing({
