@@ -1120,11 +1120,13 @@ export default function ChatUI() {
                   >
                     <div className="relative">
                       <img
-                        src={msg.image_url}
+                        src={
+                          msg.blurred
+                            ? `/api/chat/messages/${msg.serverMessageId}/locked_image/`
+                            : `${msg.image_url}?user_id=${user?.id || ""}`
+                        }
                         alt="AI generated"
-                        className={`rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y ${
-                          msg.blurred ? "filter blur-md" : ""
-                        }`}
+                        className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!msg.blurred) {
@@ -1148,16 +1150,13 @@ export default function ChatUI() {
                             e.stopPropagation();
 
                             if (!msg.serverMessageId) {
-                              setShowUpgradePrompt(true);
+                              toast.error("Image not found. Please try again.");
                               return;
                             }
                             try {
                               console.log(
                                 "Attempting to unlock image:",
                                 msg.serverMessageId
-                              );
-                              console.log(
-                                "Calling endpoint: /api/billing/create-checkout-session/image-unlock/"
                               );
                               const res = await apiFetch(
                                 `/api/billing/create-checkout-session/image-unlock/`,
@@ -1170,11 +1169,7 @@ export default function ChatUI() {
                                 }
                               );
                               console.log("Unlock response:", res);
-                              console.log("Response type:", typeof res);
-                              console.log(
-                                "Response keys:",
-                                Object.keys(res || {})
-                              );
+
                               if (res?.checkout_url) {
                                 // Redirect to Stripe checkout for payment
                                 window.location.href = res.checkout_url;
@@ -1187,19 +1182,6 @@ export default function ChatUI() {
                                       : m
                                   )
                                 );
-                              } else if (res?.error) {
-                                // Handle specific errors
-                                console.error("Image unlock error:", res.error);
-                                if (
-                                  res.error.includes("time") ||
-                                  res.error.includes("credit")
-                                ) {
-                                  setShowUpgradePrompt(true);
-                                } else {
-                                  toast.error(
-                                    "Payment failed. Please try again."
-                                  );
-                                }
                               } else {
                                 // Any other response means payment failed or error
                                 toast.error(
@@ -1208,44 +1190,9 @@ export default function ChatUI() {
                               }
                             } catch (error) {
                               console.error("Image unlock error:", error);
-                              console.error("Error type:", typeof error);
-                              console.error(
-                                "Error message:",
-                                error instanceof Error
-                                  ? error.message
-                                  : String(error)
+                              toast.error(
+                                "Failed to unlock image. Please try again."
                               );
-                              console.error(
-                                "Error stack:",
-                                error instanceof Error
-                                  ? error.stack
-                                  : "No stack"
-                              );
-
-                              // Check if it's a network error or server error
-                              if (error instanceof Error) {
-                                if (
-                                  error.message.includes("time") ||
-                                  error.message.includes("credit")
-                                ) {
-                                  console.log(
-                                    "Showing time credit prompt due to error message"
-                                  );
-                                  setShowUpgradePrompt(true);
-                                } else {
-                                  console.log("Showing generic error toast");
-                                  toast.error(
-                                    "Failed to unlock image. Please try again."
-                                  );
-                                }
-                              } else {
-                                console.log(
-                                  "Showing generic error toast for non-Error object"
-                                );
-                                toast.error(
-                                  "Failed to unlock image. Please try again."
-                                );
-                              }
                             }
                           }}
                         >
