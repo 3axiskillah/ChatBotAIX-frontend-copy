@@ -1,30 +1,18 @@
 import { useState } from "react";
 
-// Placeholder image URLs for now - will be replaced with actual images
-const heroImage =
-  "https://via.placeholder.com/800x400/FF6B35/FFFFFF?text=Hero+Image";
-const galleryImage1 =
-  "https://via.placeholder.com/256x192/FF6B35/FFFFFF?text=Gallery+1";
-const galleryImage2 =
-  "https://via.placeholder.com/256x192/FF6B35/FFFFFF?text=Gallery+2";
-const mainContentImage =
-  "https://via.placeholder.com/800x400/FF6B35/FFFFFF?text=Main+Content";
-const gridImage1 =
-  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+1";
-const gridImage2 =
-  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+2";
-const gridImage3 =
-  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+3";
-const gridImage4 =
-  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+4";
-const gridImage5 =
-  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+5";
-const gridImage6 =
-  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+6";
-const gridImage7 =
-  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+7";
-const gridImage8 =
-  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+8";
+// Image paths from public folder
+const heroImage = "/hero.png";
+const galleryImage1 = "/gallery-1.png";
+const galleryImage2 = "/gallery-2.png";
+const mainContentImage = "/main-content.png";
+const gridImage1 = "/grid-1.png";
+const gridImage2 = "/grid-2.png";
+const gridImage3 = "/grid-3.png";
+const gridImage4 = "/grid-4.png";
+const gridImage5 = "/grid-5.png";
+const gridImage6 = "/grid-6.png";
+const gridImage7 = "/grid-7.png";
+const gridImage8 = "/grid-8.png";
 
 type LandingProps = {
   onRegisterClick: () => void;
