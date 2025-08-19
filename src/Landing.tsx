@@ -16,7 +16,7 @@ import gridImage8 from "../assets/grid-8.png";
 
 type LandingProps = {
   onRegisterClick: () => void;
-  onLoginClick?: () => void; // Make optional since it's not used
+  onLoginClick: () => void;
 };
 
 export default function Landing({
@@ -104,6 +104,13 @@ export default function Landing({
                     />
                   </svg>
                 </button>
+                <div className="w-px h-6 bg-gray-600"></div>
+                <button
+                  onClick={onLoginClick}
+                  className="text-gray-300 hover:text-white transition-colors"
+                >
+                  Login
+                </button>
               </div>
             </nav>
 
@@ -154,6 +161,12 @@ export default function Landing({
               <a href="#shop" className="block text-gray-300 hover:text-white">
                 Ready To Shop
               </a>
+              <button
+                onClick={onLoginClick}
+                className="block w-full text-left text-gray-300 hover:text-white"
+              >
+                Login
+              </button>
             </div>
           </div>
         )}
