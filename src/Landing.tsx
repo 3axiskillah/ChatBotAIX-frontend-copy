@@ -1,18 +1,30 @@
 import { useState } from "react";
 
-// Import images from assets folder
-import heroImage from "../assets/hero.png";
-import galleryImage1 from "../assets/gallery-1.png";
-import galleryImage2 from "../assets/gallery-2.png";
-import mainContentImage from "../assets/main-content.png";
-import gridImage1 from "../assets/grid-1.png";
-import gridImage2 from "../assets/grid-2.png";
-import gridImage3 from "../assets/grid-3.png";
-import gridImage4 from "../assets/grid-4.png";
-import gridImage5 from "../assets/grid-5.png";
-import gridImage6 from "../assets/grid-6.png";
-import gridImage7 from "../assets/grid-7.png";
-import gridImage8 from "../assets/grid-8.png";
+// Placeholder image URLs for now - will be replaced with actual images
+const heroImage =
+  "https://via.placeholder.com/800x400/FF6B35/FFFFFF?text=Hero+Image";
+const galleryImage1 =
+  "https://via.placeholder.com/256x192/FF6B35/FFFFFF?text=Gallery+1";
+const galleryImage2 =
+  "https://via.placeholder.com/256x192/FF6B35/FFFFFF?text=Gallery+2";
+const mainContentImage =
+  "https://via.placeholder.com/800x400/FF6B35/FFFFFF?text=Main+Content";
+const gridImage1 =
+  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+1";
+const gridImage2 =
+  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+2";
+const gridImage3 =
+  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+3";
+const gridImage4 =
+  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+4";
+const gridImage5 =
+  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+5";
+const gridImage6 =
+  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+6";
+const gridImage7 =
+  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+7";
+const gridImage8 =
+  "https://via.placeholder.com/200x200/FF6B35/FFFFFF?text=Grid+8";
 
 type LandingProps = {
   onRegisterClick: () => void;
