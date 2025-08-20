@@ -95,6 +95,7 @@ export async function apiFetch(
     isAuthenticated()
   ) {
     try {
+      console.log("Attempting token refresh...");
       const refreshRes = await apiFetch(
         "/api/accounts/refresh/",
         {
@@ -105,11 +106,14 @@ export async function apiFetch(
       ); // Prevent infinite retry loops
 
       if (refreshRes) {
+        console.log("Token refresh successful, retrying request...");
         return apiFetch(endpoint, options, isAIWorker, false); // Retry once
       }
       throw new Error("Refresh failed");
     } catch (err) {
-      throw new Error("Session expired. Please log in again.");
+      console.error("Token refresh failed:", err);
+      // Don't throw error immediately, let the calling code handle it
+      return null;
     }
   }
 
