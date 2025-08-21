@@ -188,7 +188,10 @@ export default function ChatUI() {
                 );
                 console.log("Found unlocked message:", unlockedMessage);
                 if (unlockedMessage && unlockedMessage.image_url) {
-                  console.log("Adding image to gallery:", unlockedMessage.image_url);
+                  console.log(
+                    "Adding image to gallery:",
+                    unlockedMessage.image_url
+                  );
                   setGalleryImages((gallery) => [
                     ...gallery,
                     unlockedMessage.image_url!,
@@ -1013,7 +1016,7 @@ export default function ChatUI() {
                         src={
                           msg.blurred
                             ? `/api/chat/messages/${msg.serverMessageId}/protected_image/`
-                            : `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                            : msg.image_url || `/api/chat/messages/${msg.serverMessageId}/protected_image/`
                         }
                         alt="AI generated"
                         className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
@@ -1021,7 +1024,7 @@ export default function ChatUI() {
                           e.stopPropagation();
                           if (!msg.blurred) {
                             setModalImage(
-                              `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                              msg.image_url || `/api/chat/messages/${msg.serverMessageId}/protected_image/`
                             );
                           }
                         }}
