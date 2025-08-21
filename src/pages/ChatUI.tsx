@@ -1124,15 +1124,17 @@ export default function ChatUI() {
                       <img
                         src={
                           msg.blurred
-                            ? `/api/chat/messages/${msg.serverMessageId}/locked_image/`
-                            : `${msg.image_url}?user_id=${user?.id || ""}`
+                            ? `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                            : `/api/chat/messages/${msg.serverMessageId}/protected_image/`
                         }
                         alt="AI generated"
                         className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!msg.blurred) {
-                            setModalImage(msg.image_url || null);
+                            setModalImage(
+                              `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                            );
                           }
                         }}
                       />

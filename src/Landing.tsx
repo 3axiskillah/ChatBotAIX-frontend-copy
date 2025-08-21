@@ -175,8 +175,8 @@ export default function Landing({
       {/* Hero Section */}
       <section className="relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="bg-amber-50 rounded-3xl p-8 md:p-12 mb-8">
-            <div className="aspect-video bg-amber-100 rounded-2xl mb-6 flex items-center justify-center">
+          <div className="bg-gradient-to-br from-gray-900 to-black rounded-3xl p-8 md:p-12 mb-8">
+            <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl mb-6 flex items-center justify-center">
               {heroImage ? (
                 <img
                   src={heroImage}
@@ -184,13 +184,13 @@ export default function Landing({
                   className="w-full h-full object-cover rounded-2xl"
                 />
               ) : (
-                <div className="text-amber-600 text-lg font-medium">
+                <div className="text-gray-400 text-lg font-medium">
                   Hero Image Placeholder
                 </div>
               )}
             </div>
             <div className="text-center">
-              <h1 className="text-3xl md:text-4xl font-bold text-black mb-4">
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
                 Say hi... let's make this nasty.
               </h1>
               <button
@@ -212,7 +212,7 @@ export default function Landing({
             <div className="lg:w-1/2">
               <div className="flex space-x-4 overflow-x-auto pb-4">
                 <div className="flex-shrink-0">
-                  <div className="w-64 h-48 bg-amber-50 rounded-2xl mb-2 flex items-center justify-center">
+                  <div className="w-64 h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl mb-2 flex items-center justify-center">
                     {galleryImage1 ? (
                       <img
                         src={galleryImage1}
@@ -220,7 +220,7 @@ export default function Landing({
                         className="w-full h-full object-cover rounded-2xl"
                       />
                     ) : (
-                      <div className="text-amber-600 font-medium">
+                      <div className="text-gray-400 font-medium">
                         No Panties Today
                       </div>
                     )}
@@ -228,7 +228,7 @@ export default function Landing({
                   <p className="text-white text-center">No Panties Today</p>
                 </div>
                 <div className="flex-shrink-0">
-                  <div className="w-64 h-48 bg-amber-50 rounded-2xl mb-2 flex items-center justify-center relative">
+                  <div className="w-64 h-48 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl mb-2 flex items-center justify-center relative">
                     {galleryImage2 ? (
                       <img
                         src={galleryImage2}
@@ -236,7 +236,7 @@ export default function Landing({
                         className="w-full h-full object-cover rounded-2xl"
                       />
                     ) : (
-                      <div className="text-amber-600 font-medium">
+                      <div className="text-gray-400 font-medium">
                         Only If You Beg
                       </div>
                     )}
@@ -287,8 +287,8 @@ export default function Landing({
       {/* Main Content Image */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-amber-50 rounded-3xl p-8 md:p-12">
-            <div className="aspect-video bg-amber-100 rounded-2xl flex items-center justify-center">
+          <div className="bg-gradient-to-br from-gray-900 to-black rounded-3xl p-8 md:p-12">
+            <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl flex items-center justify-center">
               {mainContentImage ? (
                 <img
                   src={mainContentImage}
@@ -296,7 +296,7 @@ export default function Landing({
                   className="w-full h-full object-cover rounded-2xl"
                 />
               ) : (
-                <div className="text-amber-600 text-lg font-medium">
+                <div className="text-gray-400 text-lg font-medium">
                   Main Content Image Placeholder
                 </div>
               )}
@@ -330,7 +330,7 @@ export default function Landing({
               "Say please",
             ].map((title, index) => (
               <div key={index} className="group cursor-pointer">
-                <div className="aspect-square bg-amber-50 rounded-2xl mb-3 flex items-center justify-center overflow-hidden">
+                <div className="aspect-square bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl mb-3 flex items-center justify-center overflow-hidden">
                   {gridImages[index] ? (
                     <img
                       src={gridImages[index]}
@@ -338,7 +338,7 @@ export default function Landing({
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
-                    <div className="text-amber-600 font-medium text-center px-2">
+                    <div className="text-gray-400 font-medium text-center px-2">
                       {title}
                     </div>
                   )}
