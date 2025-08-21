@@ -174,7 +174,10 @@ export default function ChatUI() {
           }, 100);
           navigate(window.location.pathname, { replace: true });
         } else if (params.get("unlock_success") === "true") {
-          console.log("Image unlock success detected, messageId:", params.get("message_id"));
+          console.log(
+            "Image unlock success detected, messageId:",
+            params.get("message_id")
+          );
           const messageId = params.get("message_id");
           if (messageId) {
             // Refresh the specific message to show unblurred image
@@ -204,7 +207,9 @@ export default function ChatUI() {
               }, 100);
             } catch (error) {
               console.error("Failed to unlock image:", error);
-              toast.error("Payment completed but failed to unlock image. Please refresh the page.");
+              toast.error(
+                "Payment completed but failed to unlock image. Please refresh the page."
+              );
             }
           }
           navigate(window.location.pathname, { replace: true });
