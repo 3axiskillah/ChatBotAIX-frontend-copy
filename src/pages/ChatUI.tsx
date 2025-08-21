@@ -668,31 +668,39 @@ export default function ChatUI() {
     try {
       setCheckoutLoading(true);
       console.log("Creating checkout session for tier:", tier);
-      
+
       const stripe = await loadStripe(
         "pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX"
       );
-      
-      const response = await apiFetch(
-        "/api/billing/create-checkout-session/time/",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: { tier },
-        }
-      );
-      
-      console.log("Checkout session response:", response);
-      
-      if (!response?.sessionId) {
+
+      // Use fetch directly to handle the response properly
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/billing/create-checkout-session/time/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ tier }),
+      });
+
+      const data = await response.json();
+      console.log("Checkout session response:", data);
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || "Payment failed");
+      }
+
+      if (!data?.sessionId) {
         throw new Error("No session ID received");
       }
-      
-      const { error } = await stripe!.redirectToCheckout({ sessionId: response.sessionId });
+
+      const { error } = await stripe!.redirectToCheckout({
+        sessionId: data.sessionId,
+      });
       if (error) throw error;
     } catch (e) {
       console.error("Time credit purchase error:", e);
-      toast.error("Payment failed. Please try again.");
+      toast.error(e instanceof Error ? e.message : "Payment failed. Please try again.");
     } finally {
       setCheckoutLoading(false);
     }
