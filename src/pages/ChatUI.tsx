@@ -182,8 +182,19 @@ export default function ChatUI() {
           if (messageId) {
             // Refresh the specific message to show unblurred image
             try {
-              setMessages((prev) =>
-                prev.map((m) =>
+              setMessages((prev) => {
+                const unlockedMessage = prev.find(
+                  (m) => m.serverMessageId === parseInt(messageId)
+                );
+                console.log("Found unlocked message:", unlockedMessage);
+                if (unlockedMessage && unlockedMessage.image_url) {
+                  console.log("Adding image to gallery:", unlockedMessage.image_url);
+                  setGalleryImages((gallery) => [
+                    ...gallery,
+                    unlockedMessage.image_url!,
+                  ]);
+                }
+                return prev.map((m) =>
                   m.serverMessageId === parseInt(messageId)
                     ? {
                         ...m,
@@ -191,16 +202,7 @@ export default function ChatUI() {
                         locked: false,
                       }
                     : m
-                )
-              );
-
-              // Add the unlocked image to gallery
-              setMessages((prev) => {
-                const unlockedMessage = prev.find(m => m.serverMessageId === parseInt(messageId));
-                if (unlockedMessage && unlockedMessage.image_url) {
-                  setGalleryImages((gallery) => [...gallery, unlockedMessage.image_url!]);
-                }
-                return prev;
+                );
               });
 
               setMessages((prev) => [
@@ -237,6 +239,19 @@ export default function ChatUI() {
               scrollToBottom("auto");
             }, 100);
           }
+          navigate(window.location.pathname, { replace: true });
+        } else if (params.get("purchase") === "time_success") {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              text: "⏱️ Payment successful! Time credits added to your account.",
+              sender: "ai",
+            },
+          ]);
+          setTimeout(() => {
+            scrollToBottom("auto");
+          }, 100);
           navigate(window.location.pathname, { replace: true });
         } else if (params.get("purchase") === "time_cancel") {
           setMessages((prev) => [
@@ -275,7 +290,10 @@ export default function ChatUI() {
           );
 
           setTimeCreditsSeconds(currentCredits);
-          setDisplayTime(adjustedCredits);
+          // Only update display time if it's significantly different (more than 10 seconds)
+          if (Math.abs(displayTime - adjustedCredits) > 10) {
+            setDisplayTime(adjustedCredits);
+          }
           setLastSyncTime(now);
           console.log(
             "Periodic sync - backend:",
