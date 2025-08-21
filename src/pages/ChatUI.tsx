@@ -194,6 +194,15 @@ export default function ChatUI() {
                 )
               );
 
+              // Add the unlocked image to gallery
+              setMessages((prev) => {
+                const unlockedMessage = prev.find(m => m.serverMessageId === parseInt(messageId));
+                if (unlockedMessage && unlockedMessage.image_url) {
+                  setGalleryImages((gallery) => [...gallery, unlockedMessage.image_url!]);
+                }
+                return prev;
+              });
+
               setMessages((prev) => [
                 ...prev,
                 {
