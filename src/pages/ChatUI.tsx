@@ -157,6 +157,87 @@ export default function ChatUI() {
           }, 100);
           navigate(window.location.pathname, { replace: true });
         }
+
+        // Handle payment success parameters
+        const params = new URLSearchParams(window.location.search);
+        if (params.has("payment_success")) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              text: "🎉 Payment successful! Your time credits have been added.",
+              sender: "ai",
+            },
+          ]);
+          setTimeout(() => {
+            scrollToBottom("auto");
+          }, 100);
+          navigate(window.location.pathname, { replace: true });
+        } else if (params.get("unlock_success") === "true") {
+          console.log("Image unlock success detected, messageId:", params.get("message_id"));
+          const messageId = params.get("message_id");
+          if (messageId) {
+            // Refresh the specific message to show unblurred image
+            try {
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.serverMessageId === parseInt(messageId)
+                    ? {
+                        ...m,
+                        blurred: false,
+                        locked: false,
+                      }
+                    : m
+                )
+              );
+
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: Date.now(),
+                  text: "🖼️ Payment successful! Image unlocked and added to your gallery.",
+                  sender: "ai",
+                },
+              ]);
+              setTimeout(() => {
+                scrollToBottom("auto");
+              }, 100);
+            } catch (error) {
+              console.error("Failed to unlock image:", error);
+              toast.error("Payment completed but failed to unlock image. Please refresh the page.");
+            }
+          }
+          navigate(window.location.pathname, { replace: true });
+        } else if (params.get("unlock_cancel") === "true") {
+          const messageId = params.get("message_id");
+          if (messageId) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: Date.now(),
+                text: "❌ Payment cancelled. Image remains locked.",
+                sender: "ai",
+              },
+            ]);
+            setTimeout(() => {
+              scrollToBottom("auto");
+            }, 100);
+          }
+          navigate(window.location.pathname, { replace: true });
+        } else if (params.get("purchase") === "time_cancel") {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              text: "❌ Time credit purchase cancelled. No credits were added.",
+              sender: "ai",
+            },
+          ]);
+          setTimeout(() => {
+            scrollToBottom("auto");
+          }, 100);
+          navigate(window.location.pathname, { replace: true });
+        }
       } catch (error) {
         console.error("Authentication check failed:", error);
         navigate("/");
