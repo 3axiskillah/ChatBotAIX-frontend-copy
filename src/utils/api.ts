@@ -25,10 +25,10 @@ export async function apiFetch(
   isAIWorker = false,
   retry = true
 ): Promise<any> {
-  // Rate limiting check
-  if (!rateLimiter.canAttempt(`api_${endpoint}`, 30, 60000)) {
-    throw new Error("Rate limit exceeded. Please try again later.");
-  }
+  // Rate limiting check - temporarily disabled
+  // if (!rateLimiter.canAttempt(`api_${endpoint}`, 30, 60000)) {
+  //   throw new Error("Rate limit exceeded. Please try again later.");
+  // }
 
   const url = `${isAIWorker ? AI_WORKER_URL : API_BASE_URL}${endpoint}`;
 
