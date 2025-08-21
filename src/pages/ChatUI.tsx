@@ -667,10 +667,13 @@ export default function ChatUI() {
   const handleBuyTime = async (tier: string) => {
     try {
       setCheckoutLoading(true);
+      console.log("Creating checkout session for tier:", tier);
+      
       const stripe = await loadStripe(
         "pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX"
       );
-      const { sessionId } = await apiFetch(
+      
+      const response = await apiFetch(
         "/api/billing/create-checkout-session/time/",
         {
           method: "POST",
@@ -678,7 +681,14 @@ export default function ChatUI() {
           body: { tier },
         }
       );
-      const { error } = await stripe!.redirectToCheckout({ sessionId });
+      
+      console.log("Checkout session response:", response);
+      
+      if (!response?.sessionId) {
+        throw new Error("No session ID received");
+      }
+      
+      const { error } = await stripe!.redirectToCheckout({ sessionId: response.sessionId });
       if (error) throw error;
     } catch (e) {
       console.error("Time credit purchase error:", e);
@@ -1016,7 +1026,8 @@ export default function ChatUI() {
                         src={
                           msg.blurred
                             ? `/api/chat/messages/${msg.serverMessageId}/protected_image/`
-                            : msg.image_url || `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                            : msg.image_url ||
+                              `/api/chat/messages/${msg.serverMessageId}/protected_image/`
                         }
                         alt="AI generated"
                         className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
@@ -1024,7 +1035,8 @@ export default function ChatUI() {
                           e.stopPropagation();
                           if (!msg.blurred) {
                             setModalImage(
-                              msg.image_url || `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                              msg.image_url ||
+                                `/api/chat/messages/${msg.serverMessageId}/protected_image/`
                             );
                           }
                         }}
