@@ -293,9 +293,9 @@ export default function ChatUI() {
           );
 
           setTimeCreditsSeconds(currentCredits);
-          // Only update display time if it's significantly different (more than 30 seconds)
+          // Only update display time if it's significantly different (more than 60 seconds)
           // This prevents the AI response from resetting the real-time countdown
-          if (Math.abs(displayTime - adjustedCredits) > 30) {
+          if (Math.abs(displayTime - adjustedCredits) > 60) {
             setDisplayTime(adjustedCredits);
           }
           setLastSyncTime(now);
@@ -305,7 +305,9 @@ export default function ChatUI() {
             "adjusted:",
             adjustedCredits,
             "displayTime:",
-            displayTime
+            displayTime,
+            "difference:",
+            Math.abs(displayTime - adjustedCredits)
           );
         }
       } catch (error) {
@@ -536,14 +538,14 @@ export default function ChatUI() {
           updatedTimeCredits = Math.max(0, usage.time_credits_seconds);
           const now = Date.now();
           setTimeCreditsSeconds(updatedTimeCredits);
-          setDisplayTime(updatedTimeCredits);
+          // Don't override displayTime here - let the real-time countdown continue
           setLastSyncTime(now);
           console.log("Time credits updated from backend:", updatedTimeCredits);
         } else {
           // Fallback: use local decrement but still sync with backend
           updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
           setTimeCreditsSeconds(updatedTimeCredits);
-          setDisplayTime(updatedTimeCredits);
+          // Don't override displayTime here - let the real-time countdown continue
           console.log("Fallback time credits update:", updatedTimeCredits);
         }
       } catch (error) {
@@ -561,7 +563,7 @@ export default function ChatUI() {
             );
             const now = Date.now();
             setTimeCreditsSeconds(updatedTimeCredits);
-            setDisplayTime(updatedTimeCredits);
+            // Don't override displayTime here - let the real-time countdown continue
             setLastSyncTime(now);
             console.log("Synced time credits after error:", updatedTimeCredits);
           } else {
@@ -570,13 +572,13 @@ export default function ChatUI() {
               timeCreditsSeconds - processingTime
             );
             setTimeCreditsSeconds(updatedTimeCredits);
-            setDisplayTime(updatedTimeCredits);
+            // Don't override displayTime here - let the real-time countdown continue
           }
         } catch (syncError) {
           console.error("Failed to sync time credits:", syncError);
           updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
           setTimeCreditsSeconds(updatedTimeCredits);
-          setDisplayTime(updatedTimeCredits);
+          // Don't override displayTime here - let the real-time countdown continue
         }
       }
 
