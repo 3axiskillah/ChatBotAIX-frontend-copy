@@ -11,7 +11,7 @@ export default function Addons() {
     try {
       setIsLoading(true);
       const stripe = await loadStripe(
-        "pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX"
+        "pk_test_51RfN83Rmpew7aCdyjEfExfKKJwnfu1WdusdNbdECFskXUHkA2ChiiYzNgRqp4DKkIxQsoppUZHVikvwdefxhxv41003hlgqZu7"
       );
       const { sessionId } = await apiFetch(
         "/api/billing/create-checkout-session/time/",

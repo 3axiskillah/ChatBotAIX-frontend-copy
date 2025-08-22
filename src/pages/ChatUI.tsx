@@ -674,14 +674,19 @@ export default function ChatUI() {
       );
 
       // Use fetch directly to handle the response properly
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/billing/create-checkout-session/time/`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ tier }),
-      });
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_BASE_URL
+        }/api/billing/create-checkout-session/time/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ tier }),
+        }
+      );
 
       const data = await response.json();
       console.log("Checkout session response:", data);
@@ -700,7 +705,9 @@ export default function ChatUI() {
       if (error) throw error;
     } catch (e) {
       console.error("Time credit purchase error:", e);
-      toast.error(e instanceof Error ? e.message : "Payment failed. Please try again.");
+      toast.error(
+        e instanceof Error ? e.message : "Payment failed. Please try again."
+      );
     } finally {
       setCheckoutLoading(false);
     }
