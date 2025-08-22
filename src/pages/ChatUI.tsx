@@ -293,8 +293,9 @@ export default function ChatUI() {
           );
 
           setTimeCreditsSeconds(currentCredits);
-          // Only update display time if it's significantly different (more than 10 seconds)
-          if (Math.abs(displayTime - adjustedCredits) > 10) {
+          // Only update display time if it's significantly different (more than 30 seconds)
+          // This prevents the AI response from resetting the real-time countdown
+          if (Math.abs(displayTime - adjustedCredits) > 30) {
             setDisplayTime(adjustedCredits);
           }
           setLastSyncTime(now);
@@ -302,7 +303,9 @@ export default function ChatUI() {
             "Periodic sync - backend:",
             currentCredits,
             "adjusted:",
-            adjustedCredits
+            adjustedCredits,
+            "displayTime:",
+            displayTime
           );
         }
       } catch (error) {
