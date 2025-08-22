@@ -1044,21 +1044,13 @@ export default function ChatUI() {
                   >
                     <div className="relative">
                       <img
-                        src={
-                          msg.blurred
-                            ? `/api/chat/messages/${msg.serverMessageId}/protected_image/`
-                            : msg.image_url ||
-                              `/api/chat/messages/${msg.serverMessageId}/protected_image/`
-                        }
+                        src={`/api/chat/messages/${msg.serverMessageId}/protected_image/`}
                         alt="AI generated"
                         className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!msg.blurred) {
-                            setModalImage(
-                              msg.image_url ||
-                                `/api/chat/messages/${msg.serverMessageId}/protected_image/`
-                            );
+                            setModalImage(`/api/chat/messages/${msg.serverMessageId}/protected_image/`);
                           }
                         }}
                       />
