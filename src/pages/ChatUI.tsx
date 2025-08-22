@@ -279,41 +279,42 @@ export default function ChatUI() {
     checkAuth();
     authIntervalRef.current = setInterval(() => checkAuth(), 120000);
 
-    // Sync time credits every 30 seconds to ensure accuracy
-    syncIntervalRef.current = setInterval(async () => {
-      try {
-        const credits = await apiFetch("/api/billing/credits/status/");
-        if (credits && typeof credits.time_credits_seconds === "number") {
-          const currentCredits = credits.time_credits_seconds;
-          const now = Date.now();
-          const elapsedSinceSync = Math.floor((now - lastSyncTime) / 1000);
-          const adjustedCredits = Math.max(
-            0,
-            currentCredits - elapsedSinceSync
-          );
+    // Disable periodic sync to prevent time counter reset
+    // The real-time countdown will handle time display
+    // syncIntervalRef.current = setInterval(async () => {
+    //   try {
+    //     const credits = await apiFetch("/api/billing/credits/status/");
+    //     if (credits && typeof credits.time_credits_seconds === "number") {
+    //       const currentCredits = credits.time_credits_seconds;
+    //       const now = Date.now();
+    //       const elapsedSinceSync = Math.floor((now - lastSyncTime) / 1000);
+    //       const adjustedCredits = Math.max(
+    //         0,
+    //         currentCredits - elapsedSinceSync
+    //       );
 
-          setTimeCreditsSeconds(currentCredits);
-          // Only update display time if it's significantly different (more than 60 seconds)
-          // This prevents the AI response from resetting the real-time countdown
-          if (Math.abs(displayTime - adjustedCredits) > 60) {
-            setDisplayTime(adjustedCredits);
-          }
-          setLastSyncTime(now);
-          console.log(
-            "Periodic sync - backend:",
-            currentCredits,
-            "adjusted:",
-            adjustedCredits,
-            "displayTime:",
-            displayTime,
-            "difference:",
-            Math.abs(displayTime - adjustedCredits)
-          );
-        }
-      } catch (error) {
-        console.error("Periodic time credit sync failed:", error);
-      }
-    }, 30000);
+    //       setTimeCreditsSeconds(currentCredits);
+    //       // Only update display time if it's significantly different (more than 120 seconds)
+    //       // This prevents the AI response from resetting the real-time countdown
+    //       if (Math.abs(displayTime - adjustedCredits) > 120) {
+    //         setDisplayTime(adjustedCredits);
+    //       }
+    //       setLastSyncTime(now);
+    //       console.log(
+    //         "Periodic sync - backend:",
+    //         currentCredits,
+    //         "adjusted:",
+    //         adjustedCredits,
+    //         "displayTime:",
+    //         displayTime,
+    //         "difference:",
+    //         Math.abs(displayTime - adjustedCredits)
+    //       );
+    //     }
+    //   } catch (error) {
+    //     console.error("Periodic time credit sync failed:", error);
+    //   }
+    // }, 30000);
 
     return () => {
       if (authIntervalRef.current) clearInterval(authIntervalRef.current);
@@ -349,9 +350,9 @@ export default function ChatUI() {
           image_url: msg.image_url || undefined,
           serverMessageId: msg.id, // Add server message ID for unlock functionality
           timestamp: msg.timestamp,
-          blurred: msg.metadata?.unlocked !== true, // Blurred if NOT unlocked
-          locked: msg.metadata?.unlocked !== true, // Locked if NOT unlocked
-          has_image: msg.metadata?.has_image || false, // Whether message has an image
+          blurred: msg.blurred || false, // Use backend's calculated blurred state
+          locked: msg.locked || false, // Use backend's calculated locked state
+          has_image: msg.has_image || false, // Use backend's calculated has_image state
         }));
 
         const newMessages: Message[] =
