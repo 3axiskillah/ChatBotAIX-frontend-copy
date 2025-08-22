@@ -1050,7 +1050,9 @@ export default function ChatUI() {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!msg.blurred) {
-                            setModalImage(`/api/chat/messages/${msg.serverMessageId}/protected_image/`);
+                            setModalImage(
+                              `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                            );
                           }
                         }}
                       />
