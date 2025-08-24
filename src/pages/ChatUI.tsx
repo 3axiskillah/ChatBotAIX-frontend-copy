@@ -203,6 +203,8 @@ export default function ChatUI() {
                         ...m,
                         blurred: false,
                         locked: false,
+                        // Use the direct R2 URL instead of protected endpoint
+                        image_url: m.image_url, // This is the direct R2 URL
                       }
                     : m
                 );
@@ -1051,12 +1053,18 @@ export default function ChatUI() {
                     <div className="relative">
                       {msg.serverMessageId ? (
                         <img
-                          src={`/api/chat/messages/${msg.serverMessageId}/protected_image/`}
+                          src={
+                            msg.blurred 
+                              ? `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                              : msg.image_url || `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                          }
                           alt="AI generated"
                           className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
                           onLoad={() => {
                             console.log(
-                              `Image loaded for message ${msg.serverMessageId} using protected endpoint`
+                              `Image loaded for message ${msg.serverMessageId} using ${
+                                msg.blurred ? 'protected endpoint' : 'direct R2 URL'
+                              }`
                             );
                           }}
                           onError={(e) => {
@@ -1069,7 +1077,7 @@ export default function ChatUI() {
                             e.stopPropagation();
                             if (!msg.blurred) {
                               setModalImage(
-                                `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                                msg.image_url || `/api/chat/messages/${msg.serverMessageId}/protected_image/`
                               );
                             }
                           }}
