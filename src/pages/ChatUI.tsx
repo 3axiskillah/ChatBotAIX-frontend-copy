@@ -1044,7 +1044,7 @@ export default function ChatUI() {
                   >
                     <div className="relative">
                       <img
-                        src={`/api/chat/messages/${msg.serverMessageId}/protected_image/?t=${Date.now()}`}
+                        src={`/api/chat/messages/${msg.serverMessageId}/protected_image/`}
                         alt="AI generated"
                         className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
                         onLoad={() => {
@@ -1062,7 +1062,7 @@ export default function ChatUI() {
                           e.stopPropagation();
                           if (!msg.blurred) {
                             setModalImage(
-                              `/api/chat/messages/${msg.serverMessageId}/protected_image/?t=${Date.now()}`
+                              `/api/chat/messages/${msg.serverMessageId}/protected_image/`
                             );
                           }
                         }}
