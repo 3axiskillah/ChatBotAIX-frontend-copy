@@ -77,6 +77,34 @@ export default function ChatUI() {
     // eslint-disable-next-line
   }, []);
 
+  // Prevent zoom on input focus for mobile
+  useEffect(() => {
+    const preventZoom = (e: any) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        // Prevent zoom by setting viewport scale
+        const viewport = document.querySelector('meta[name=viewport]');
+        if (viewport) {
+          viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+        }
+      }
+    };
+
+    const restoreZoom = () => {
+      const viewport = document.querySelector('meta[name=viewport]');
+      if (viewport) {
+        viewport.setAttribute('content', 'width=device-width, initial-scale=1');
+      }
+    };
+
+    document.addEventListener('focusin', preventZoom);
+    document.addEventListener('focusout', restoreZoom);
+
+    return () => {
+      document.removeEventListener('focusin', preventZoom);
+      document.removeEventListener('focusout', restoreZoom);
+    };
+  }, []);
+
   // On new messages, only scroll if user is already near the bottom
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -829,7 +857,7 @@ export default function ChatUI() {
 
         {galleryImages.length > 0 ? (
           <div
-            className="grid grid-cols-2 gap-3 pr-2 pb-4 touch-pan-y"
+            className="grid grid-cols-2 gap-3 pr-2 pb-20 md:pb-4 touch-pan-y"
             onClick={(e) => e.stopPropagation()}
             style={{ pointerEvents: "auto" }}
           >
@@ -864,8 +892,8 @@ export default function ChatUI() {
           <p className="text-sm text-[#E7D8C1]/70">No images yet</p>
         )}
 
-        {/* Time Credits Section */}
-        <div className="mt-4 p-4 bg-gradient-to-br from-[#4B1F1F] to-[#3A1818] rounded-lg border border-[#D1A75D]/30">
+        {/* Time Credits Section - Fixed at bottom for mobile */}
+        <div className="mt-4 p-4 bg-gradient-to-br from-[#4B1F1F] to-[#3A1818] rounded-lg border border-[#D1A75D]/30 md:relative fixed bottom-0 left-0 right-0 z-50 md:z-auto">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">⏱️</span>
             <span className="font-bold text-[#D1A75D]">Time Credits</span>
@@ -1009,6 +1037,7 @@ export default function ChatUI() {
             height: "100%",
             minHeight: 0,
             maxHeight: "calc(100vh - 120px)",
+            paddingBottom: sidebarOpen ? '120px' : '80px' // Extra padding when gallery is open
           }}
         >
           {messages.map((msg) => (
@@ -1183,6 +1212,9 @@ export default function ChatUI() {
         <form
           onSubmit={handleSend}
           className="fixed md:sticky bottom-0 left-0 right-0 flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-[#D1A75D] bg-[#4B1F1F] z-40 touch-pan-y"
+          style={{
+            paddingBottom: sidebarOpen ? '80px' : '16px' // Extra padding when gallery is open on mobile
+          }}
         >
           <input
             type="text"
@@ -1193,11 +1225,20 @@ export default function ChatUI() {
             className="flex-1 px-3 py-2 md:px-4 md:py-2 rounded-lg border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] placeholder-[#E7D8C1]/70 focus:outline-none focus:ring-1 md:focus:ring-2 focus:ring-[#D1A75D] text-sm md:text-base"
             disabled={showUpgradePrompt}
             onFocus={() => setTimeout(scrollToBottom, 300)}
+            style={{
+              fontSize: '16px', // Prevents zoom on iOS
+              lineHeight: '1.2',
+              minHeight: '44px' // Better touch target
+            }}
           />
           <button
             type="submit"
             disabled={!message.trim() || typing || showUpgradePrompt}
             className="ml-3 px-3 py-2 md:px-4 md:py-2 bg-[#D1A75D] text-[#4B1F1F] rounded-lg hover:bg-[#c49851] disabled:opacity-50 transition active:scale-95 text-sm md:text-base"
+            style={{
+              minHeight: '44px', // Better touch target
+              minWidth: '60px'
+            }}
           >
             Send
           </button>
