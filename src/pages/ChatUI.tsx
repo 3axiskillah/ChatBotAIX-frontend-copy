@@ -595,6 +595,7 @@ export default function ChatUI() {
         locked: willHaveImage ? true : false,
         has_image: willHaveImage,
         upsell: data.upsell,
+        serverMessageId: undefined, // Will be set after backend submission
       };
 
       setMessages((prev) => [...prev, aiReply]);
