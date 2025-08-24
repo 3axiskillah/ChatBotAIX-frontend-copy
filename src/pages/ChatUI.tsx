@@ -1047,6 +1047,12 @@ export default function ChatUI() {
                         src={`/api/chat/messages/${msg.serverMessageId}/protected_image/`}
                         alt="AI generated"
                         className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
+                        onLoad={() => {
+                          console.log(`Image loaded for message ${msg.serverMessageId} using protected endpoint`);
+                        }}
+                        onError={(e) => {
+                          console.error(`Image failed to load for message ${msg.serverMessageId}:`, e);
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           if (!msg.blurred) {
