@@ -16,7 +16,6 @@ interface Message {
   serverMessageId?: number;
   locked?: boolean;
   has_image?: boolean;
-  cacheBuster?: number; // Added for cache-busting
 }
 
 interface User {
@@ -204,8 +203,6 @@ export default function ChatUI() {
                         ...m,
                         blurred: false,
                         locked: false,
-                        // Add cache-busting parameter to force reload
-                        cacheBuster: Date.now(),
                       }
                     : m
                 );
@@ -1047,7 +1044,7 @@ export default function ChatUI() {
                   >
                     <div className="relative">
                       <img
-                        src={`/api/chat/messages/${msg.serverMessageId}/protected_image/${msg.cacheBuster ? `?cb=${msg.cacheBuster}` : ''}`}
+                        src={`/api/chat/messages/${msg.serverMessageId}/protected_image/`}
                         alt="AI generated"
                         className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
                         onLoad={() => {
@@ -1065,7 +1062,7 @@ export default function ChatUI() {
                           e.stopPropagation();
                           if (!msg.blurred) {
                             setModalImage(
-                              `/api/chat/messages/${msg.serverMessageId}/protected_image/${msg.cacheBuster ? `?cb=${msg.cacheBuster}` : ''}`
+                              `/api/chat/messages/${msg.serverMessageId}/protected_image/`
                             );
                           }
                         }}
