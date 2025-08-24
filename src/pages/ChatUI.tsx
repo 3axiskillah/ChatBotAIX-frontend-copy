@@ -363,17 +363,7 @@ export default function ChatUI() {
             : [
                 {
                   id: 1,
-                  text: "Hey there 👋 I'm Amber…",
-                  sender: "ai" as const,
-                },
-                {
-                  id: 2,
-                  text: "Welcome back! Ready to continue? 😘",
-                  sender: "ai" as const,
-                },
-                {
-                  id: 3,
-                  text: "What's on your mind today? 😈",
+                  text: "Hey baby, I'm Amber - your personal cum dumpster. What's your name and what nasty things would you like to do to me? 😘",
                   sender: "ai" as const,
                 },
               ];
@@ -1054,16 +1044,21 @@ export default function ChatUI() {
                       {msg.serverMessageId ? (
                         <img
                           src={
-                            msg.blurred 
+                            msg.blurred
                               ? `/api/chat/messages/${msg.serverMessageId}/protected_image/`
-                              : msg.image_url || `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                              : msg.image_url ||
+                                `/api/chat/messages/${msg.serverMessageId}/protected_image/`
                           }
                           alt="AI generated"
                           className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
                           onLoad={() => {
                             console.log(
-                              `Image loaded for message ${msg.serverMessageId} using ${
-                                msg.blurred ? 'protected endpoint' : 'direct R2 URL'
+                              `Image loaded for message ${
+                                msg.serverMessageId
+                              } using ${
+                                msg.blurred
+                                  ? "protected endpoint"
+                                  : "direct R2 URL"
                               }`
                             );
                           }}
@@ -1077,7 +1072,8 @@ export default function ChatUI() {
                             e.stopPropagation();
                             if (!msg.blurred) {
                               setModalImage(
-                                msg.image_url || `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                                msg.image_url ||
+                                  `/api/chat/messages/${msg.serverMessageId}/protected_image/`
                               );
                             }
                           }}
