@@ -613,10 +613,15 @@ export default function ChatUI() {
 
       // Attach server message id for future unlock
       const serverMessageId = submitRes?.message_id as number | undefined;
+      console.log("Backend response:", submitRes);
+      console.log("Server message ID:", serverMessageId);
       if (serverMessageId) {
+        console.log("Setting serverMessageId for message:", aiReply.id);
         setMessages((prev) =>
           prev.map((m) => (m.id === aiReply.id ? { ...m, serverMessageId } : m))
         );
+      } else {
+        console.error("No serverMessageId received from backend");
       }
 
       // Do not push to gallery until unlocked
@@ -1070,7 +1075,9 @@ export default function ChatUI() {
                         />
                       ) : (
                         <div className="w-full aspect-[1/1] bg-gray-600 rounded-lg flex items-center justify-center">
-                          <span className="text-white text-sm">Loading image...</span>
+                          <span className="text-white text-sm">
+                            Loading image... (ID: {msg.id})
+                          </span>
                         </div>
                       )}
                       {msg.blurred && msg.serverMessageId && (
