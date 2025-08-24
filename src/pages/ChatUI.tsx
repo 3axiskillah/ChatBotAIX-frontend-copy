@@ -77,32 +77,25 @@ export default function ChatUI() {
     // eslint-disable-next-line
   }, []);
 
-  // Prevent zoom on input focus for mobile
+  // Professional mobile keyboard handling
   useEffect(() => {
-    const preventZoom = (e: any) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-        // Prevent zoom by setting viewport scale
-        const viewport = document.querySelector('meta[name=viewport]');
-        if (viewport) {
-          viewport.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+    const handleResize = () => {
+      if (window.visualViewport) {
+        const isKeyboardOpen =
+          window.visualViewport.height < window.innerHeight * 0.8;
+        document.body.classList.toggle("mobile-keyboard-open", isKeyboardOpen);
+
+        if (isKeyboardOpen && inputRef.current === document.activeElement) {
+          setTimeout(() => {
+            scrollToBottom("auto");
+          }, 300);
         }
       }
     };
 
-    const restoreZoom = () => {
-      const viewport = document.querySelector('meta[name=viewport]');
-      if (viewport) {
-        viewport.setAttribute('content', 'width=device-width, initial-scale=1');
-      }
-    };
-
-    document.addEventListener('focusin', preventZoom);
-    document.addEventListener('focusout', restoreZoom);
-
-    return () => {
-      document.removeEventListener('focusin', preventZoom);
-      document.removeEventListener('focusout', restoreZoom);
-    };
+    window.visualViewport?.addEventListener("resize", handleResize);
+    return () =>
+      window.visualViewport?.removeEventListener("resize", handleResize);
   }, []);
 
   // On new messages, only scroll if user is already near the bottom
@@ -841,11 +834,12 @@ export default function ChatUI() {
         } 
         flex-col bg-[#3A1818] border-r border-[#D1A75D] transition-all duration-300 ease-in-out 
         ${
-          sidebarOpen ? "w-full md:w-64 p-4" : "w-0 p-0"
-        } overflow-y-auto h-[calc(100vh-4rem)] md:h-full touch-pan-y`}
+          sidebarOpen ? "w-full md:w-64" : "w-0"
+        } h-[calc(100vh-4rem)] md:h-full`}
         style={{ zIndex: 40 }}
       >
-        <div className="flex justify-between items-center mb-4">
+        {/* Gallery Header */}
+        <div className="flex justify-between items-center p-4 border-b border-[#D1A75D]/30">
           <h2 className="text-lg font-bold">Gallery</h2>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -855,45 +849,46 @@ export default function ChatUI() {
           </button>
         </div>
 
-        {galleryImages.length > 0 ? (
-          <div
-            className="grid grid-cols-2 gap-3 pr-2 pb-20 md:pb-4 touch-pan-y"
-            onClick={(e) => e.stopPropagation()}
-            style={{ pointerEvents: "auto" }}
-          >
-            {galleryImages.map((url, i) => (
-              <div key={i} className="aspect-[1/1] relative group">
-                <button
-                  type="button"
-                  style={{
-                    all: "unset",
-                    cursor: "pointer",
-                    display: "block",
-                    width: "100%",
-                    height: "100%",
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleImageClick(url);
-                  }}
-                >
-                  <img
-                    src={url}
-                    alt={`Generated ${i}`}
-                    className="rounded-lg shadow object-cover h-full w-full transition-transform group-hover:scale-105 touch-pan-y"
-                    style={{ pointerEvents: "auto", zIndex: 50 }}
-                  />
-                </button>
-                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg pointer-events-none" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-[#E7D8C1]/70">No images yet</p>
-        )}
+        {/* Gallery Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {galleryImages.length > 0 ? (
+            <div
+              className="grid grid-cols-2 gap-3 touch-pan-y"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {galleryImages.map((url, i) => (
+                <div key={i} className="aspect-[1/1] relative group">
+                  <button
+                    type="button"
+                    style={{
+                      all: "unset",
+                      cursor: "pointer",
+                      display: "block",
+                      width: "100%",
+                      height: "100%",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleImageClick(url);
+                    }}
+                  >
+                    <img
+                      src={url}
+                      alt={`Generated ${i}`}
+                      className="rounded-lg shadow object-cover h-full w-full transition-transform group-hover:scale-105"
+                    />
+                  </button>
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg pointer-events-none" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[#E7D8C1]/70">No images yet</p>
+          )}
+        </div>
 
-        {/* Time Credits Section - Fixed at bottom for mobile */}
-        <div className="mt-4 p-4 bg-gradient-to-br from-[#4B1F1F] to-[#3A1818] rounded-lg border border-[#D1A75D]/30 md:relative fixed bottom-0 left-0 right-0 z-50 md:z-auto">
+        {/* Time Credits Section - Fixed at bottom */}
+        <div className="p-4 bg-gradient-to-br from-[#4B1F1F] to-[#3A1818] border-t border-[#D1A75D]/30">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">⏱️</span>
             <span className="font-bold text-[#D1A75D]">Time Credits</span>
@@ -1037,7 +1032,6 @@ export default function ChatUI() {
             height: "100%",
             minHeight: 0,
             maxHeight: "calc(100vh - 120px)",
-            paddingBottom: sidebarOpen ? '120px' : '80px' // Extra padding when gallery is open
           }}
         >
           {messages.map((msg) => (
@@ -1211,10 +1205,7 @@ export default function ChatUI() {
         {/* Input Area */}
         <form
           onSubmit={handleSend}
-          className="fixed md:sticky bottom-0 left-0 right-0 flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-[#D1A75D] bg-[#4B1F1F] z-40 touch-pan-y"
-          style={{
-            paddingBottom: sidebarOpen ? '80px' : '16px' // Extra padding when gallery is open on mobile
-          }}
+          className="fixed md:sticky bottom-0 left-0 right-0 flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-[#D1A75D] bg-[#4B1F1F] z-40"
         >
           <input
             type="text"
@@ -1226,9 +1217,9 @@ export default function ChatUI() {
             disabled={showUpgradePrompt}
             onFocus={() => setTimeout(scrollToBottom, 300)}
             style={{
-              fontSize: '16px', // Prevents zoom on iOS
-              lineHeight: '1.2',
-              minHeight: '44px' // Better touch target
+              fontSize: "16px", // Prevents zoom on iOS
+              lineHeight: "1.2",
+              minHeight: "44px", // Better touch target
             }}
           />
           <button
@@ -1236,8 +1227,8 @@ export default function ChatUI() {
             disabled={!message.trim() || typing || showUpgradePrompt}
             className="ml-3 px-3 py-2 md:px-4 md:py-2 bg-[#D1A75D] text-[#4B1F1F] rounded-lg hover:bg-[#c49851] disabled:opacity-50 transition active:scale-95 text-sm md:text-base"
             style={{
-              minHeight: '44px', // Better touch target
-              minWidth: '60px'
+              minHeight: "44px", // Better touch target
+              minWidth: "60px",
             }}
           >
             Send
