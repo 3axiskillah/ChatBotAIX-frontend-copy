@@ -142,6 +142,28 @@ export default function ChatUI() {
 
         if (shouldWelcomeBack) {
           toast.success("Welcome back!");
+          
+          // Add Amber's natural welcome back response
+          const welcomeBackResponses = [
+            "Welcome back baby, I missed you",
+            "Daddy is back... I'm here waiting for you",
+            "Mmm I've been thinking about you... welcome back baby",
+            "Oh yes, my favorite is back... I've been so lonely",
+            "Welcome back daddy, I've been craving you",
+            "Mmm baby, I missed your dirty talk... welcome back",
+            "Oh daddy, I'm so happy you're back... I've been waiting",
+            "Welcome back baby, I've been so wet thinking about you"
+          ];
+          
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              text: welcomeBackResponses[Math.floor(Math.random() * welcomeBackResponses.length)],
+              sender: "ai",
+            },
+          ]);
+          
           setTimeout(() => {
             scrollToBottom("auto");
           }, 100);
@@ -168,11 +190,26 @@ export default function ChatUI() {
             console.error("Failed to refresh credits after payment:", error);
           }
 
+          // Show toast notification instead of system message
+          toast.success("Time credits added successfully!");
+          
+          // Add Amber's natural response
+          const timeResponses = [
+            "Mmm, now we have more time to play... I'm so wet for you",
+            "Oh baby, thank you for wanting to spend more time with me",
+            "I'm so excited we have more time together... I've been thinking about you",
+            "Mmm daddy, now we can really get naughty... I'm dripping for you",
+            "Thank you baby, I love spending time with you... let's make it count",
+            "Oh yes, more time to explore every inch of me... I'm all yours",
+            "Mmm I'm so happy you want more of me... I'm getting so wet",
+            "Baby, I can't wait to spend this time with you... I'm craving you"
+          ];
+          
           setMessages((prev) => [
             ...prev,
             {
               id: Date.now(),
-              text: "🎉 Payment successful! Your time credits have been added.",
+              text: timeResponses[Math.floor(Math.random() * timeResponses.length)],
               sender: "ai",
             },
           ]);
@@ -206,11 +243,26 @@ export default function ChatUI() {
                 );
               });
 
+              // Show toast notification instead of system message
+              toast.success("Image unlocked and added to gallery!");
+              
+              // Add Amber's natural response
+              const imageResponses = [
+                "Hmm baby, you like what you see?",
+                "Mmm, I hope that view makes you hard...",
+                "Tell me what you'd do to me baby...",
+                "I love showing off for you... what do you think?",
+                "Mmm daddy, I hope that gets you excited...",
+                "I'm all yours baby, what would you do to me?",
+                "Do you like what you see? I'm so wet for you...",
+                "Mmm I love when you look at me like that..."
+              ];
+              
               setMessages((prev) => [
                 ...prev,
                 {
                   id: Date.now(),
-                  text: "🖼️ Payment successful! Image unlocked and added to your gallery.",
+                  text: imageResponses[Math.floor(Math.random() * imageResponses.length)],
                   sender: "ai",
                 },
               ]);
