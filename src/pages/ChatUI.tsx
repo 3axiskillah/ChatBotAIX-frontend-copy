@@ -44,7 +44,6 @@ export default function ChatUI() {
 
   const [timeCreditsSeconds, setTimeCreditsSeconds] = useState<number>(0);
   const [displayTime, setDisplayTime] = useState<number>(0);
-  const [lastSyncTime, setLastSyncTime] = useState<number>(Date.now());
   const [lastSignOutTime, setLastSignOutTime] = useState<number | null>(null);
   const [hasShownWelcome, setHasShownWelcome] = useState<boolean>(false);
   const [keepGalleryOpen, setKeepGalleryOpen] = useState(false);
@@ -131,15 +130,15 @@ export default function ChatUI() {
 
         if (credits) {
           const currentCredits = credits.time_credits_seconds || 0;
-          
+
           // Always use the backend time as the source of truth
           setTimeCreditsSeconds(currentCredits);
           setDisplayTime(currentCredits);
-          setLastSyncTime(Date.now());
         }
 
         // Show welcome message - prioritize fresh login over welcome back
-        if (isFreshLogin) {
+        // Only show welcome if there are no existing messages
+        if (isFreshLogin && messages.length === 0) {
           setHasShownWelcome(true);
           toast.success("Welcome to Amber!");
 
@@ -166,7 +165,7 @@ export default function ChatUI() {
             scrollToBottom("auto");
           }, 100);
           navigate(window.location.pathname, { replace: true });
-        } else if (shouldWelcomeBack) {
+        } else if (shouldWelcomeBack && messages.length === 0) {
           toast.success("Welcome back!");
 
           const welcomeBackResponses = [
@@ -211,7 +210,6 @@ export default function ChatUI() {
             ) {
               setTimeCreditsSeconds(currentCredits.time_credits_seconds);
               setDisplayTime(currentCredits.time_credits_seconds);
-              setLastSyncTime(Date.now());
             }
           } catch (error) {
             console.error("Failed to refresh credits after payment:", error);
@@ -380,19 +378,18 @@ export default function ChatUI() {
       });
     }, 1000);
 
-    // Sync with backend every 30 seconds to prevent drift
-    const syncInterval = setInterval(async () => {
-      try {
-        const credits = await apiFetch("/api/billing/credits/status/");
-        if (credits && typeof credits.time_credits_seconds === "number") {
-          setTimeCreditsSeconds(credits.time_credits_seconds);
-          setDisplayTime(credits.time_credits_seconds);
-          setLastSyncTime(Date.now());
-        }
-      } catch (error) {
-        console.error("Failed to sync time credits:", error);
-      }
-    }, 30000);
+            // Sync with backend every 30 seconds to prevent drift
+        const syncInterval = setInterval(async () => {
+          try {
+            const credits = await apiFetch("/api/billing/credits/status/");
+            if (credits && typeof credits.time_credits_seconds === "number") {
+              setTimeCreditsSeconds(credits.time_credits_seconds);
+              setDisplayTime(credits.time_credits_seconds);
+            }
+          } catch (error) {
+            console.error("Failed to sync time credits:", error);
+          }
+        }, 30000);
 
     return () => {
       clearInterval(interval);
@@ -584,14 +581,12 @@ export default function ChatUI() {
         if (usage && typeof usage.time_credits_seconds === "number") {
           setTimeCreditsSeconds(usage.time_credits_seconds);
           setDisplayTime(usage.time_credits_seconds);
-          setLastSyncTime(Date.now());
         } else {
           // If usage report doesn't return credits, fetch them separately
           const credits = await apiFetch("/api/billing/credits/status/");
           if (credits && typeof credits.time_credits_seconds === "number") {
             setTimeCreditsSeconds(credits.time_credits_seconds);
             setDisplayTime(credits.time_credits_seconds);
-            setLastSyncTime(Date.now());
           }
         }
       } catch (error) {
@@ -602,7 +597,6 @@ export default function ChatUI() {
           if (credits && typeof credits.time_credits_seconds === "number") {
             setTimeCreditsSeconds(credits.time_credits_seconds);
             setDisplayTime(credits.time_credits_seconds);
-            setLastSyncTime(Date.now());
           }
         } catch (fallbackError) {
           console.error("Fallback credit fetch failed:", fallbackError);
