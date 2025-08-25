@@ -722,9 +722,7 @@ export default function ChatUI() {
             : "hidden md:flex"
         } 
         flex-col bg-gray-900 border-r border-gray-800 transition-all duration-300 ease-in-out 
-        ${
-          sidebarOpen ? "w-full md:w-80" : "w-0"
-        } h-[calc(100vh-4rem)] md:h-full`}
+        ${sidebarOpen ? "w-full md:w-80" : "w-0"} h-screen md:h-full`}
         style={{ zIndex: 40 }}
       >
         {/* Gallery Header */}
@@ -746,8 +744,7 @@ export default function ChatUI() {
             overscrollBehavior: "contain",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
-            height: "calc(100vh - 8rem)",
-            maxHeight: "calc(100vh - 8rem)",
+            paddingBottom: "120px", // Extra space for mobile scrolling
           }}
         >
           {galleryImages.length > 0 ? (
@@ -856,7 +853,7 @@ export default function ChatUI() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col relative mt-16 md:mt-0">
+      <div className="flex-1 flex flex-col relative mt-16 md:mt-0 h-screen md:h-full">
         {/* Desktop Header */}
         <header className="hidden md:flex justify-between items-center px-6 py-4 border-b border-gray-800 bg-black">
           <div className="flex items-center gap-3">
@@ -931,10 +928,9 @@ export default function ChatUI() {
             overscrollBehavior: "contain",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
-            height: "calc(100vh - 200px)",
+            height: "calc(100vh - 140px)",
             minHeight: 0,
-            maxHeight: "calc(100vh - 200px)",
-            paddingBottom: "120px", // Account for fixed input on mobile
+            paddingBottom: "100px", // Account for fixed input on mobile
           }}
         >
           {messages.map((msg, index) => (
@@ -971,9 +967,17 @@ export default function ChatUI() {
                         <img
                           src={
                             msg.blurred
-                              ? `${import.meta.env.VITE_API_BASE_URL}/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                              ? `${
+                                  import.meta.env.VITE_API_BASE_URL
+                                }/api/chat/messages/${
+                                  msg.serverMessageId
+                                }/protected_image/`
                               : msg.image_url ||
-                                `${import.meta.env.VITE_API_BASE_URL}/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                                `${
+                                  import.meta.env.VITE_API_BASE_URL
+                                }/api/chat/messages/${
+                                  msg.serverMessageId
+                                }/protected_image/`
                           }
                           alt="attachment"
                           className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition"
@@ -999,7 +1003,11 @@ export default function ChatUI() {
                             if (!msg.blurred) {
                               setModalImage(
                                 msg.image_url ||
-                                  `${import.meta.env.VITE_API_BASE_URL}/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                                  `${
+                                    import.meta.env.VITE_API_BASE_URL
+                                  }/api/chat/messages/${
+                                    msg.serverMessageId
+                                  }/protected_image/`
                               );
                             }
                           }}
