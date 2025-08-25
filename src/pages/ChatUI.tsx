@@ -719,10 +719,10 @@ export default function ChatUI() {
         className={`${
           sidebarOpen
             ? "fixed md:relative inset-0 z-40 md:z-auto mt-16 md:mt-0"
-            : "hidden md:flex"
+            : "hidden md:hidden"
         } 
         flex-col bg-gray-900 border-r border-gray-800 transition-all duration-300 ease-in-out 
-        ${sidebarOpen ? "w-full md:w-80" : "w-0"} h-screen md:h-full`}
+        ${sidebarOpen ? "w-80 md:w-80" : "w-0"} h-screen md:h-full`}
         style={{ zIndex: 40 }}
       >
         {/* Gallery Header */}
