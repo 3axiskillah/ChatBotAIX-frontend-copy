@@ -46,9 +46,9 @@ export default function Landing({
             {/* Logo */}
             <div className="flex items-center space-x-2">
               {amberLogo ? (
-                <img src={amberLogo} alt="Amber Logo" className="h-8 w-auto" />
+                <img src={amberLogo} alt="Amber Logo" className="h-12 w-auto" />
               ) : (
-                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
                   <span className="text-black font-bold text-sm">🔥</span>
                 </div>
               )}
@@ -306,7 +306,7 @@ export default function Landing({
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
               {amberLogo ? (
-                <img src={amberLogo} alt="Amber Logo" className="h-6 w-auto" />
+                <img src={amberLogo} alt="Amber Logo" className="h-8 w-auto" />
               ) : (
                 <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
                   <span className="text-black font-bold text-xs">🔥</span>
