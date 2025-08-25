@@ -52,9 +52,6 @@ export default function Landing({
                   <span className="text-black font-bold text-sm">🔥</span>
                 </div>
               )}
-              <span className="text-white font-bold text-lg">
-                SPEAK WITH AMBER
-              </span>
             </div>
 
             {/* Desktop Navigation */}
@@ -315,7 +312,6 @@ export default function Landing({
                   <span className="text-black font-bold text-xs">🔥</span>
                 </div>
               )}
-              <span className="text-white font-bold">SPEAK WITH AMBER</span>
             </div>
 
             <div className="text-gray-400 text-sm text-center md:text-left">
