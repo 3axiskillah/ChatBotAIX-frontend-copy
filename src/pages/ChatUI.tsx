@@ -728,7 +728,7 @@ export default function ChatUI() {
         style={{ zIndex: 40 }}
       >
         {/* Gallery Header */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-800">
+        <div className="flex justify-between items-center p-4 border-b border-gray-800 bg-gray-900">
           <h2 className="text-lg font-bold text-red-500">Gallery</h2>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -740,12 +740,14 @@ export default function ChatUI() {
 
         {/* Gallery Content - Scrollable */}
         <div
-          className="flex-1 overflow-y-auto p-4"
+          className="flex-1 overflow-y-auto p-4 bg-gray-900"
           style={{
             WebkitOverflowScrolling: "touch",
             overscrollBehavior: "contain",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
+            height: "calc(100vh - 8rem)",
+            maxHeight: "calc(100vh - 8rem)",
           }}
         >
           {galleryImages.length > 0 ? (
@@ -929,15 +931,15 @@ export default function ChatUI() {
             overscrollBehavior: "contain",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
-            height: "100%",
+            height: "calc(100vh - 200px)",
             minHeight: 0,
-            maxHeight: "calc(100vh - 120px)",
-            paddingBottom: "100px", // Account for fixed input on mobile
+            maxHeight: "calc(100vh - 200px)",
+            paddingBottom: "120px", // Account for fixed input on mobile
           }}
         >
-          {messages.map((msg) => (
+          {messages.map((msg, index) => (
             <div
-              key={msg.id}
+              key={`${msg.id}-${index}`}
               className={`flex flex-col ${
                 msg.sender === "user" ? "items-end" : "items-start"
               }`}
@@ -969,9 +971,9 @@ export default function ChatUI() {
                         <img
                           src={
                             msg.blurred
-                              ? `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                              ? `${import.meta.env.VITE_API_BASE_URL}/api/chat/messages/${msg.serverMessageId}/protected_image/`
                               : msg.image_url ||
-                                `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                                `${import.meta.env.VITE_API_BASE_URL}/api/chat/messages/${msg.serverMessageId}/protected_image/`
                           }
                           alt="attachment"
                           className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition"
@@ -997,7 +999,7 @@ export default function ChatUI() {
                             if (!msg.blurred) {
                               setModalImage(
                                 msg.image_url ||
-                                  `/api/chat/messages/${msg.serverMessageId}/protected_image/`
+                                  `${import.meta.env.VITE_API_BASE_URL}/api/chat/messages/${msg.serverMessageId}/protected_image/`
                               );
                             }
                           }}
