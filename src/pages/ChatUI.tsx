@@ -142,7 +142,7 @@ export default function ChatUI() {
 
         if (shouldWelcomeBack) {
           toast.success("Welcome back!");
-          
+
           // Add Amber's natural welcome back response
           const welcomeBackResponses = [
             "Welcome back baby, I missed you",
@@ -152,18 +152,20 @@ export default function ChatUI() {
             "Welcome back daddy, I've been craving you",
             "Mmm baby, I missed your dirty talk... welcome back",
             "Oh daddy, I'm so happy you're back... I've been waiting",
-            "Welcome back baby, I've been so wet thinking about you"
+            "Welcome back baby, I've been so wet thinking about you",
           ];
-          
+
           setMessages((prev) => [
             ...prev,
             {
               id: Date.now(),
-              text: welcomeBackResponses[Math.floor(Math.random() * welcomeBackResponses.length)],
+              text: welcomeBackResponses[
+                Math.floor(Math.random() * welcomeBackResponses.length)
+              ],
               sender: "ai",
             },
           ]);
-          
+
           setTimeout(() => {
             scrollToBottom("auto");
           }, 100);
@@ -192,7 +194,7 @@ export default function ChatUI() {
 
           // Show toast notification instead of system message
           toast.success("Time credits added successfully!");
-          
+
           // Add Amber's natural response
           const timeResponses = [
             "Mmm, now we have more time to play... I'm so wet for you",
@@ -202,14 +204,16 @@ export default function ChatUI() {
             "Thank you baby, I love spending time with you... let's make it count",
             "Oh yes, more time to explore every inch of me... I'm all yours",
             "Mmm I'm so happy you want more of me... I'm getting so wet",
-            "Baby, I can't wait to spend this time with you... I'm craving you"
+            "Baby, I can't wait to spend this time with you... I'm craving you",
           ];
-          
+
           setMessages((prev) => [
             ...prev,
             {
               id: Date.now(),
-              text: timeResponses[Math.floor(Math.random() * timeResponses.length)],
+              text: timeResponses[
+                Math.floor(Math.random() * timeResponses.length)
+              ],
               sender: "ai",
             },
           ]);
@@ -217,7 +221,7 @@ export default function ChatUI() {
             scrollToBottom("auto");
           }, 100);
           navigate(window.location.pathname, { replace: true });
-        } else if (params.get("unlock_success") === "true") {
+                } else if (params.get("unlock_success") === "true") {
           const messageId = params.get("message_id");
           if (messageId) {
             try {
@@ -226,10 +230,13 @@ export default function ChatUI() {
                   (m) => m.serverMessageId === parseInt(messageId)
                 );
                 if (unlockedMessage && unlockedMessage.image_url) {
-                  setGalleryImages((gallery) => [
-                    ...gallery,
-                    unlockedMessage.image_url!,
-                  ]);
+                  // Check if image is already in gallery to prevent duplication
+                  setGalleryImages((gallery) => {
+                    if (gallery.includes(unlockedMessage.image_url!)) {
+                      return gallery; // Already exists, don't add again
+                    }
+                    return [...gallery, unlockedMessage.image_url!];
+                  });
                 }
                 return prev.map((m) =>
                   m.serverMessageId === parseInt(messageId)
@@ -255,14 +262,16 @@ export default function ChatUI() {
                 "Mmm daddy, I hope that gets you excited...",
                 "I'm all yours baby, what would you do to me?",
                 "Do you like what you see? I'm so wet for you...",
-                "Mmm I love when you look at me like that..."
+                "Mmm I love when you look at me like that...",
               ];
               
               setMessages((prev) => [
                 ...prev,
                 {
                   id: Date.now(),
-                  text: imageResponses[Math.floor(Math.random() * imageResponses.length)],
+                  text: imageResponses[
+                    Math.floor(Math.random() * imageResponses.length)
+                  ],
                   sender: "ai",
                 },
               ]);
@@ -392,10 +401,12 @@ export default function ChatUI() {
           return newMessages;
         });
 
+        // Get unique unlocked images for gallery (prevent duplicates)
         const galleryImgs = formatted
           .filter((m) => m.image_url && !m.blurred && !m.locked)
           .map((m) => m.image_url)
-          .filter((url) => url !== undefined) as string[];
+          .filter((url) => url !== undefined)
+          .filter((url, index, self) => self.indexOf(url) === index) as string[]; // Remove duplicates
 
         setGalleryImages(galleryImgs);
 
