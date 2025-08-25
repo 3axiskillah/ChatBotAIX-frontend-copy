@@ -1,5 +1,7 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api"; // ← relative path adjusted, no alias
+import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 const links = [
   { name: "Dashboard", path: "/admin/dashboard" },
@@ -12,6 +14,31 @@ const links = [
 export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin on component mount
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const userData = await apiFetch("/api/accounts/me/");
+        if (userData && userData.is_admin) {
+          setIsAdmin(true);
+        } else {
+          toast.error("Access denied. Admin privileges required.");
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("Admin check failed:", error);
+        toast.error("Authentication failed. Please log in.");
+        navigate("/");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [navigate]);
 
   const handleLogout = async () => {
     try {
@@ -24,6 +51,21 @@ export default function AdminLayout() {
       console.error("Logout failed:", error);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen bg-[#4B1F1F] text-[#E7D8C1] items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D1A75D] mx-auto mb-4"></div>
+          <p>Checking admin privileges...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return null; // Will redirect to home
+  }
 
   return (
     <div className="flex h-screen bg-[#4B1F1F] text-[#E7D8C1]">

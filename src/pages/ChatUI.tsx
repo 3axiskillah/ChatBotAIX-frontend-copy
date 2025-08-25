@@ -125,12 +125,19 @@ export default function ChatUI() {
 
         // Use backend data for login status - much simpler!
         const isFreshLogin = userData.is_fresh_login && !hasShownWelcome;
-        const shouldWelcomeBack = userData.should_welcome_back && !hasShownWelcome;
+        const shouldWelcomeBack =
+          userData.should_welcome_back && !hasShownWelcome;
 
         setUser({
           id: userData.id,
           email: userData.email,
         });
+
+        // Redirect admin users to admin dashboard
+        if (userData.is_admin) {
+          navigate("/admin/dashboard");
+          return;
+        }
 
         if (credits) {
           const currentCredits = credits.time_credits_seconds || 0;
@@ -372,7 +379,7 @@ export default function ChatUI() {
       if (authIntervalRef.current) clearInterval(authIntervalRef.current);
       if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
     };
-      }, [navigate]);
+  }, [navigate]);
 
   // Real-time countdown timer with backend sync
   useEffect(() => {
@@ -402,7 +409,7 @@ export default function ChatUI() {
       clearInterval(interval);
       clearInterval(syncInterval);
     };
-  }, [displayTime]);
+  }, []); // Empty dependency array - only run once
 
   // Load chat history
   useEffect(() => {
