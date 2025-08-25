@@ -721,12 +721,12 @@ export default function ChatUI() {
             ? "fixed md:relative inset-0 z-40 md:z-auto mt-16 md:mt-0"
             : "hidden md:hidden"
         } 
-        flex-col bg-gray-900 border-r border-gray-800 transition-all duration-300 ease-in-out 
+        flex flex-col bg-gray-900 border-r border-gray-800 transition-all duration-300 ease-in-out 
         ${sidebarOpen ? "w-80 md:w-80" : "w-0"} h-screen md:h-full`}
         style={{ zIndex: 40 }}
       >
         {/* Gallery Header */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-800 bg-gray-900">
+        <div className="flex justify-between items-center p-4 border-b border-gray-800 bg-gray-900 flex-shrink-0">
           <h2 className="text-lg font-bold text-red-500">Gallery</h2>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -745,6 +745,7 @@ export default function ChatUI() {
             scrollbarWidth: "none",
             msOverflowStyle: "none",
             paddingBottom: "120px", // Extra space for mobile scrolling
+            height: "calc(100vh - 120px)", // Ensure proper height for mobile
           }}
         >
           {galleryImages.length > 0 ? (
@@ -853,7 +854,11 @@ export default function ChatUI() {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col relative mt-16 md:mt-0 h-screen md:h-full">
+      <div
+        className={`flex-1 flex flex-col relative mt-16 md:mt-0 h-screen md:h-full ${
+          sidebarOpen ? "md:flex hidden" : "flex"
+        }`}
+      >
         {/* Desktop Header */}
         <header className="hidden md:flex justify-between items-center px-6 py-4 border-b border-gray-800 bg-black">
           <div className="flex items-center gap-3">
