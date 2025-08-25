@@ -46,21 +46,27 @@ export default function Landing({
             {/* Logo */}
             <div className="flex items-center space-x-2">
               {amberLogo ? (
-                <img src={amberLogo} alt="Amber Logo" className="h-12 w-auto" />
+                <img src={amberLogo} alt="Amber Logo" className="h-16 w-auto" />
               ) : (
-                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center">
                   <span className="text-black font-bold text-sm">🔥</span>
                 </div>
               )}
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
+            <nav className="hidden md:flex items-center space-x-4">
               <button
                 onClick={onLoginClick}
-                className="text-gray-300 hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors px-4 py-2 rounded-lg border border-gray-600 hover:border-red-500"
               >
                 Login
+              </button>
+              <button
+                onClick={onRegisterClick}
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Sign Up
               </button>
             </nav>
 
@@ -104,6 +110,12 @@ export default function Landing({
                 className="block w-full text-left text-gray-300 hover:text-white"
               >
                 Login
+              </button>
+              <button
+                onClick={onRegisterClick}
+                className="block w-full text-left text-gray-300 hover:text-white"
+              >
+                Sign Up
               </button>
             </div>
           </div>
@@ -306,9 +318,9 @@ export default function Landing({
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
               {amberLogo ? (
-                <img src={amberLogo} alt="Amber Logo" className="h-8 w-auto" />
+                <img src={amberLogo} alt="Amber Logo" className="h-12 w-auto" />
               ) : (
-                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
                   <span className="text-black font-bold text-xs">🔥</span>
                 </div>
               )}

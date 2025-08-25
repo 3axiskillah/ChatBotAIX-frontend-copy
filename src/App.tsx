@@ -78,7 +78,13 @@ function App() {
         )}
         {showLogin && (
           <Modal onClose={() => setShowLogin(false)}>
-            <Login onClose={() => setShowLogin(false)} />
+            <Login
+              onClose={() => setShowLogin(false)}
+              onSwitchToRegister={() => {
+                setShowLogin(false);
+                setShowRegister(true);
+              }}
+            />
           </Modal>
         )}
       </AuthProvider>
