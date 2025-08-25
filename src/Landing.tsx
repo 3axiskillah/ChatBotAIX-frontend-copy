@@ -37,10 +37,10 @@ export default function Landing({
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white w-full overflow-x-hidden">
       {/* Header */}
       <header className="w-full bg-black border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             {/* Logo */}
             <div className="flex items-center space-x-2">
@@ -147,8 +147,8 @@ export default function Landing({
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-gray-900 border-t border-gray-800">
-            <div className="px-4 py-4 space-y-4">
+          <div className="md:hidden bg-gray-900 border-t border-gray-800 w-full">
+            <div className="w-full px-4 py-4 space-y-4">
               <a href="#home" className="block text-gray-300 hover:text-white">
                 Home
               </a>
@@ -173,8 +173,8 @@ export default function Landing({
       </header>
 
       {/* Hero Section */}
-      <section className="relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <section className="relative w-full">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="bg-gradient-to-br from-gray-900 to-black rounded-3xl p-8 md:p-12 mb-8">
             <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl mb-6 flex items-center justify-center">
               {heroImage ? (
@@ -205,8 +205,8 @@ export default function Landing({
       </section>
 
       {/* Want to See More Section */}
-      <section className="relative bg-gradient-to-br from-red-900/20 to-black py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative bg-gradient-to-br from-red-900/20 to-black py-16 w-full">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center gap-12">
             {/* Gallery */}
             <div className="lg:w-1/2">
@@ -285,8 +285,8 @@ export default function Landing({
       </section>
 
       {/* Main Content Image */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-16 w-full">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-gradient-to-br from-gray-900 to-black rounded-3xl p-8 md:p-12">
             <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl flex items-center justify-center">
               {mainContentImage ? (
@@ -306,8 +306,8 @@ export default function Landing({
       </section>
 
       {/* See More of ME Section */}
-      <section className="relative bg-gradient-to-br from-red-900/20 to-black py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative bg-gradient-to-br from-red-900/20 to-black py-16 w-full">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
               See More of ME
@@ -363,8 +363,8 @@ export default function Landing({
       </section>
 
       {/* Footer */}
-      <footer className="bg-black border-t border-gray-800 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className="bg-black border-t border-gray-800 py-8 w-full">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
               <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
