@@ -116,18 +116,18 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-[#4B1F1F] p-8 rounded-2xl shadow-2xl w-full max-w-md text-[#E7D8C1] border border-[#D1A75D]"
+      className="bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md text-white border border-gray-700"
     >
-      <h2 className="text-3xl font-extrabold text-center text-[#D1A75D] mb-2">
+      <h2 className="text-3xl font-extrabold text-center text-red-500 mb-2">
         Welcome Back!
       </h2>
-      <p className="text-center text-[#E7D8C1]/70 mb-6">
+      <p className="text-center text-gray-300 mb-6">
         Sign in to continue your journey
       </p>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm mb-1">Email</label>
+          <label className="block text-sm mb-1 text-gray-300">Email</label>
           <input
             type="email"
             name="email"
@@ -135,8 +135,8 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
             onChange={handleChange}
             placeholder="Enter your email"
             className={`w-full px-4 py-2 border ${
-              errors.email ? "border-red-500" : "border-[#D1A75D]"
-            } bg-[#3A1A1A] text-[#E7D8C1] rounded-lg`}
+              errors.email ? "border-red-500" : "border-gray-600"
+            } bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent`}
             required
             disabled={isLoading}
             autoComplete="username"
@@ -147,7 +147,7 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
         </div>
 
         <div>
-          <label className="block text-sm mb-1">Password</label>
+          <label className="block text-sm mb-1 text-gray-300">Password</label>
           <input
             type="password"
             name="password"
@@ -155,8 +155,8 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
             onChange={handleChange}
             placeholder="Enter your password"
             className={`w-full px-4 py-2 border ${
-              errors.password ? "border-red-500" : "border-[#D1A75D]"
-            } bg-[#3A1A1A] text-[#E7D8C1] rounded-lg`}
+              errors.password ? "border-red-500" : "border-gray-600"
+            } bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent`}
             required
             disabled={isLoading}
             autoComplete="current-password"
@@ -168,13 +168,13 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
 
         <button
           type="submit"
-          className="w-full bg-[#D1A75D] hover:bg-[#b88b35] text-[#4B1F1F] py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isLoading}
         >
           {isLoading ? (
             <span className="inline-flex items-center">
               <svg
-                className="animate-spin -ml-1 mr-2 h-4 w-4 text-[#4B1F1F]"
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -201,12 +201,12 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
         </button>
       </div>
 
-      <p className="text-center text-sm text-[#E7D8C1]/70 mt-4">
+      <p className="text-center text-sm text-gray-300 mt-4">
         Don't have an account?{" "}
         <button
           type="button"
           onClick={onSwitchToRegister}
-          className="text-[#D1A75D] hover:underline focus:outline-none"
+          className="text-red-400 hover:text-red-300 hover:underline focus:outline-none"
           disabled={isLoading}
         >
           Sign Up

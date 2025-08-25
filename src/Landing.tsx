@@ -13,6 +13,7 @@ const gridImage5 = "/grid-5.png";
 const gridImage6 = "/grid-6.png";
 const gridImage7 = "/grid-7.png";
 const gridImage8 = "/grid-8.png";
+const amberLogo = "/AMBER-LOGO.svg";
 
 type LandingProps = {
   onRegisterClick: () => void;
@@ -44,9 +45,13 @@ export default function Landing({
           <div className="flex justify-between items-center py-4">
             {/* Logo */}
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-black font-bold text-sm">🔥</span>
-              </div>
+              {amberLogo ? (
+                <img src={amberLogo} alt="Amber Logo" className="h-8 w-auto" />
+              ) : (
+                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-black font-bold text-sm">🔥</span>
+                </div>
+              )}
               <span className="text-white font-bold text-lg">
                 SPEAK WITH AMBER
               </span>
@@ -54,64 +59,12 @@ export default function Landing({
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
-              <a
-                href="#home"
+              <button
+                onClick={onLoginClick}
                 className="text-gray-300 hover:text-white transition-colors"
               >
-                Home
-              </a>
-              <a
-                href="#services"
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Services
-              </a>
-              <a
-                href="#shop"
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Ready To Shop
-              </a>
-              <div className="flex items-center space-x-4">
-                <button className="text-gray-300 hover:text-white">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </button>
-                <div className="w-px h-6 bg-gray-600"></div>
-                <button className="text-gray-300 hover:text-white">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                </button>
-                <div className="w-px h-6 bg-gray-600"></div>
-                <button
-                  onClick={onLoginClick}
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Login
-                </button>
-              </div>
+                Login
+              </button>
             </nav>
 
             {/* Mobile Menu Button */}
@@ -149,18 +102,6 @@ export default function Landing({
         {mobileMenuOpen && (
           <div className="md:hidden bg-gray-900 border-t border-gray-800 w-full">
             <div className="w-full px-4 py-4 space-y-4">
-              <a href="#home" className="block text-gray-300 hover:text-white">
-                Home
-              </a>
-              <a
-                href="#services"
-                className="block text-gray-300 hover:text-white"
-              >
-                Services
-              </a>
-              <a href="#shop" className="block text-gray-300 hover:text-white">
-                Ready To Shop
-              </a>
               <button
                 onClick={onLoginClick}
                 className="block w-full text-left text-gray-300 hover:text-white"
@@ -367,30 +308,18 @@ export default function Landing({
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-                <span className="text-black font-bold text-xs">🔥</span>
-              </div>
+              {amberLogo ? (
+                <img src={amberLogo} alt="Amber Logo" className="h-6 w-auto" />
+              ) : (
+                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                  <span className="text-black font-bold text-xs">🔥</span>
+                </div>
+              )}
               <span className="text-white font-bold">SPEAK WITH AMBER</span>
             </div>
 
             <div className="text-gray-400 text-sm text-center md:text-left">
-              <p className="mb-2">
-                Copyright 2025 | SPEAK WITH AMBER All Rights Reserved.
-              </p>
-              <div className="flex flex-wrap justify-center md:justify-start space-x-6">
-                <a href="#home" className="hover:text-white transition-colors">
-                  Home
-                </a>
-                <a
-                  href="#services"
-                  className="hover:text-white transition-colors"
-                >
-                  Services
-                </a>
-                <a href="#shop" className="hover:text-white transition-colors">
-                  Ready To Shop
-                </a>
-              </div>
+              <p>Copyright 2025 | SPEAK WITH AMBER All Rights Reserved.</p>
             </div>
           </div>
         </div>

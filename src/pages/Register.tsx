@@ -91,25 +91,23 @@ export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-[#4B1F1F] p-8 rounded-2xl shadow-2xl w-full max-w-md text-[#E7D8C1] border border-[#D1A75D]"
+      className="bg-gray-900 p-8 rounded-2xl shadow-2xl w-full max-w-md text-white border border-gray-700"
     >
-      <h2 className="text-3xl font-extrabold text-center text-[#D1A75D] mb-2">
+      <h2 className="text-3xl font-extrabold text-center text-red-500 mb-2">
         Create Account
       </h2>
-      <p className="text-center text-[#E7D8C1]/70 mb-6">
-        Join our community today
-      </p>
+      <p className="text-center text-gray-300 mb-6">Join our community today</p>
 
       <div className="space-y-4">
         <div>
-          <label className="block text-sm mb-1">Username</label>
+          <label className="block text-sm mb-1 text-gray-300">Username</label>
           <input
             type="text"
             name="username"
             value={form.username}
             onChange={handleChange}
             placeholder="Enter 3+ characters"
-            className="w-full px-4 py-2 border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] rounded-lg focus:ring-2 focus:ring-[#D1A75D] focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-600 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             required
             minLength={3}
             maxLength={20}
@@ -118,28 +116,28 @@ export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
         </div>
 
         <div>
-          <label className="block text-sm mb-1">Email</label>
+          <label className="block text-sm mb-1 text-gray-300">Email</label>
           <input
             type="email"
             name="email"
             value={form.email}
             onChange={handleChange}
             placeholder="your@email.com"
-            className="w-full px-4 py-2 border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] rounded-lg focus:ring-2 focus:ring-[#D1A75D] focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-600 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             required
             disabled={isLoading}
           />
         </div>
 
         <div>
-          <label className="block text-sm mb-1">Password</label>
+          <label className="block text-sm mb-1 text-gray-300">Password</label>
           <input
             type="password"
             name="password"
             value={form.password}
             onChange={handleChange}
             placeholder="At least 8 characters"
-            className="w-full px-4 py-2 border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] rounded-lg focus:ring-2 focus:ring-[#D1A75D] focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-600 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
             required
             minLength={8}
             disabled={isLoading}
@@ -149,12 +147,12 @@ export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-[#D1A75D] text-[#4B1F1F] py-2 rounded-lg hover:bg-[#b88b35] font-semibold disabled:opacity-50 transition-colors duration-200 flex items-center justify-center"
+          className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold disabled:opacity-50 transition-colors duration-200 flex items-center justify-center"
         >
           {isLoading ? (
             <>
               <svg
-                className="animate-spin -ml-1 mr-2 h-4 w-4 text-[#4B1F1F]"
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -181,12 +179,12 @@ export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
         </button>
       </div>
 
-      <p className="text-center text-sm text-[#E7D8C1]/70 mt-4">
+      <p className="text-center text-sm text-gray-300 mt-4">
         Already have an account?{" "}
         <button
           type="button"
           onClick={onSwitchToLogin}
-          className="text-[#D1A75D] hover:underline focus:outline-none"
+          className="text-red-400 hover:text-red-300 hover:underline focus:outline-none"
           disabled={isLoading}
         >
           Sign In
