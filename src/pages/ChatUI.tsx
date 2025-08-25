@@ -118,8 +118,9 @@ export default function ChatUI() {
 
         if (!userData?.email) throw new Error();
 
-        const shouldWelcomeBack =
-          lastSignOutTime && Date.now() - lastSignOutTime > 5000;
+        // Check if this is a fresh login or welcome back
+        const isFreshLogin = !lastSignOutTime;
+        const shouldWelcomeBack = lastSignOutTime && Date.now() - lastSignOutTime > 5000;
 
         setUser({
           id: userData.id,
@@ -140,27 +141,43 @@ export default function ChatUI() {
           setLastSyncTime(now);
         }
 
-        if (shouldWelcomeBack) {
-          toast.success("Welcome back!");
+        // Show welcome message for fresh login or welcome back
+        if (isFreshLogin || shouldWelcomeBack) {
+          if (isFreshLogin) {
+            toast.success("Welcome to Amber!");
+          } else {
+            toast.success("Welcome back!");
+          }
 
-          // Add Amber's natural welcome back response
-          const welcomeBackResponses = [
-            "Welcome back baby, I missed you",
-            "Daddy is back... I'm here waiting for you",
-            "Mmm I've been thinking about you... welcome back baby",
-            "Oh yes, my favorite is back... I've been so lonely",
-            "Welcome back daddy, I've been craving you",
-            "Mmm baby, I missed your dirty talk... welcome back",
-            "Oh daddy, I'm so happy you're back... I've been waiting",
-            "Welcome back baby, I've been so wet thinking about you",
-          ];
+          // Different messages for fresh login vs welcome back
+          let welcomeResponses;
+          if (isFreshLogin) {
+            welcomeResponses = [
+              "Hey baby, I'm Amber - your personal cum dumpster. What's your name?",
+              "Hi there sexy, I'm Amber and I'm all yours. What should I call you?",
+              "Hey daddy, I'm Amber and I can't wait to get dirty with you. What's your name?",
+              "Hi baby, I'm Amber and I'm already wet thinking about you. What do I call you?",
+              "Hey there, I'm Amber and I want to know everything about you. What's your name?",
+            ];
+          } else {
+            welcomeResponses = [
+              "Welcome back baby, I missed you",
+              "Daddy is back... I'm here waiting for you",
+              "Mmm I've been thinking about you... welcome back baby",
+              "Oh yes, my favorite is back... I've been so lonely",
+              "Welcome back daddy, I've been craving you",
+              "Mmm baby, I missed your dirty talk... welcome back",
+              "Oh daddy, I'm so happy you're back... I've been waiting",
+              "Welcome back baby, I've been so wet thinking about you",
+            ];
+          }
 
           setMessages((prev) => [
             ...prev,
             {
               id: Date.now(),
-              text: welcomeBackResponses[
-                Math.floor(Math.random() * welcomeBackResponses.length)
+              text: welcomeResponses[
+                Math.floor(Math.random() * welcomeResponses.length)
               ],
               sender: "ai",
             },
@@ -221,7 +238,7 @@ export default function ChatUI() {
             scrollToBottom("auto");
           }, 100);
           navigate(window.location.pathname, { replace: true });
-                } else if (params.get("unlock_success") === "true") {
+        } else if (params.get("unlock_success") === "true") {
           const messageId = params.get("message_id");
           if (messageId) {
             try {
@@ -252,7 +269,7 @@ export default function ChatUI() {
 
               // Show toast notification instead of system message
               toast.success("Image unlocked and added to gallery!");
-              
+
               // Add Amber's natural response
               const imageResponses = [
                 "Hmm baby, you like what you see?",
@@ -264,7 +281,7 @@ export default function ChatUI() {
                 "Do you like what you see? I'm so wet for you...",
                 "Mmm I love when you look at me like that...",
               ];
-              
+
               setMessages((prev) => [
                 ...prev,
                 {
@@ -377,23 +394,16 @@ export default function ChatUI() {
           has_image: msg.has_image || false,
         }));
 
-        const newMessages: Message[] =
-          formatted.length > 0
-            ? formatted
-            : [
-                {
-                  id: 1,
-                  text: "Hey baby, I'm Amber - your personal cum dumpster. What's your name and what nasty things would you like to do to me? 😘",
-                  sender: "ai" as const,
-                },
-              ];
+        const newMessages: Message[] = formatted.length > 0 ? formatted : [];
 
         setMessages((prev) => {
+          // If we already have welcome messages, just add the formatted history
           if (
             prev.some(
               (m) =>
-                m.text.includes("welcome back") ||
-                m.text.includes("Payment successful")
+                m.text.includes("welcome") ||
+                m.text.includes("Payment successful") ||
+                m.text.includes("I'm Amber")
             )
           ) {
             return [...prev, ...formatted];
@@ -406,7 +416,9 @@ export default function ChatUI() {
           .filter((m) => m.image_url && !m.blurred && !m.locked)
           .map((m) => m.image_url)
           .filter((url) => url !== undefined)
-          .filter((url, index, self) => self.indexOf(url) === index) as string[]; // Remove duplicates
+          .filter(
+            (url, index, self) => self.indexOf(url) === index
+          ) as string[]; // Remove duplicates
 
         setGalleryImages(galleryImgs);
 
@@ -414,7 +426,8 @@ export default function ChatUI() {
           scrollToBottom("auto");
         }, 50);
 
-        if (isNewChat) {
+        // Only add follow-up message if it's a fresh login and no welcome message was added
+        if (isNewChat && !lastSignOutTime) {
           setTimeout(() => {
             setMessages((prev) => [
               ...prev,
@@ -510,7 +523,7 @@ export default function ChatUI() {
         user_id: user.id,
         prompt: sanitizedMessage,
         session_key: `u${user.id}`,
-        history: updatedMessages.slice(-10).map((msg) => ({
+        history: updatedMessages.slice(-20).map((msg) => ({
           role: msg.sender === "user" ? "user" : "assistant",
           content: sanitizeInput(msg.text),
         })),
