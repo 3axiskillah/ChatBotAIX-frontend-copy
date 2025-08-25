@@ -151,6 +151,23 @@ export default function ChatUI() {
         // Handle payment success parameters
         const params = new URLSearchParams(window.location.search);
         if (params.has("payment_success")) {
+          // Refresh time credits after payment
+          try {
+            const currentCredits = await apiFetch(
+              "/api/billing/credits/status/"
+            );
+            if (
+              currentCredits &&
+              typeof currentCredits.time_credits_seconds === "number"
+            ) {
+              setTimeCreditsSeconds(currentCredits.time_credits_seconds);
+              setDisplayTime(currentCredits.time_credits_seconds);
+              setLastSyncTime(Date.now());
+            }
+          } catch (error) {
+            console.error("Failed to refresh credits after payment:", error);
+          }
+
           setMessages((prev) => [
             ...prev,
             {
@@ -453,49 +470,23 @@ export default function ChatUI() {
         : undefined;
 
       const processingTime = Math.floor((Date.now() - startTime) / 1000);
-      let updatedTimeCredits = timeCreditsSeconds;
+
+      // Simplified time credit handling - only update once
       try {
         const usage = await apiFetch("/api/billing/usage/report/", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: { seconds_used: processingTime },
         });
+
         if (usage && typeof usage.time_credits_seconds === "number") {
-          updatedTimeCredits = Math.max(0, usage.time_credits_seconds);
-          const now = Date.now();
-          setTimeCreditsSeconds(updatedTimeCredits);
-          setLastSyncTime(now);
-        } else {
-          updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
-          setTimeCreditsSeconds(updatedTimeCredits);
+          setTimeCreditsSeconds(usage.time_credits_seconds);
+          setDisplayTime(usage.time_credits_seconds);
+          setLastSyncTime(Date.now());
         }
       } catch (error) {
         console.error("Time credit usage report failed:", error);
-        try {
-          const currentCredits = await apiFetch("/api/billing/credits/status/");
-          if (
-            currentCredits &&
-            typeof currentCredits.time_credits_seconds === "number"
-          ) {
-            updatedTimeCredits = Math.max(
-              0,
-              currentCredits.time_credits_seconds
-            );
-            const now = Date.now();
-            setTimeCreditsSeconds(updatedTimeCredits);
-            setLastSyncTime(now);
-          } else {
-            updatedTimeCredits = Math.max(
-              0,
-              timeCreditsSeconds - processingTime
-            );
-            setTimeCreditsSeconds(updatedTimeCredits);
-          }
-        } catch (syncError) {
-          console.error("Failed to sync time credits:", syncError);
-          updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
-          setTimeCreditsSeconds(updatedTimeCredits);
-        }
+        // Don't do fallback calculations - let the backend handle it
       }
 
       const willHaveImage = Boolean(fullImageUrl);
@@ -532,7 +523,9 @@ export default function ChatUI() {
         );
       }
 
-      if (updatedTimeCredits <= 0) {
+      // Check if time is up after the response
+      const currentCredits = await apiFetch("/api/billing/credits/status/");
+      if (currentCredits && currentCredits.time_credits_seconds <= 0) {
         setShowUpgradePrompt(true);
       }
     } catch (err) {
