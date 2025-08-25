@@ -118,6 +118,10 @@ export default function ChatUI() {
 
         if (!userData?.email) throw new Error();
 
+        // Get URL parameters early to check for payment success
+        const params = new URLSearchParams(window.location.search);
+        const hasPaymentSuccess = params.has("payment_success") || params.get("unlock_success") === "true";
+
         // Check if this is a fresh login or welcome back
         const isFreshLogin = !lastSignOutTime && !hasShownWelcome;
         const shouldWelcomeBack =
@@ -137,8 +141,9 @@ export default function ChatUI() {
         }
 
         // Show welcome message - prioritize fresh login over welcome back
-        // Only show welcome if there are no existing messages
-        if (isFreshLogin && messages.length === 0) {
+        // Only show welcome if there are no existing messages AND no payment success parameters
+        
+        if (isFreshLogin && messages.length === 0 && !hasPaymentSuccess) {
           setHasShownWelcome(true);
           toast.success("Welcome to Amber!");
 
@@ -165,7 +170,7 @@ export default function ChatUI() {
             scrollToBottom("auto");
           }, 100);
           navigate(window.location.pathname, { replace: true });
-        } else if (shouldWelcomeBack && messages.length === 0) {
+        } else if (shouldWelcomeBack && messages.length === 0 && !hasPaymentSuccess) {
           toast.success("Welcome back!");
 
           const welcomeBackResponses = [
@@ -197,7 +202,6 @@ export default function ChatUI() {
         }
 
         // Handle payment success parameters
-        const params = new URLSearchParams(window.location.search);
         if (params.has("payment_success")) {
           // Refresh time credits after payment
           try {
@@ -378,18 +382,18 @@ export default function ChatUI() {
       });
     }, 1000);
 
-            // Sync with backend every 30 seconds to prevent drift
-        const syncInterval = setInterval(async () => {
-          try {
-            const credits = await apiFetch("/api/billing/credits/status/");
-            if (credits && typeof credits.time_credits_seconds === "number") {
-              setTimeCreditsSeconds(credits.time_credits_seconds);
-              setDisplayTime(credits.time_credits_seconds);
-            }
-          } catch (error) {
-            console.error("Failed to sync time credits:", error);
-          }
-        }, 30000);
+    // Sync with backend every 30 seconds to prevent drift
+    const syncInterval = setInterval(async () => {
+      try {
+        const credits = await apiFetch("/api/billing/credits/status/");
+        if (credits && typeof credits.time_credits_seconds === "number") {
+          setTimeCreditsSeconds(credits.time_credits_seconds);
+          setDisplayTime(credits.time_credits_seconds);
+        }
+      } catch (error) {
+        console.error("Failed to sync time credits:", error);
+      }
+    }, 30000);
 
     return () => {
       clearInterval(interval);
