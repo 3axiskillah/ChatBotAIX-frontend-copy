@@ -124,9 +124,11 @@ export default function ChatUI() {
           params.get("unlock_success") === "true";
 
         // Use backend data for login status - much simpler!
-        const isFreshLogin = userData.is_fresh_login && !hasShownWelcome;
+        // Only show welcome messages if there are NO existing messages in the chat
+        const hasExistingMessages = messages.length > 0;
+        const isFreshLogin = userData.is_fresh_login && !hasShownWelcome && !hasExistingMessages;
         const shouldWelcomeBack =
-          userData.should_welcome_back && !hasShownWelcome;
+          userData.should_welcome_back && !hasShownWelcome && !hasExistingMessages;
 
         setUser({
           id: userData.id,
@@ -147,10 +149,13 @@ export default function ChatUI() {
           setDisplayTime(currentCredits);
         }
 
-        // Show welcome message ONLY on fresh login or after logout - never on navigation or payments
-        if (isFreshLogin && messages.length === 0 && !hasPaymentSuccess) {
+        // Show welcome message ONLY on actual sign in with empty chat
+        if (isFreshLogin && messages.length === 0 && !hasPaymentSuccess && !hasShownWelcome) {
           setHasShownWelcome(true);
-          toast.success("Welcome to Amber!");
+          // Only show toast on actual sign in, not navigation
+          if (userData.is_fresh_login) {
+            toast.success("Welcome to Amber!");
+          }
 
           const freshLoginResponses = [
             "Hey baby, I'm Amber - your personal cum dumpster. What's your name?",
@@ -178,10 +183,14 @@ export default function ChatUI() {
         } else if (
           shouldWelcomeBack &&
           messages.length === 0 &&
-          !hasPaymentSuccess
+          !hasPaymentSuccess &&
+          !hasShownWelcome
         ) {
           setHasShownWelcome(true);
-          toast.success("Welcome back!");
+          // Only show toast on actual sign in, not navigation
+          if (userData.should_welcome_back) {
+            toast.success("Welcome back!");
+          }
 
           const welcomeBackResponses = [
             "Welcome back baby, I missed you",
@@ -462,22 +471,8 @@ export default function ChatUI() {
           scrollToBottom("auto");
         }, 50);
 
-        // Only add follow-up message if it's a fresh login and no welcome message was added
-        if (isNewChat && !hasShownWelcome) {
-          setTimeout(() => {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: Date.now(),
-                text: "I've been thinking about you... what naughty things shall we do? 💋",
-                sender: "ai",
-              },
-            ]);
-            setTimeout(() => {
-              scrollToBottom("auto");
-            }, 100);
-          }, 3000);
-        }
+        // REMOVED: No more automatic welcome messages from loadAllHistory
+        // Welcome messages should ONLY come from actual sign in, not navigation
       } catch (err) {
         console.error("Error loading chat history:", err);
         toast.error(
