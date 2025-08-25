@@ -44,7 +44,6 @@ export default function ChatUI() {
 
   const [timeCreditsSeconds, setTimeCreditsSeconds] = useState<number>(0);
   const [displayTime, setDisplayTime] = useState<number>(0);
-  const [lastSignOutTime, setLastSignOutTime] = useState<number | null>(null);
   const [hasShownWelcome, setHasShownWelcome] = useState<boolean>(false);
   const [keepGalleryOpen, setKeepGalleryOpen] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -120,12 +119,13 @@ export default function ChatUI() {
 
         // Get URL parameters early to check for payment success
         const params = new URLSearchParams(window.location.search);
-        const hasPaymentSuccess = params.has("payment_success") || params.get("unlock_success") === "true";
+        const hasPaymentSuccess =
+          params.has("payment_success") ||
+          params.get("unlock_success") === "true";
 
-        // Check if this is a fresh login or welcome back
-        const isFreshLogin = !lastSignOutTime && !hasShownWelcome;
-        const shouldWelcomeBack =
-          lastSignOutTime && Date.now() - lastSignOutTime > 5000;
+        // Use backend data for login status - much simpler!
+        const isFreshLogin = userData.is_fresh_login && !hasShownWelcome;
+        const shouldWelcomeBack = userData.should_welcome_back && !hasShownWelcome;
 
         setUser({
           id: userData.id,
@@ -140,9 +140,7 @@ export default function ChatUI() {
           setDisplayTime(currentCredits);
         }
 
-        // Show welcome message - prioritize fresh login over welcome back
-        // Only show welcome if there are no existing messages AND no payment success parameters
-        
+        // Show welcome message ONLY on fresh login or after logout - never on navigation or payments
         if (isFreshLogin && messages.length === 0 && !hasPaymentSuccess) {
           setHasShownWelcome(true);
           toast.success("Welcome to Amber!");
@@ -170,7 +168,12 @@ export default function ChatUI() {
             scrollToBottom("auto");
           }, 100);
           navigate(window.location.pathname, { replace: true });
-        } else if (shouldWelcomeBack && messages.length === 0 && !hasPaymentSuccess) {
+        } else if (
+          shouldWelcomeBack &&
+          messages.length === 0 &&
+          !hasPaymentSuccess
+        ) {
+          setHasShownWelcome(true);
           toast.success("Welcome back!");
 
           const welcomeBackResponses = [
@@ -369,7 +372,7 @@ export default function ChatUI() {
       if (authIntervalRef.current) clearInterval(authIntervalRef.current);
       if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
     };
-  }, [navigate, lastSignOutTime]);
+      }, [navigate]);
 
   // Real-time countdown timer with backend sync
   useEffect(() => {
@@ -453,7 +456,7 @@ export default function ChatUI() {
         }, 50);
 
         // Only add follow-up message if it's a fresh login and no welcome message was added
-        if (isNewChat && !lastSignOutTime) {
+        if (isNewChat && !hasShownWelcome) {
           setTimeout(() => {
             setMessages((prev) => [
               ...prev,
@@ -502,7 +505,6 @@ export default function ChatUI() {
       localStorage.removeItem("chat_seconds_used");
       localStorage.removeItem("imagesSentToday");
       localStorage.removeItem("imageResetDate");
-      setLastSignOutTime(Date.now());
       setHasShownWelcome(false); // Reset welcome flag on actual logout
       setGalleryImages([]);
       navigate("/");
