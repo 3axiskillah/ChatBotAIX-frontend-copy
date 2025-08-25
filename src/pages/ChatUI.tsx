@@ -631,7 +631,7 @@ export default function ChatUI() {
   return (
     <div className="w-full h-full flex flex-col md:flex-row bg-black text-white fixed inset-0">
       {/* Mobile Header */}
-      <header className="md:hidden flex justify-between items-center px-4 py-3 border-b border-gray-800 bg-black fixed top-0 left-0 right-0 z-50">
+      <header className="md:hidden flex justify-between items-center px-4 py-3 border-b border-gray-800 bg-black fixed top-0 left-0 right-0 z-40">
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -920,6 +920,7 @@ export default function ChatUI() {
             height: "100%",
             minHeight: 0,
             maxHeight: "calc(100vh - 120px)",
+            paddingBottom: "80px", // Account for fixed input
           }}
         >
           {messages.map((msg) => (
@@ -1090,7 +1091,7 @@ export default function ChatUI() {
         {/* Input Area */}
         <form
           onSubmit={handleSend}
-          className={`fixed md:sticky bottom-0 left-0 right-0 flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-gray-800 bg-black z-40 ${
+          className={`fixed md:sticky bottom-0 left-0 right-0 flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-gray-800 bg-black z-30 ${
             sidebarOpen ? 'md:flex hidden' : 'flex'
           }`}
         >
