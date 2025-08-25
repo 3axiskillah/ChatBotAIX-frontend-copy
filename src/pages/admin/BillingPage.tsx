@@ -55,7 +55,7 @@ export default function BillingPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold text-[#D1A75D] mb-6">Billing Dashboard</h1>
+      <h1 className="text-3xl font-bold text-red-500 mb-6">Billing Dashboard</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard 
@@ -80,13 +80,13 @@ export default function BillingPage() {
         />
       </div>
 
-      <div className="bg-[#3A1818] rounded-lg shadow-lg overflow-hidden">
-        <h2 className="text-xl font-bold text-[#D1A75D] p-4 border-b border-[#D1A75D]">
+      <div className="bg-gray-900 rounded-lg shadow-lg overflow-hidden border border-gray-800">
+        <h2 className="text-xl font-bold text-red-500 p-4 border-b border-gray-700">
           Recent Transactions
         </h2>
         <div className="overflow-x-auto">
           <table className="min-w-full">
-            <thead className="bg-[#4B1F1F] text-[#E7D8C1]">
+            <thead className="bg-gray-800 text-white">
               <tr>
                 <th className="px-4 py-3 text-left">User</th>
                 <th className="px-4 py-3 text-left">Email</th>
@@ -96,9 +96,9 @@ export default function BillingPage() {
                 <th className="px-4 py-3 text-left">Subscription</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#D1A75D]/20">
+            <tbody className="divide-y divide-gray-700">
               {transactions.map((tx) => (
-                <tr key={tx.id} className="hover:bg-[#4B1F1F]">
+                <tr key={tx.id} className="hover:bg-gray-800">
                   <td className="px-4 py-3">{tx.username}</td>
                   <td className="px-4 py-3">{tx.email}</td>
                   <td className="px-4 py-3">${tx.amount.toFixed(2)}</td>
@@ -112,7 +112,7 @@ export default function BillingPage() {
                       {tx.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-[#E7D8C1]/70">
+                  <td className="px-4 py-3 text-sm text-gray-400">
                     {tx.subscription_id ? tx.subscription_id.slice(0, 8) + '...' : 'N/A'}
                   </td>
                 </tr>
@@ -127,11 +127,11 @@ export default function BillingPage() {
 
 function StatCard({ title, value, icon }: { title: string; value: string | number; icon: string }) {
   return (
-    <div className="bg-[#3A1818] p-4 rounded-lg border border-[#D1A75D]/20">
+    <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-[#E7D8C1]/70">{title}</p>
-          <p className="text-2xl font-bold text-[#D1A75D]">{value}</p>
+          <p className="text-sm text-gray-400">{title}</p>
+          <p className="text-2xl font-bold text-red-500">{value}</p>
         </div>
         <span className="text-2xl">{icon}</span>
       </div>

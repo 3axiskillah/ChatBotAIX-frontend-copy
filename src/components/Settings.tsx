@@ -102,20 +102,20 @@ export default function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-[#4B1F1F] text-[#E7D8C1] p-4 md:p-8">
+    <div className="min-h-screen bg-black text-white p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Sidebar Navigation */}
-          <div className="w-full md:w-64 bg-[#3A1818] rounded-xl p-4 h-fit sticky top-4">
-            <h1 className="text-2xl font-bold text-[#D1A75D] mb-6">Settings</h1>
+          <div className="w-full md:w-64 bg-gray-900 rounded-xl p-4 h-fit sticky top-4 border border-gray-800">
+            <h1 className="text-2xl font-bold text-red-500 mb-6">Settings</h1>
 
             <nav className="space-y-2">
               <button
                 onClick={() => setActiveTab("profile")}
                 className={`w-full text-left px-4 py-3 rounded-lg transition ${
                   activeTab === "profile"
-                    ? "bg-[#D1A75D] text-[#4B1F1F] font-medium"
-                    : "hover:bg-[#4B1F1F]"
+                    ? "bg-red-600 text-white font-medium"
+                    : "hover:bg-gray-800"
                 }`}
               >
                 Profile
@@ -124,8 +124,8 @@ export default function Settings() {
                 onClick={() => setActiveTab("subscription")}
                 className={`w-full text-left px-4 py-3 rounded-lg transition ${
                   activeTab === "subscription"
-                    ? "bg-[#D1A75D] text-[#4B1F1F] font-medium"
-                    : "hover:bg-[#4B1F1F]"
+                    ? "bg-red-600 text-white font-medium"
+                    : "hover:bg-gray-800"
                 }`}
               >
                 Subscription
@@ -134,8 +134,8 @@ export default function Settings() {
                 onClick={() => setActiveTab("security")}
                 className={`w-full text-left px-4 py-3 rounded-lg transition ${
                   activeTab === "security"
-                    ? "bg-[#D1A75D] text-[#4B1F1F] font-medium"
-                    : "hover:bg-[#4B1F1F]"
+                    ? "bg-red-600 text-white font-medium"
+                    : "hover:bg-gray-800"
                 }`}
               >
                 Security
@@ -144,7 +144,7 @@ export default function Settings() {
 
             <button
               onClick={() => navigate("/chat")}
-              className="w-full mt-6 px-4 py-3 bg-[#4B1F1F] text-[#E7D8C1] rounded-lg hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition flex items-center gap-2 justify-center"
+              className="w-full mt-6 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2 justify-center"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -163,18 +163,18 @@ export default function Settings() {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 bg-[#3A1818] rounded-xl p-6 md:p-8">
+          <div className="flex-1 bg-gray-900 rounded-xl p-6 md:p-8 border border-gray-800">
             {/* Profile Tab */}
             {activeTab === "profile" && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold text-[#D1A75D]">
+                  <h2 className="text-2xl font-bold text-red-500">
                     Profile Information
                   </h2>
                   {!isEditing ? (
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="px-4 py-2 bg-[#D1A75D] text-[#4B1F1F] rounded-lg hover:bg-[#c49851] font-medium"
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
                     >
                       Edit Profile
                     </button>
@@ -189,13 +189,13 @@ export default function Settings() {
                             password: "",
                           });
                         }}
-                        className="px-4 py-2 bg-[#4B1F1F] text-[#E7D8C1] rounded-lg hover:bg-[#5B2F2F] font-medium"
+                        className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 font-medium"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleSave}
-                        className="px-4 py-2 bg-[#D1A75D] text-[#4B1F1F] rounded-lg hover:bg-[#c49851] font-medium"
+                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
                       >
                         Save Changes
                       </button>
@@ -210,7 +210,7 @@ export default function Settings() {
                     </label>
                     <input
                       name="username"
-                      className="w-full p-3 bg-[#4B1F1F] border border-[#D1A75D]/30 rounded-lg text-[#E7D8C1] disabled:opacity-70"
+                      className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white disabled:opacity-70"
                       value={formData.username}
                       onChange={handleInputChange}
                       disabled={!isEditing}
@@ -224,7 +224,7 @@ export default function Settings() {
                     <input
                       name="email"
                       type="email"
-                      className="w-full p-3 bg-[#4B1F1F] border border-[#D1A75D]/30 rounded-lg text-[#E7D8C1] disabled:opacity-70"
+                      className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white disabled:opacity-70"
                       value={formData.email}
                       onChange={handleInputChange}
                       disabled={!isEditing}
@@ -246,7 +246,7 @@ export default function Settings() {
                         Email not verified.{" "}
                         <button
                           onClick={resendVerification}
-                          className="underline text-[#D1A75D] hover:text-[#c49851]"
+                          className="underline text-red-500 hover:text-red-400"
                         >
                           Resend Verification
                         </button>
@@ -264,13 +264,13 @@ export default function Settings() {
                           name="password"
                           type={showPassword ? "text" : "password"}
                           placeholder="Enter new password"
-                          className="w-full p-3 bg-[#4B1F1F] border border-[#D1A75D]/30 rounded-lg text-[#E7D8C1] pr-10"
+                          className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white pr-10"
                           value={formData.password}
                           onChange={handleInputChange}
                         />
                         <button
                           type="button"
-                          className="absolute right-3 top-3 text-[#D1A75D] hover:text-[#c49851]"
+                          className="absolute right-3 top-3 text-red-500 hover:text-red-400"
                           onClick={() => setShowPassword(!showPassword)}
                         >
                           {showPassword ? (
@@ -304,7 +304,7 @@ export default function Settings() {
                           )}
                         </button>
                       </div>
-                      <p className="mt-1 text-xs text-[#E7D8C1]/70">
+                      <p className="mt-1 text-xs text-gray-400">
                         Leave blank to keep current password
                       </p>
                     </div>
@@ -316,33 +316,33 @@ export default function Settings() {
             {/* Subscription Tab */}
             {activeTab === "subscription" && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-[#D1A75D]">
+                <h2 className="text-2xl font-bold text-red-500">
                   Subscription Plan
                 </h2>
 
-                <div className="bg-[#4B1F1F] rounded-xl p-6 border border-[#D1A75D]/30">
+                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
                       <h3 className="text-xl font-bold">Time Credits System</h3>
-                      <p className="text-[#E7D8C1]/80">
+                      <p className="text-gray-400">
                         Pay for time credits to chat with Amber
                       </p>
                     </div>
 
                     <div className="flex flex-col md:items-end">
-                      <span className="text-2xl font-bold text-[#D1A75D]">
+                      <span className="text-2xl font-bold text-red-500">
                         Pay per use
                       </span>
                       <button
                         onClick={() => navigate("/addons")}
-                        className="mt-2 px-4 py-2 bg-[#D1A75D] text-[#4B1F1F] rounded-lg hover:bg-[#c49851] font-medium"
+                        className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
                       >
                         Buy Time Credits
                       </button>
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-6 border-t border-[#D1A75D]/20">
+                  <div className="mt-6 pt-6 border-t border-gray-700">
                     <h4 className="font-medium mb-3">How It Works</h4>
                     <ul className="space-y-2">
                       <li className="flex items-center gap-2">
@@ -399,18 +399,18 @@ export default function Settings() {
             {/* Security Tab */}
             {activeTab === "security" && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-[#D1A75D]">
+                <h2 className="text-2xl font-bold text-red-500">
                   Security Settings
                 </h2>
 
-                <div className="bg-[#4B1F1F] rounded-xl p-6 border border-[#D1A75D]/30">
+                <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
                   <h3 className="font-medium mb-4">Account Actions</h3>
 
                   <div className="space-y-4">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-[#3A1818] rounded-lg">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-gray-900 rounded-lg">
                       <div>
                         <h4 className="font-medium">Delete Account</h4>
-                        <p className="text-sm text-[#E7D8C1]/70">
+                        <p className="text-sm text-gray-400">
                           Permanently remove your account and all associated
                           data
                         </p>
@@ -450,10 +450,10 @@ export default function Settings() {
                       </button>
                     </div>
 
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-[#3A1818] rounded-lg">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-gray-900 rounded-lg">
                       <div>
                         <h4 className="font-medium">Log Out of All Devices</h4>
-                        <p className="text-sm text-[#E7D8C1]/70">
+                        <p className="text-sm text-gray-400">
                           Sign out of all active sessions except this one
                         </p>
                       </div>
@@ -468,7 +468,7 @@ export default function Settings() {
                             toast.error("Failed to log out of all devices");
                           }
                         }}
-                        className="px-4 py-2 bg-[#4B1F1F] text-[#E7D8C1] rounded-lg hover:bg-[#5B2F2F] font-medium border border-[#D1A75D]/30"
+                        className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 font-medium border border-gray-700"
                       >
                         Log Out Everywhere
                       </button>

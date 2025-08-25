@@ -724,7 +724,7 @@ export default function ChatUI() {
         flex-col bg-gray-900 border-r border-gray-800 transition-all duration-300 ease-in-out 
         ${
           sidebarOpen ? "w-full md:w-80" : "w-0"
-        } h-screen md:h-full`}
+        } h-[calc(100vh-4rem)] md:h-full`}
         style={{ zIndex: 40 }}
       >
         {/* Gallery Header */}
@@ -739,7 +739,15 @@ export default function ChatUI() {
         </div>
 
         {/* Gallery Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div
+          className="flex-1 overflow-y-auto p-4"
+          style={{
+            WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
+        >
           {galleryImages.length > 0 ? (
             <div
               className="grid grid-cols-2 gap-3 mb-6"
@@ -918,6 +926,9 @@ export default function ChatUI() {
           className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4"
           style={{
             WebkitOverflowScrolling: "touch",
+            overscrollBehavior: "contain",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
             height: "100%",
             minHeight: 0,
             maxHeight: "calc(100vh - 120px)",

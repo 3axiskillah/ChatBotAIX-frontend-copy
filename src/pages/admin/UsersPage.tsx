@@ -30,11 +30,11 @@ export default function UsersPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold text-[#D1A75D]">Users</h1>
+      <h1 className="text-3xl font-bold text-red-500">Users</h1>
       <div className="mt-6 overflow-x-auto rounded-lg shadow-lg">
         <table className="min-w-full border-collapse">
           <thead>
-            <tr className="bg-[#4B1F1F] text-[#E7D8C1] text-left text-sm font-bold tracking-wide">
+            <tr className="bg-gray-800 text-white text-left text-sm font-bold tracking-wide">
               <th className="px-5 py-3">Username</th>
               <th className="px-5 py-3">Email</th>
               <th className="px-5 py-3 text-center">Has Credits</th>
@@ -55,7 +55,7 @@ export default function UsersPage() {
                     )}&email=${encodeURIComponent(user.email)}`
                   )
                 }
-                className="bg-[#3A1818] text-[#E7D8C1] hover:bg-[#c49851] hover:text-[#4B1F1F] cursor-pointer rounded transition-colors"
+                className="bg-gray-900 text-white hover:bg-red-600 hover:text-white cursor-pointer rounded transition-colors"
               >
                 <td className="px-5 py-4">{user.username}</td>
                 <td className="px-5 py-4">{user.email}</td>
@@ -90,7 +90,7 @@ export default function UsersPage() {
             ))}
             {currentUsers.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-center py-8 text-[#E7D8C1]">
+                <td colSpan={5} className="text-center py-8 text-white">
                   No users found.
                 </td>
               </tr>
@@ -104,22 +104,22 @@ export default function UsersPage() {
           <button
             className={`px-3 py-1 rounded font-bold ${
               currentPage === 1
-                ? "bg-[#3A1818] text-[#777] cursor-not-allowed"
-                : "bg-[#D1A75D] text-[#4B1F1F] hover:bg-[#c49851]"
+                ? "bg-gray-900 text-gray-500 cursor-not-allowed"
+                : "bg-red-600 text-white hover:bg-red-700"
             }`}
             disabled={currentPage === 1}
             onClick={() => setCurrentPage(currentPage - 1)}
           >
             ← Prev
           </button>
-          <span className="text-[#E7D8C1] flex items-center">
+          <span className="text-white flex items-center">
             Page {currentPage} of {totalPages}
           </span>
           <button
             className={`px-3 py-1 rounded font-bold ${
               currentPage === totalPages
-                ? "bg-[#3A1818] text-[#777] cursor-not-allowed"
-                : "bg-[#D1A75D] text-[#4B1F1F] hover:bg-[#c49851]"
+                ? "bg-gray-900 text-gray-500 cursor-not-allowed"
+                : "bg-red-600 text-white hover:bg-red-700"
             }`}
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage(currentPage + 1)}

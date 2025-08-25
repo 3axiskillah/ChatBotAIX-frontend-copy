@@ -27,11 +27,11 @@ export default function AnonymousActivityPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold text-[#D1A75D]">Anonymous Chat Activity</h1>
+      <h1 className="text-3xl font-bold text-red-500">Anonymous Chat Activity</h1>
       <div className="mt-6 overflow-x-auto rounded-lg shadow-lg">
         <table className="min-w-full border-collapse">
           <thead>
-            <tr className="bg-[#4B1F1F] text-[#E7D8C1] text-left text-sm font-bold tracking-wide">
+            <tr className="bg-gray-800 text-white text-left text-sm font-bold tracking-wide">
               <th className="px-5 py-3">Session ID</th>
               <th className="px-5 py-3">Started At</th>
               <th className="px-5 py-3">Ended At</th>
@@ -43,7 +43,7 @@ export default function AnonymousActivityPage() {
               sessions.map((session) => (
                 <tr
                   key={session.id}
-                  className="bg-[#3A1818] text-[#E7D8C1] hover:bg-[#c49851] hover:text-[#4B1F1F] rounded transition-colors"
+                  className="bg-gray-900 text-white hover:bg-red-600 hover:text-white rounded transition-colors"
                 >
                   <td className="px-5 py-4">{session.id}</td>
                   <td className="px-5 py-4">
@@ -69,7 +69,7 @@ export default function AnonymousActivityPage() {
               ))
             ) : (
               <tr>
-                <td colSpan={4} className="text-center py-8 text-[#E7D8C1]">
+                <td colSpan={4} className="text-center py-8 text-white">
                   No anonymous activity found.
                 </td>
               </tr>
