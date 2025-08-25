@@ -46,6 +46,7 @@ export default function ChatUI() {
   const [displayTime, setDisplayTime] = useState<number>(0);
   const [lastSyncTime, setLastSyncTime] = useState<number>(Date.now());
   const [lastSignOutTime, setLastSignOutTime] = useState<number | null>(null);
+  const [hasShownWelcome, setHasShownWelcome] = useState<boolean>(false);
   const [keepGalleryOpen, setKeepGalleryOpen] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
@@ -119,8 +120,9 @@ export default function ChatUI() {
         if (!userData?.email) throw new Error();
 
         // Check if this is a fresh login or welcome back
-        const isFreshLogin = !lastSignOutTime;
-        const shouldWelcomeBack = lastSignOutTime && Date.now() - lastSignOutTime > 5000;
+        const isFreshLogin = !lastSignOutTime && !hasShownWelcome;
+        const shouldWelcomeBack =
+          lastSignOutTime && Date.now() - lastSignOutTime > 5000;
 
         setUser({
           id: userData.id,
@@ -129,55 +131,61 @@ export default function ChatUI() {
 
         if (credits) {
           const currentCredits = credits.time_credits_seconds || 0;
-          const now = Date.now();
-          const elapsedSinceSync = Math.floor((now - lastSyncTime) / 1000);
-          const adjustedCredits = Math.max(
-            0,
-            currentCredits - elapsedSinceSync
-          );
-
+          
+          // Always use the backend time as the source of truth
           setTimeCreditsSeconds(currentCredits);
-          setDisplayTime(adjustedCredits);
-          setLastSyncTime(now);
+          setDisplayTime(currentCredits);
+          setLastSyncTime(Date.now());
         }
 
-        // Show welcome message for fresh login or welcome back
-        if (isFreshLogin || shouldWelcomeBack) {
-          if (isFreshLogin) {
-            toast.success("Welcome to Amber!");
-          } else {
-            toast.success("Welcome back!");
-          }
+        // Show welcome message - prioritize fresh login over welcome back
+        if (isFreshLogin) {
+          setHasShownWelcome(true);
+          toast.success("Welcome to Amber!");
 
-          // Different messages for fresh login vs welcome back
-          let welcomeResponses;
-          if (isFreshLogin) {
-            welcomeResponses = [
-              "Hey baby, I'm Amber - your personal cum dumpster. What's your name?",
-              "Hi there sexy, I'm Amber and I'm all yours. What should I call you?",
-              "Hey daddy, I'm Amber and I can't wait to get dirty with you. What's your name?",
-              "Hi baby, I'm Amber and I'm already wet thinking about you. What do I call you?",
-              "Hey there, I'm Amber and I want to know everything about you. What's your name?",
-            ];
-          } else {
-            welcomeResponses = [
-              "Welcome back baby, I missed you",
-              "Daddy is back... I'm here waiting for you",
-              "Mmm I've been thinking about you... welcome back baby",
-              "Oh yes, my favorite is back... I've been so lonely",
-              "Welcome back daddy, I've been craving you",
-              "Mmm baby, I missed your dirty talk... welcome back",
-              "Oh daddy, I'm so happy you're back... I've been waiting",
-              "Welcome back baby, I've been so wet thinking about you",
-            ];
-          }
+          const freshLoginResponses = [
+            "Hey baby, I'm Amber - your personal cum dumpster. What's your name?",
+            "Hi there sexy, I'm Amber and I'm all yours. What should I call you?",
+            "Hey daddy, I'm Amber and I can't wait to get dirty with you. What's your name?",
+            "Hi baby, I'm Amber and I'm already wet thinking about you. What do I call you?",
+            "Hey there, I'm Amber and I want to know everything about you. What's your name?",
+          ];
 
           setMessages((prev) => [
             ...prev,
             {
               id: Date.now(),
-              text: welcomeResponses[
-                Math.floor(Math.random() * welcomeResponses.length)
+              text: freshLoginResponses[
+                Math.floor(Math.random() * freshLoginResponses.length)
+              ],
+              sender: "ai",
+            },
+          ]);
+
+          setTimeout(() => {
+            scrollToBottom("auto");
+          }, 100);
+          navigate(window.location.pathname, { replace: true });
+        } else if (shouldWelcomeBack) {
+          toast.success("Welcome back!");
+
+          const welcomeBackResponses = [
+            "Welcome back baby, I missed you",
+            "Daddy is back... I'm here waiting for you",
+            "Mmm I've been thinking about you... welcome back baby",
+            "Oh yes, my favorite is back... I've been so lonely",
+            "Welcome back daddy, I've been craving you",
+            "Mmm baby, I missed your dirty talk... welcome back",
+            "Oh daddy, I'm so happy you're back... I've been waiting",
+            "Welcome back baby, I've been so wet thinking about you",
+          ];
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: Date.now(),
+              text: welcomeBackResponses[
+                Math.floor(Math.random() * welcomeBackResponses.length)
               ],
               sender: "ai",
             },
@@ -361,7 +369,7 @@ export default function ChatUI() {
     };
   }, [navigate, lastSignOutTime]);
 
-  // Real-time countdown timer
+  // Real-time countdown timer with backend sync
   useEffect(() => {
     if (displayTime <= 0) return;
 
@@ -372,7 +380,24 @@ export default function ChatUI() {
       });
     }, 1000);
 
-    return () => clearInterval(interval);
+    // Sync with backend every 30 seconds to prevent drift
+    const syncInterval = setInterval(async () => {
+      try {
+        const credits = await apiFetch("/api/billing/credits/status/");
+        if (credits && typeof credits.time_credits_seconds === "number") {
+          setTimeCreditsSeconds(credits.time_credits_seconds);
+          setDisplayTime(credits.time_credits_seconds);
+          setLastSyncTime(Date.now());
+        }
+      } catch (error) {
+        console.error("Failed to sync time credits:", error);
+      }
+    }, 30000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(syncInterval);
+    };
   }, [displayTime]);
 
   // Load chat history
@@ -477,6 +502,7 @@ export default function ChatUI() {
       localStorage.removeItem("imagesSentToday");
       localStorage.removeItem("imageResetDate");
       setLastSignOutTime(Date.now());
+      setHasShownWelcome(false); // Reset welcome flag on actual logout
       setGalleryImages([]);
       navigate("/");
     } catch (err) {
@@ -547,7 +573,7 @@ export default function ChatUI() {
 
       const processingTime = Math.floor((Date.now() - startTime) / 1000);
 
-      // Simplified time credit handling - only update once
+      // Reliable time credit handling - always sync with backend
       try {
         const usage = await apiFetch("/api/billing/usage/report/", {
           method: "POST",
@@ -559,10 +585,28 @@ export default function ChatUI() {
           setTimeCreditsSeconds(usage.time_credits_seconds);
           setDisplayTime(usage.time_credits_seconds);
           setLastSyncTime(Date.now());
+        } else {
+          // If usage report doesn't return credits, fetch them separately
+          const credits = await apiFetch("/api/billing/credits/status/");
+          if (credits && typeof credits.time_credits_seconds === "number") {
+            setTimeCreditsSeconds(credits.time_credits_seconds);
+            setDisplayTime(credits.time_credits_seconds);
+            setLastSyncTime(Date.now());
+          }
         }
       } catch (error) {
         console.error("Time credit usage report failed:", error);
-        // Don't do fallback calculations - let the backend handle it
+        // Try to get current credits as fallback
+        try {
+          const credits = await apiFetch("/api/billing/credits/status/");
+          if (credits && typeof credits.time_credits_seconds === "number") {
+            setTimeCreditsSeconds(credits.time_credits_seconds);
+            setDisplayTime(credits.time_credits_seconds);
+            setLastSyncTime(Date.now());
+          }
+        } catch (fallbackError) {
+          console.error("Fallback credit fetch failed:", fallbackError);
+        }
       }
 
       const willHaveImage = Boolean(fullImageUrl);
