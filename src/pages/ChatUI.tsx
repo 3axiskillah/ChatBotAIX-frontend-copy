@@ -631,7 +631,7 @@ export default function ChatUI() {
   return (
     <div className="w-full h-full flex flex-col md:flex-row bg-black text-white fixed inset-0">
       {/* Mobile Header */}
-      <header className="md:hidden flex justify-between items-center px-4 py-3 border-b border-gray-800 bg-black fixed top-0 left-0 right-0 z-40">
+      <header className="md:hidden flex justify-between items-center px-4 py-3 border-b border-gray-800 bg-black fixed top-0 left-0 right-0 z-50">
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
@@ -739,10 +739,10 @@ export default function ChatUI() {
         </div>
 
         {/* Gallery Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-4 pb-4">
+        <div className="flex-1 overflow-y-auto p-4">
           {galleryImages.length > 0 ? (
             <div
-              className="grid grid-cols-2 gap-3 mb-4"
+              className="grid grid-cols-2 gap-3"
               onClick={(e) => e.stopPropagation()}
             >
               {galleryImages.map((url, i) => (
@@ -772,11 +772,12 @@ export default function ChatUI() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 mb-4">No images yet</p>
+            <p className="text-sm text-gray-400">No images yet</p>
           )}
+        </div>
 
-          {/* Time Credits Section - Now part of scrollable content */}
-          <div className="p-4 bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-lg">
+        {/* Time Credits Section - Fixed at bottom */}
+        <div className="p-4 bg-gradient-to-br from-gray-800 to-gray-900 border-t border-gray-800">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">⏱️</span>
             <span className="font-bold text-red-500">Time Credits</span>
@@ -920,7 +921,7 @@ export default function ChatUI() {
             height: "100%",
             minHeight: 0,
             maxHeight: "calc(100vh - 120px)",
-            paddingBottom: "80px", // Account for fixed input
+            paddingBottom: "100px", // Account for fixed input on mobile
           }}
         >
           {messages.map((msg) => (
@@ -1091,7 +1092,7 @@ export default function ChatUI() {
         {/* Input Area */}
         <form
           onSubmit={handleSend}
-          className={`fixed md:sticky bottom-0 left-0 right-0 flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-gray-800 bg-black z-30 ${
+          className={`fixed md:sticky bottom-0 left-0 right-0 flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-gray-800 bg-black z-40 ${
             sidebarOpen ? 'md:flex hidden' : 'flex'
           }`}
         >
