@@ -763,7 +763,7 @@ export default function ChatUI() {
                   >
                     <img
                       src={url}
-                      alt={`Generated ${i}`}
+                      alt="attachment"
                       className="rounded-lg shadow object-cover h-full w-full transition-transform group-hover:scale-105"
                     />
                   </button>
@@ -777,71 +777,71 @@ export default function ChatUI() {
 
           {/* Time Credits Section - Now part of scrollable content */}
           <div className="p-4 bg-gradient-to-br from-gray-800 to-gray-900 border border-gray-700 rounded-lg">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-lg">⏱️</span>
-            <span className="font-bold text-red-500">Time Credits</span>
-          </div>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">⏱️</span>
+              <span className="font-bold text-red-500">Time Credits</span>
+            </div>
 
-          <div
-            className={`flex items-center justify-between p-3 rounded-lg mb-3 ${
-              displayTime < 300
-                ? "bg-red-500/20 border border-red-400"
-                : displayTime < 600
-                ? "bg-yellow-500/20 border border-yellow-400"
-                : "bg-green-500/20 border border-green-400"
-            }`}
-          >
-            <span className="text-sm">Remaining:</span>
-            <span
-              className={`font-bold text-lg ${
+            <div
+              className={`flex items-center justify-between p-3 rounded-lg mb-3 ${
                 displayTime < 300
-                  ? "text-red-200"
+                  ? "bg-red-500/20 border border-red-400"
                   : displayTime < 600
-                  ? "text-yellow-200"
-                  : "text-green-200"
+                  ? "bg-yellow-500/20 border border-yellow-400"
+                  : "bg-green-500/20 border border-green-400"
               }`}
             >
-              {getRemainingTime()}
-            </span>
-          </div>
-
-          <div className="flex justify-between mb-4 text-sm">
-            <span>Images:</span>
-            <span className="text-red-400 font-medium">
-              $4.99 each when unlocked
-            </span>
-          </div>
-
-          {/* Time purchase buttons */}
-          <div className="space-y-2">
-            <div className="text-xs text-gray-400 mb-2">
-              {displayTime < 300
-                ? "⚠️ Time running low! Add more credits:"
-                : "Add more time credits:"}
+              <span className="text-sm">Remaining:</span>
+              <span
+                className={`font-bold text-lg ${
+                  displayTime < 300
+                    ? "text-red-200"
+                    : displayTime < 600
+                    ? "text-yellow-200"
+                    : "text-green-200"
+                }`}
+              >
+                {getRemainingTime()}
+              </span>
             </div>
-            <button
-              disabled={checkoutLoading}
-              onClick={() => handleBuyTime("10_min")}
-              className="w-full px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50 font-medium"
-            >
-              Add 10 min ($9.99)
-            </button>
-            <button
-              disabled={checkoutLoading}
-              onClick={() => handleBuyTime("30_min")}
-              className="w-full px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50 font-medium"
-            >
-              Add 30 min ($19.99)
-            </button>
-            <button
-              disabled={checkoutLoading}
-              onClick={() => handleBuyTime("60_min")}
-              className="w-full px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50 font-medium"
-            >
-              Add 60 min ($29.99)
-            </button>
+
+            <div className="flex justify-between mb-4 text-sm">
+              <span>Images:</span>
+              <span className="text-red-400 font-medium">
+                $4.99 each when unlocked
+              </span>
+            </div>
+
+            {/* Time purchase buttons */}
+            <div className="space-y-2">
+              <div className="text-xs text-gray-400 mb-2">
+                {displayTime < 300
+                  ? "⚠️ Time running low! Add more credits:"
+                  : "Add more time credits:"}
+              </div>
+              <button
+                disabled={checkoutLoading}
+                onClick={() => handleBuyTime("10_min")}
+                className="w-full px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50 font-medium"
+              >
+                Add 10 min ($9.99)
+              </button>
+              <button
+                disabled={checkoutLoading}
+                onClick={() => handleBuyTime("30_min")}
+                className="w-full px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50 font-medium"
+              >
+                Add 30 min ($19.99)
+              </button>
+              <button
+                disabled={checkoutLoading}
+                onClick={() => handleBuyTime("60_min")}
+                className="w-full px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50 font-medium"
+              >
+                Add 60 min ($29.99)
+              </button>
+            </div>
           </div>
-        </div>
         </div>
       </div>
 
@@ -962,7 +962,7 @@ export default function ChatUI() {
                               : msg.image_url ||
                                 `/api/chat/messages/${msg.serverMessageId}/protected_image/`
                           }
-                          alt="AI generated"
+                          alt="attachment"
                           className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition"
                           onLoad={() => {
                             console.log(
@@ -1136,7 +1136,7 @@ export default function ChatUI() {
             >
               <img
                 src={modalImage}
-                alt="Preview"
+                alt="attachment"
                 className="max-w-full max-h-[80vh] rounded-lg shadow-lg object-contain"
                 onClick={(e) => e.stopPropagation()}
               />
