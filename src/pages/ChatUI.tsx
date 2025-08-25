@@ -56,8 +56,6 @@ export default function ChatUI() {
   const syncIntervalRef = useRef<number | null>(null);
   const navigate = useNavigate();
 
-  // no daily limit when using time credits
-
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({
@@ -70,11 +68,9 @@ export default function ChatUI() {
 
   // On initial mount, always scroll to bottom
   useEffect(() => {
-    // Delay scroll to ensure messages are rendered
     setTimeout(() => {
       scrollToBottom("auto");
     }, 100);
-    // eslint-disable-next-line
   }, []);
 
   // Professional mobile keyboard handling
@@ -102,35 +98,14 @@ export default function ChatUI() {
   useEffect(() => {
     const container = messagesContainerRef.current;
     if (!container) return;
-    // If user is near the bottom (within 300px), auto-scroll
+    
     const isNearBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight <
       300;
     if (isNearBottom) {
       scrollToBottom("auto");
     }
-    // Otherwise, do nothing (user is reading old messages)
   }, [messages]);
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.visualViewport) {
-        const isKeyboardOpen =
-          window.visualViewport.height < window.innerHeight * 0.8;
-        document.body.classList.toggle("mobile-keyboard-open", isKeyboardOpen);
-
-        if (isKeyboardOpen && inputRef.current === document.activeElement) {
-          setTimeout(() => {
-            scrollToBottom("auto");
-          }, 300);
-        }
-      }
-    };
-
-    window.visualViewport?.addEventListener("resize", handleResize);
-    return () =>
-      window.visualViewport?.removeEventListener("resize", handleResize);
-  }, []);
 
   // Authentication and user data
   useEffect(() => {
@@ -163,12 +138,6 @@ export default function ChatUI() {
           setTimeCreditsSeconds(currentCredits);
           setDisplayTime(adjustedCredits);
           setLastSyncTime(now);
-          console.log(
-            "Periodic sync - backend:",
-            currentCredits,
-            "adjusted:",
-            adjustedCredits
-          );
         }
 
         if (shouldWelcomeBack) {
@@ -195,24 +164,14 @@ export default function ChatUI() {
           }, 100);
           navigate(window.location.pathname, { replace: true });
         } else if (params.get("unlock_success") === "true") {
-          console.log(
-            "Image unlock success detected, messageId:",
-            params.get("message_id")
-          );
           const messageId = params.get("message_id");
           if (messageId) {
-            // Refresh the specific message to show unblurred image
             try {
               setMessages((prev) => {
                 const unlockedMessage = prev.find(
                   (m) => m.serverMessageId === parseInt(messageId)
                 );
-                console.log("Found unlocked message:", unlockedMessage);
                 if (unlockedMessage && unlockedMessage.image_url) {
-                  console.log(
-                    "Adding image to gallery:",
-                    unlockedMessage.image_url
-                  );
                   setGalleryImages((gallery) => [
                     ...gallery,
                     unlockedMessage.image_url!,
@@ -224,8 +183,7 @@ export default function ChatUI() {
                         ...m,
                         blurred: false,
                         locked: false,
-                        // Use the direct R2 URL instead of protected endpoint
-                        image_url: m.image_url, // This is the direct R2 URL
+                        image_url: m.image_url,
                       }
                     : m
                 );
@@ -302,48 +260,11 @@ export default function ChatUI() {
     checkAuth();
     authIntervalRef.current = setInterval(() => checkAuth(), 120000);
 
-    // Disable periodic sync to prevent time counter reset
-    // The real-time countdown will handle time display
-    // syncIntervalRef.current = setInterval(async () => {
-    //   try {
-    //     const credits = await apiFetch("/api/billing/credits/status/");
-    //     if (credits && typeof credits.time_credits_seconds === "number") {
-    //       const currentCredits = credits.time_credits_seconds;
-    //       const now = Date.now();
-    //       const elapsedSinceSync = Math.floor((now - lastSyncTime) / 1000);
-    //       const adjustedCredits = Math.max(
-    //         0,
-    //         currentCredits - elapsedSinceSync
-    //       );
-
-    //       setTimeCreditsSeconds(currentCredits);
-    //       // Only update display time if it's significantly different (more than 120 seconds)
-    //       // This prevents the AI response from resetting the real-time countdown
-    //       if (Math.abs(displayTime - adjustedCredits) > 120) {
-    //         setDisplayTime(adjustedCredits);
-    //       }
-    //       setLastSyncTime(now);
-    //       console.log(
-    //         "Periodic sync - backend:",
-    //         currentCredits,
-    //         "adjusted:",
-    //         adjustedCredits,
-    //         "displayTime:",
-    //         displayTime,
-    //         "difference:",
-    //         Math.abs(displayTime - adjustedCredits)
-    //       );
-    //     }
-    //   } catch (error) {
-    //     console.error("Periodic time credit sync failed:", error);
-    //   }
-    // }, 30000);
-
     return () => {
       if (authIntervalRef.current) clearInterval(authIntervalRef.current);
       if (syncIntervalRef.current) clearInterval(syncIntervalRef.current);
     };
-  }, [navigate, lastSignOutTime]); // Removed lastSyncTime from dependencies
+  }, [navigate, lastSignOutTime]);
 
   // Real-time countdown timer
   useEffect(() => {
@@ -371,11 +292,11 @@ export default function ChatUI() {
           text: msg.content,
           sender: msg.is_user ? "user" : "ai",
           image_url: msg.image_url || undefined,
-          serverMessageId: msg.id, // Add server message ID for unlock functionality
+          serverMessageId: msg.id,
           timestamp: msg.timestamp,
-          blurred: msg.blurred || false, // Use backend's calculated blurred state
-          locked: msg.locked || false, // Use backend's calculated locked state
-          has_image: msg.has_image || false, // Use backend's calculated has_image state
+          blurred: msg.blurred || false,
+          locked: msg.locked || false,
+          has_image: msg.has_image || false,
         }));
 
         const newMessages: Message[] =
@@ -402,7 +323,6 @@ export default function ChatUI() {
           return newMessages;
         });
 
-        // Only add images to gallery if they are unlocked (paid for)
         const galleryImgs = formatted
           .filter((m) => m.image_url && !m.blurred && !m.locked)
           .map((m) => m.image_url)
@@ -410,7 +330,6 @@ export default function ChatUI() {
 
         setGalleryImages(galleryImgs);
 
-        // Scroll to bottom immediately after setting messages
         setTimeout(() => {
           scrollToBottom("auto");
         }, 50);
@@ -425,7 +344,6 @@ export default function ChatUI() {
                 sender: "ai",
               },
             ]);
-            // Scroll to bottom after adding new chat message
             setTimeout(() => {
               scrollToBottom("auto");
             }, 100);
@@ -466,7 +384,7 @@ export default function ChatUI() {
       localStorage.removeItem("imagesSentToday");
       localStorage.removeItem("imageResetDate");
       setLastSignOutTime(Date.now());
-      setGalleryImages([]); // Clear gallery on logout
+      setGalleryImages([]);
       navigate("/");
     } catch (err) {
       console.error("Logout error:", err);
@@ -479,7 +397,6 @@ export default function ChatUI() {
 
     if (!message.trim() || typing || !user) return;
 
-    // Validate and sanitize message
     const validation = validateChatMessage(message);
     if (!validation.isValid) {
       toast.error(validation.error || "Invalid message");
@@ -495,8 +412,6 @@ export default function ChatUI() {
       return;
     }
 
-    // Images are always allowed but blurred initially
-
     const newMsg: Message = {
       id: Date.now(),
       text: message,
@@ -508,7 +423,7 @@ export default function ChatUI() {
     setMessage("");
     setTyping(true);
 
-    const startTime = Date.now(); // Make sure this is at the very start of the async operation
+    const startTime = Date.now();
 
     try {
       const payload = {
@@ -537,10 +452,7 @@ export default function ChatUI() {
           : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
         : undefined;
 
-      // Calculate and increment time used right after successful response
       const processingTime = Math.floor((Date.now() - startTime) / 1000);
-      // Report usage to backend (will deduct credits server-side).
-      // Always use server's authoritative balance
       let updatedTimeCredits = timeCreditsSeconds;
       try {
         const usage = await apiFetch("/api/billing/usage/report/", {
@@ -552,19 +464,13 @@ export default function ChatUI() {
           updatedTimeCredits = Math.max(0, usage.time_credits_seconds);
           const now = Date.now();
           setTimeCreditsSeconds(updatedTimeCredits);
-          // Don't override displayTime here - let the real-time countdown continue
           setLastSyncTime(now);
-          console.log("Time credits updated from backend:", updatedTimeCredits);
         } else {
-          // Fallback: use local decrement but still sync with backend
           updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
           setTimeCreditsSeconds(updatedTimeCredits);
-          // Don't override displayTime here - let the real-time countdown continue
-          console.log("Fallback time credits update:", updatedTimeCredits);
         }
       } catch (error) {
         console.error("Time credit usage report failed:", error);
-        // On error, still try to sync with backend
         try {
           const currentCredits = await apiFetch("/api/billing/credits/status/");
           if (
@@ -577,43 +483,37 @@ export default function ChatUI() {
             );
             const now = Date.now();
             setTimeCreditsSeconds(updatedTimeCredits);
-            // Don't override displayTime here - let the real-time countdown continue
             setLastSyncTime(now);
-            console.log("Synced time credits after error:", updatedTimeCredits);
           } else {
             updatedTimeCredits = Math.max(
               0,
               timeCreditsSeconds - processingTime
             );
             setTimeCreditsSeconds(updatedTimeCredits);
-            // Don't override displayTime here - let the real-time countdown continue
           }
         } catch (syncError) {
           console.error("Failed to sync time credits:", syncError);
           updatedTimeCredits = Math.max(0, timeCreditsSeconds - processingTime);
           setTimeCreditsSeconds(updatedTimeCredits);
-          // Don't override displayTime here - let the real-time countdown continue
         }
       }
 
-      // Always blur images initially - user pays to unlock
       const willHaveImage = Boolean(fullImageUrl);
 
       const aiReply: Message = {
         id: Date.now() + 1,
         text: data.response || "I'm having trouble responding right now...",
         sender: "ai",
-        image_url: willHaveImage ? fullImageUrl : undefined, // Store the real URL but it will be blurred
+        image_url: willHaveImage ? fullImageUrl : undefined,
         blurred: willHaveImage ? true : false,
         locked: willHaveImage ? true : false,
         has_image: willHaveImage,
         upsell: data.upsell,
-        serverMessageId: undefined, // Will be set after backend submission
+        serverMessageId: undefined,
       };
 
       setMessages((prev) => [...prev, aiReply]);
 
-      // Rest of your code remains the same...
       const submitRes = await apiFetch("/api/chat/submit/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -625,22 +525,13 @@ export default function ChatUI() {
         }),
       });
 
-      // Attach server message id for future unlock
       const serverMessageId = submitRes?.message_id as number | undefined;
-      console.log("Backend response:", submitRes);
-      console.log("Server message ID:", serverMessageId);
       if (serverMessageId) {
-        console.log("Setting serverMessageId for message:", aiReply.id);
         setMessages((prev) =>
           prev.map((m) => (m.id === aiReply.id ? { ...m, serverMessageId } : m))
         );
-      } else {
-        console.error("No serverMessageId received from backend");
       }
 
-      // Do not push to gallery until unlocked
-
-      // Only show upgrade prompt if user is actually out of time credits
       if (updatedTimeCredits <= 0) {
         setShowUpgradePrompt(true);
       }
@@ -698,7 +589,6 @@ export default function ChatUI() {
         "pk_test_51RfN83Rmpew7aCdyjEfExfKKJwnfu1WdusdNbdECFskXUHkA2ChiiYzNgRqp4DKkIxQsoppUZHVikvwdefxhxv41003hlgqZu7"
       );
 
-      // Use fetch directly to handle the response properly
       const response = await fetch(
         `${
           import.meta.env.VITE_API_BASE_URL
@@ -739,21 +629,21 @@ export default function ChatUI() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col md:flex-row bg-[#4B1F1F] text-[#E7D8C1] fixed inset-0 touch-none">
+    <div className="w-full h-full flex flex-col md:flex-row bg-black text-white fixed inset-0">
       {/* Mobile Header */}
-      <header className="md:hidden flex justify-between items-center px-4 py-3 border-b border-[#D1A75D] bg-[#4B1F1F] fixed top-0 left-0 right-0 z-50">
+      <header className="md:hidden flex justify-between items-center px-4 py-3 border-b border-gray-800 bg-black fixed top-0 left-0 right-0 z-50">
         <div className="flex items-center gap-3">
           <button
             onClick={() => {
               setSidebarOpen(!sidebarOpen);
               setMenuOpen(false);
             }}
-            className="bg-[#D1A75D] text-[#4B1F1F] p-2 rounded-lg hover:bg-[#b88b35] transition active:scale-95"
+            className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition active:scale-95"
           >
             {sidebarOpen ? "✕" : "☰"}
           </button>
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-[#D1A75D]">Amber</h1>
+            <h1 className="text-lg font-bold text-red-500">Amber</h1>
           </div>
         </div>
 
@@ -777,7 +667,7 @@ export default function ChatUI() {
               setMenuOpen(!menuOpen);
               setSidebarOpen(false);
             }}
-            className="bg-[#D1A75D] text-[#4B1F1F] p-2 rounded-lg hover:bg-[#c49851] transition active:scale-95"
+            className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition active:scale-95"
           >
             ☰
           </button>
@@ -786,14 +676,14 @@ export default function ChatUI() {
 
       {/* Mobile Menu Dropdown */}
       {menuOpen && (
-        <div className="md:hidden bg-[#3A1818] border-b border-[#D1A75D] fixed top-16 left-0 right-0 z-40 animate-slideDown">
+        <div className="md:hidden bg-gray-900 border-b border-gray-800 fixed top-16 left-0 right-0 z-40 animate-slideDown">
           <div className="flex flex-col space-y-2 p-3">
             <button
               onClick={() => {
                 navigate("/settings");
                 setMenuOpen(false);
               }}
-              className="w-full text-left px-3 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-lg active:scale-95"
+              className="w-full text-left px-3 py-2 hover:bg-red-600 hover:text-white transition rounded-lg active:scale-95"
             >
               Settings
             </button>
@@ -802,13 +692,13 @@ export default function ChatUI() {
                 navigate("/addons");
                 setMenuOpen(false);
               }}
-              className="w-full text-left px-3 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-lg active:scale-95"
+              className="w-full text-left px-3 py-2 hover:bg-red-600 hover:text-white transition rounded-lg active:scale-95"
             >
               Add-ons
             </button>
             <button
               onClick={handleSignOut}
-              className="w-full text-left px-3 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-lg active:scale-95"
+              className="w-full text-left px-3 py-2 hover:bg-red-600 hover:text-white transition rounded-lg active:scale-95"
             >
               Sign Out
             </button>
@@ -821,7 +711,6 @@ export default function ChatUI() {
         <div
           className="fixed inset-0 bg-black/40 z-30 md:hidden"
           onClick={() => setSidebarOpen(false)}
-          style={{ touchAction: "none" }}
         />
       )}
 
@@ -832,18 +721,18 @@ export default function ChatUI() {
             ? "fixed md:relative inset-0 z-40 md:z-auto mt-16 md:mt-0"
             : "hidden md:flex"
         } 
-        flex-col bg-[#3A1818] border-r border-[#D1A75D] transition-all duration-300 ease-in-out 
+        flex-col bg-gray-900 border-r border-gray-800 transition-all duration-300 ease-in-out 
         ${
-          sidebarOpen ? "w-full md:w-64" : "w-0"
+          sidebarOpen ? "w-full md:w-80" : "w-0"
         } h-[calc(100vh-4rem)] md:h-full`}
         style={{ zIndex: 40 }}
       >
         {/* Gallery Header */}
-        <div className="flex justify-between items-center p-4 border-b border-[#D1A75D]/30">
-          <h2 className="text-lg font-bold">Gallery</h2>
+        <div className="flex justify-between items-center p-4 border-b border-gray-800">
+          <h2 className="text-lg font-bold text-red-500">Gallery</h2>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden text-[#E7D8C1] p-1 hover:text-[#D1A75D] transition"
+            className="md:hidden text-gray-300 p-1 hover:text-red-500 transition"
           >
             ✕
           </button>
@@ -853,7 +742,7 @@ export default function ChatUI() {
         <div className="flex-1 overflow-y-auto p-4">
           {galleryImages.length > 0 ? (
             <div
-              className="grid grid-cols-2 gap-3 touch-pan-y"
+              className="grid grid-cols-2 gap-3"
               onClick={(e) => e.stopPropagation()}
             >
               {galleryImages.map((url, i) => (
@@ -883,15 +772,15 @@ export default function ChatUI() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-[#E7D8C1]/70">No images yet</p>
+            <p className="text-sm text-gray-400">No images yet</p>
           )}
         </div>
 
         {/* Time Credits Section - Fixed at bottom */}
-        <div className="p-4 bg-gradient-to-br from-[#4B1F1F] to-[#3A1818] border-t border-[#D1A75D]/30">
+        <div className="p-4 bg-gradient-to-br from-gray-800 to-gray-900 border-t border-gray-800">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-lg">⏱️</span>
-            <span className="font-bold text-[#D1A75D]">Time Credits</span>
+            <span className="font-bold text-red-500">Time Credits</span>
           </div>
 
           <div
@@ -919,14 +808,14 @@ export default function ChatUI() {
 
           <div className="flex justify-between mb-4 text-sm">
             <span>Images:</span>
-            <span className="text-[#D1A75D] font-medium">
+            <span className="text-red-400 font-medium">
               $4.99 each when unlocked
             </span>
           </div>
 
           {/* Time purchase buttons */}
           <div className="space-y-2">
-            <div className="text-xs text-[#E7D8C1]/70 mb-2">
+            <div className="text-xs text-gray-400 mb-2">
               {displayTime < 300
                 ? "⚠️ Time running low! Add more credits:"
                 : "Add more time credits:"}
@@ -934,21 +823,21 @@ export default function ChatUI() {
             <button
               disabled={checkoutLoading}
               onClick={() => handleBuyTime("10_min")}
-              className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50 font-medium"
+              className="w-full px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50 font-medium"
             >
               Add 10 min ($9.99)
             </button>
             <button
               disabled={checkoutLoading}
               onClick={() => handleBuyTime("30_min")}
-              className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50 font-medium"
+              className="w-full px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50 font-medium"
             >
               Add 30 min ($19.99)
             </button>
             <button
               disabled={checkoutLoading}
               onClick={() => handleBuyTime("60_min")}
-              className="w-full px-2 py-1 bg-[#D1A75D] text-[#4B1F1F] rounded text-xs hover:bg-[#b88b35] disabled:opacity-50 font-medium"
+              className="w-full px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 disabled:opacity-50 font-medium"
             >
               Add 60 min ($29.99)
             </button>
@@ -959,16 +848,16 @@ export default function ChatUI() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative mt-16 md:mt-0">
         {/* Desktop Header */}
-        <header className="hidden md:flex justify-between items-center px-6 py-4 border-b border-[#D1A75D] bg-[#4B1F1F]">
+        <header className="hidden md:flex justify-between items-center px-6 py-4 border-b border-gray-800 bg-black">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="bg-[#D1A75D] text-[#4B1F1F] px-3 py-1 rounded hover:bg-[#b88b35] transition active:scale-95"
+              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition active:scale-95"
             >
               {sidebarOpen ? "←" : "→"}
             </button>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-[#D1A75D]">Amber</h1>
+              <h1 className="text-xl font-bold text-red-500">Amber</h1>
             </div>
           </div>
 
@@ -993,27 +882,27 @@ export default function ChatUI() {
             <div className="relative">
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 rounded hover:bg-[#c49851] transition active:scale-95"
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition active:scale-95"
               >
                 ☰ Menu
               </button>
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-[#3A1818] text-[#E7D8C1] border border-[#D1A75D] rounded shadow-md z-10 animate-fadeIn">
+                <div className="absolute right-0 mt-2 w-40 bg-gray-900 text-white border border-gray-800 rounded shadow-md z-10 animate-fadeIn">
                   <button
                     onClick={() => navigate("/settings")}
-                    className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-t"
+                    className="w-full text-left px-4 py-2 hover:bg-red-600 hover:text-white transition rounded-t"
                   >
                     Settings
                   </button>
                   <button
                     onClick={() => navigate("/addons")}
-                    className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition"
+                    className="w-full text-left px-4 py-2 hover:bg-red-600 hover:text-white transition"
                   >
                     Add-ons
                   </button>
                   <button
                     onClick={handleSignOut}
-                    className="w-full text-left px-4 py-2 hover:bg-[#D1A75D] hover:text-[#4B1F1F] transition rounded-b"
+                    className="w-full text-left px-4 py-2 hover:bg-red-600 hover:text-white transition rounded-b"
                   >
                     Sign Out
                   </button>
@@ -1026,7 +915,7 @@ export default function ChatUI() {
         {/* Messages Container */}
         <div
           ref={messagesContainerRef}
-          className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4 pt-0 md:pt-0 pb-20 md:pb-4 chat-scroll-container"
+          className="flex-1 p-4 md:p-6 overflow-y-auto space-y-3 md:space-y-4"
           style={{
             WebkitOverflowScrolling: "touch",
             height: "100%",
@@ -1045,8 +934,8 @@ export default function ChatUI() {
                 <div
                   className={`max-w-[85%] md:max-w-3xl px-3 py-2 md:px-4 md:py-3 rounded-2xl shadow-lg ${
                     msg.sender === "user"
-                      ? "bg-[#D1A75D] text-[#4B1F1F] rounded-br-none"
-                      : "bg-[#3A1A1A] text-[#E7D8C1] rounded-bl-none border border-[#D1A75D]/30"
+                      ? "bg-red-600 text-white rounded-br-none"
+                      : "bg-gray-800 text-white rounded-bl-none border border-gray-700"
                   }`}
                 >
                   <p className="whitespace-pre-wrap text-sm md:text-base">
@@ -1059,8 +948,8 @@ export default function ChatUI() {
                   <div
                     className={`p-1 md:p-2 rounded-2xl shadow ${
                       msg.sender === "user"
-                        ? "bg-[#D1A75D]/20 border border-[#D1A75D]/30"
-                        : "bg-[#3A1A1A] border border-[#D1A75D]/30"
+                        ? "bg-red-600/20 border border-red-600/30"
+                        : "bg-gray-800 border border-gray-700"
                     }`}
                   >
                     <div className="relative">
@@ -1073,7 +962,7 @@ export default function ChatUI() {
                                 `/api/chat/messages/${msg.serverMessageId}/protected_image/`
                           }
                           alt="AI generated"
-                          className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition touch-pan-y"
+                          className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition"
                           onLoad={() => {
                             console.log(
                               `Image loaded for message ${
@@ -1145,10 +1034,8 @@ export default function ChatUI() {
                               console.log("Unlock response:", res);
 
                               if (res?.checkout_url) {
-                                // Redirect to Stripe checkout for payment
                                 window.location.href = res.checkout_url;
                               } else if (res?.ok === true && res?.image_url) {
-                                // Image is already unlocked
                                 setMessages((prev) =>
                                   prev.map((m) =>
                                     m.serverMessageId === msg.serverMessageId
@@ -1157,7 +1044,6 @@ export default function ChatUI() {
                                   )
                                 );
                               } else {
-                                // Any other response means payment failed or error
                                 toast.error(
                                   "Payment failed. Please try again."
                                 );
@@ -1184,15 +1070,15 @@ export default function ChatUI() {
 
           {typing && (
             <div className="flex justify-start">
-              <div className="bg-[#3A1A1A] text-[#E7D8C1] px-4 py-2 rounded-2xl rounded-bl-none border border-[#D1A75D]/30">
+              <div className="bg-gray-800 text-white px-4 py-2 rounded-2xl rounded-bl-none border border-gray-700">
                 <div className="flex space-x-2">
-                  <div className="w-2 h-2 rounded-full bg-[#D1A75D] animate-bounce"></div>
+                  <div className="w-2 h-2 rounded-full bg-red-500 animate-bounce"></div>
                   <div
-                    className="w-2 h-2 rounded-full bg-[#D1A75D] animate-bounce"
+                    className="w-2 h-2 rounded-full bg-red-500 animate-bounce"
                     style={{ animationDelay: "0.2s" }}
                   ></div>
                   <div
-                    className="w-2 h-2 rounded-full bg-[#D1A75D] animate-bounce"
+                    className="w-2 h-2 rounded-full bg-red-500 animate-bounce"
                     style={{ animationDelay: "0.4s" }}
                   ></div>
                 </div>
@@ -1205,7 +1091,7 @@ export default function ChatUI() {
         {/* Input Area */}
         <form
           onSubmit={handleSend}
-          className="fixed md:sticky bottom-0 left-0 right-0 flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-[#D1A75D] bg-[#4B1F1F] z-40"
+          className="fixed md:sticky bottom-0 left-0 right-0 flex items-center px-4 md:px-6 py-3 md:py-4 border-t border-gray-800 bg-black z-40"
         >
           <input
             type="text"
@@ -1213,21 +1099,21 @@ export default function ChatUI() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Ask about your wildest desires..."
-            className="flex-1 px-3 py-2 md:px-4 md:py-2 rounded-lg border border-[#D1A75D] bg-[#3A1A1A] text-[#E7D8C1] placeholder-[#E7D8C1]/70 focus:outline-none focus:ring-1 md:focus:ring-2 focus:ring-[#D1A75D] text-sm md:text-base"
+            className="flex-1 px-3 py-2 md:px-4 md:py-2 rounded-lg border border-gray-700 bg-gray-900 text-white placeholder-gray-400 focus:outline-none focus:ring-1 md:focus:ring-2 focus:ring-red-500 text-sm md:text-base"
             disabled={showUpgradePrompt}
             onFocus={() => setTimeout(scrollToBottom, 300)}
             style={{
-              fontSize: "16px", // Prevents zoom on iOS
+              fontSize: "16px",
               lineHeight: "1.2",
-              minHeight: "44px", // Better touch target
+              minHeight: "44px",
             }}
           />
           <button
             type="submit"
             disabled={!message.trim() || typing || showUpgradePrompt}
-            className="ml-3 px-3 py-2 md:px-4 md:py-2 bg-[#D1A75D] text-[#4B1F1F] rounded-lg hover:bg-[#c49851] disabled:opacity-50 transition active:scale-95 text-sm md:text-base"
+            className="ml-3 px-3 py-2 md:px-4 md:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition active:scale-95 text-sm md:text-base"
             style={{
-              minHeight: "44px", // Better touch target
+              minHeight: "44px",
               minWidth: "60px",
             }}
           >
@@ -1238,22 +1124,22 @@ export default function ChatUI() {
         {/* Image Preview Modal */}
         {modalImage && (
           <div
-            className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 touch-none"
+            className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
             onClick={closeModal}
           >
             <div
-              className="relative max-w-full max-h-full touch-pan-y"
+              className="relative max-w-full max-h-full"
               onClick={(e) => e.stopPropagation()}
             >
               <img
                 src={modalImage}
                 alt="Preview"
-                className="max-w-full max-h-[80vh] rounded-lg shadow-lg object-contain touch-pan-y"
+                className="max-w-full max-h-[80vh] rounded-lg shadow-lg object-contain"
                 onClick={(e) => e.stopPropagation()}
               />
               <button
                 onClick={closeModal}
-                className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition touch-pan-y"
+                className="absolute top-4 right-4 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition"
               >
                 ✕
               </button>
@@ -1263,12 +1149,12 @@ export default function ChatUI() {
 
         {/* Upgrade Prompt */}
         {showUpgradePrompt && (
-          <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4 touch-pan-y">
-            <div className="bg-[#4B1F1F] p-6 rounded-lg max-w-md w-full animate-popIn">
-              <h2 className="text-xl md:text-2xl font-bold text-[#E7D8C1] mb-4 text-center">
+          <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center p-4">
+            <div className="bg-gray-900 p-6 rounded-lg max-w-md w-full animate-popIn">
+              <h2 className="text-xl md:text-2xl font-bold text-white mb-4 text-center">
                 ⏳ Add Time Credits
               </h2>
-              <p className="text-[#E7D8C1] mb-6 text-center">
+              <p className="text-gray-300 mb-6 text-center">
                 You're out of time credits. Purchase more to continue chatting.
               </p>
               <div className="flex flex-col space-y-3">
@@ -1277,13 +1163,13 @@ export default function ChatUI() {
                     navigate("/addons");
                     setShowUpgradePrompt(false);
                   }}
-                  className="bg-[#D1A75D] text-[#4B1F1F] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#b88e4f] font-semibold transition active:scale-95"
+                  className="bg-red-600 text-white px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-red-700 font-semibold transition active:scale-95"
                 >
                   Buy Time Credits
                 </button>
                 <button
                   onClick={() => setShowUpgradePrompt(false)}
-                  className="bg-[#3A1A1A] text-[#E7D8C1] px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-[#2e1414] font-semibold transition active:scale-95"
+                  className="bg-gray-800 text-white px-4 py-2 md:px-6 md:py-3 rounded-lg hover:bg-gray-700 font-semibold transition active:scale-95"
                 >
                   Continue
                 </button>
