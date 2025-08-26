@@ -69,6 +69,9 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
 
       toast.success("Logged in successfully!");
 
+      // Set flag to indicate successful login
+      localStorage.setItem("just_logged_in", "true");
+
       if (onClose) {
         onClose();
         await new Promise((res) => setTimeout(res, 50));
