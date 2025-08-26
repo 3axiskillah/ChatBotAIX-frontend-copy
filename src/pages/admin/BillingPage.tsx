@@ -17,17 +17,21 @@ type Transaction = {
 
 type Stats = {
   total_revenue: number;
-  active_subscribers: number;
-  monthly_recurring: number;
+  active_users: number;
+  total_users: number;
+  monthly_revenue: number;
   avg_revenue_per_user: number;
+  paying_users: number;
 };
 
 export default function BillingPage() {
   const [stats, setStats] = useState<Stats>({
     total_revenue: 0,
-    active_subscribers: 0,
-    monthly_recurring: 0,
+    active_users: 0,
+    total_users: 0,
+    monthly_revenue: 0,
     avg_revenue_per_user: 0,
+    paying_users: 0,
   });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,21 +70,31 @@ export default function BillingPage() {
         Billing Dashboard
       </h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
         <StatCard
           title="Total Revenue"
           value={`$${stats.total_revenue.toFixed(2)}`}
           icon="💰"
         />
         <StatCard
-          title="Active Subscribers"
-          value={stats.active_subscribers}
+          title="Active Users"
+          value={stats.active_users}
           icon="👥"
         />
         <StatCard
-          title="Monthly Recurring"
-          value={`$${stats.monthly_recurring.toFixed(2)}`}
-          icon="🔄"
+          title="Total Users"
+          value={stats.total_users}
+          icon="👤"
+        />
+        <StatCard
+          title="Monthly Revenue"
+          value={`$${stats.monthly_revenue.toFixed(2)}`}
+          icon="💰"
+        />
+        <StatCard
+          title="Paying Users"
+          value={stats.paying_users}
+          icon="💳"
         />
         <StatCard
           title="Avg Revenue/User"
@@ -144,7 +158,10 @@ export default function BillingPage() {
               ) : (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-white">
-                    No transactions found. {transactions ? `(Array length: ${transactions.length})` : '(transactions is null/undefined)'}
+                    No transactions found.{" "}
+                    {transactions
+                      ? `(Array length: ${transactions.length})`
+                      : "(transactions is null/undefined)"}
                   </td>
                 </tr>
               )}

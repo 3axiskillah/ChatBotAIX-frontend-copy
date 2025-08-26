@@ -433,7 +433,6 @@ export default function ChatUI() {
     const loadAllHistory = async () => {
       try {
         const data = await apiFetch("/api/chat/history/all/");
-        const isNewChat = data.messages.length === 0;
 
         const formatted: Message[] = data.messages.map((msg: any) => ({
           id: msg.id || Date.now(),
