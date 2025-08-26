@@ -30,7 +30,10 @@ export default function ChatSessionsPage() {
 
   const indexOfLastSession = currentPage * sessionsPerPage;
   const indexOfFirstSession = indexOfLastSession - sessionsPerPage;
-  const currentSessions = sessions.slice(indexOfFirstSession, indexOfLastSession);
+  const currentSessions = sessions.slice(
+    indexOfFirstSession,
+    indexOfLastSession
+  );
   const totalPages = Math.ceil(sessions.length / sessionsPerPage);
 
   return (
@@ -58,9 +61,13 @@ export default function ChatSessionsPage() {
                 <td className="px-5 py-4">
                   {session.user?.username ?? session.user?.email ?? "Unknown"}
                 </td>
-                <td className="px-5 py-4">{new Date(session.started_at).toLocaleString()}</td>
                 <td className="px-5 py-4">
-                  {session.ended_at ? new Date(session.ended_at).toLocaleString() : "Active"}
+                  {new Date(session.started_at).toLocaleString()}
+                </td>
+                <td className="px-5 py-4">
+                  {session.ended_at
+                    ? new Date(session.ended_at).toLocaleString()
+                    : "Active"}
                 </td>
                 <td className="px-5 py-4 text-center">
                   <span

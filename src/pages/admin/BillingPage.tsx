@@ -27,7 +27,7 @@ export default function BillingPage() {
     total_revenue: 0,
     active_subscribers: 0,
     monthly_recurring: 0,
-    avg_revenue_per_user: 0
+    avg_revenue_per_user: 0,
   });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,11 +35,15 @@ export default function BillingPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
+        console.log("Loading billing data...");
         const [statsData, transactionsData] = await Promise.all([
           apiFetch("/api/billing/admin/dashboard/"),
-          apiFetch("/api/billing/admin/transactions/")
+          apiFetch("/api/billing/admin/transactions/"),
         ]);
-        
+
+        console.log("Stats data:", statsData);
+        console.log("Transactions data:", transactionsData);
+
         setStats(statsData);
         setTransactions(transactionsData);
       } catch (err) {
@@ -48,7 +52,7 @@ export default function BillingPage() {
         setLoading(false);
       }
     };
-    
+
     loadData();
   }, []);
 
@@ -58,27 +62,29 @@ export default function BillingPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold text-red-500 mb-6">Billing Dashboard</h1>
-      
+      <h1 className="text-3xl font-bold text-red-500 mb-6">
+        Billing Dashboard
+      </h1>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard 
-          title="Total Revenue" 
-          value={`$${stats.total_revenue.toFixed(2)}`} 
+        <StatCard
+          title="Total Revenue"
+          value={`$${stats.total_revenue.toFixed(2)}`}
           icon="💰"
         />
-        <StatCard 
-          title="Active Subscribers" 
-          value={stats.active_subscribers} 
+        <StatCard
+          title="Active Subscribers"
+          value={stats.active_subscribers}
           icon="👥"
         />
-        <StatCard 
-          title="Monthly Recurring" 
-          value={`$${stats.monthly_recurring.toFixed(2)}`} 
+        <StatCard
+          title="Monthly Recurring"
+          value={`$${stats.monthly_recurring.toFixed(2)}`}
           icon="🔄"
         />
-        <StatCard 
-          title="Avg Revenue/User" 
-          value={`$${stats.avg_revenue_per_user.toFixed(2)}`} 
+        <StatCard
+          title="Avg Revenue/User"
+          value={`$${stats.avg_revenue_per_user.toFixed(2)}`}
           icon="📊"
         />
       </div>
@@ -101,31 +107,47 @@ export default function BillingPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {transactions.map((tx) => (
-                <tr key={tx.id} className="hover:bg-gray-800">
-                  <td className="px-4 py-3">{tx.username}</td>
-                  <td className="px-4 py-3">{tx.email}</td>
-                  <td className="px-4 py-3">${tx.amount.toFixed(2)}</td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {tx.item_type} x{tx.quantity}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">{new Date(tx.date).toLocaleString()}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      tx.status === 'paid' ? 'bg-green-100 text-green-800' :
-                      tx.status === 'failed' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {tx.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-400">
-                    {tx.payment_intent_id ? tx.payment_intent_id.slice(0, 8) + '...' : 'N/A'}
+              {transactions && transactions.length > 0 ? (
+                transactions.map((tx) => (
+                  <tr key={tx.id} className="hover:bg-gray-800">
+                    <td className="px-4 py-3">{tx.username}</td>
+                    <td className="px-4 py-3">{tx.email}</td>
+                    <td className="px-4 py-3">${tx.amount.toFixed(2)}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {tx.item_type} x{tx.quantity}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {new Date(tx.date).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          tx.status === "paid"
+                            ? "bg-green-100 text-green-800"
+                            : tx.status === "failed"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {tx.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-400">
+                      {tx.payment_intent_id
+                        ? tx.payment_intent_id.slice(0, 8) + "..."
+                        : "N/A"}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-white">
+                    No transactions found. {transactions ? `(Array length: ${transactions.length})` : '(transactions is null/undefined)'}
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -134,7 +156,15 @@ export default function BillingPage() {
   );
 }
 
-function StatCard({ title, value, icon }: { title: string; value: string | number; icon: string }) {
+function StatCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: string | number;
+  icon: string;
+}) {
   return (
     <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
       <div className="flex items-center justify-between">
