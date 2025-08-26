@@ -126,7 +126,8 @@ export default function ChatUI() {
         // Use backend data for login status - much simpler!
         // Only show welcome messages on ACTUAL login, not navigation
         const isFreshLogin = userData.is_fresh_login && !hasShownWelcome;
-        const shouldWelcomeBack = userData.should_welcome_back && !hasShownWelcome;
+        const shouldWelcomeBack =
+          userData.should_welcome_back && !hasShownWelcome;
 
         setUser({
           id: userData.id,
@@ -148,11 +149,7 @@ export default function ChatUI() {
         }
 
         // Show welcome message ONLY on actual sign in with empty chat
-        if (
-          isFreshLogin &&
-          !hasPaymentSuccess &&
-          !hasShownWelcome
-        ) {
+        if (isFreshLogin && !hasPaymentSuccess && !hasShownWelcome && messages.length === 0) {
           setHasShownWelcome(true);
           // Only show toast on actual sign in, not navigation
           if (userData.is_fresh_login) {
@@ -185,7 +182,8 @@ export default function ChatUI() {
         } else if (
           shouldWelcomeBack &&
           !hasPaymentSuccess &&
-          !hasShownWelcome
+          !hasShownWelcome &&
+          messages.length === 0
         ) {
           setHasShownWelcome(true);
           // Only show toast on actual sign in, not navigation
