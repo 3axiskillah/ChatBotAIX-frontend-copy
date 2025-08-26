@@ -124,14 +124,9 @@ export default function ChatUI() {
           params.get("unlock_success") === "true";
 
         // Use backend data for login status - much simpler!
-        // Only show welcome messages if there are NO existing messages in the chat
-        const hasExistingMessages = messages.length > 0;
-        const isFreshLogin =
-          userData.is_fresh_login && !hasShownWelcome && !hasExistingMessages;
-        const shouldWelcomeBack =
-          userData.should_welcome_back &&
-          !hasShownWelcome &&
-          !hasExistingMessages;
+        // Only show welcome messages on ACTUAL login, not navigation
+        const isFreshLogin = userData.is_fresh_login && !hasShownWelcome;
+        const shouldWelcomeBack = userData.should_welcome_back && !hasShownWelcome;
 
         setUser({
           id: userData.id,
@@ -155,7 +150,6 @@ export default function ChatUI() {
         // Show welcome message ONLY on actual sign in with empty chat
         if (
           isFreshLogin &&
-          messages.length === 0 &&
           !hasPaymentSuccess &&
           !hasShownWelcome
         ) {
@@ -190,7 +184,6 @@ export default function ChatUI() {
           navigate(window.location.pathname, { replace: true });
         } else if (
           shouldWelcomeBack &&
-          messages.length === 0 &&
           !hasPaymentSuccess &&
           !hasShownWelcome
         ) {

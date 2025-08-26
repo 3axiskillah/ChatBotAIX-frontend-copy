@@ -76,26 +76,14 @@ export default function BillingPage() {
           value={`$${stats.total_revenue.toFixed(2)}`}
           icon="💰"
         />
-        <StatCard
-          title="Active Users"
-          value={stats.active_users}
-          icon="👥"
-        />
-        <StatCard
-          title="Total Users"
-          value={stats.total_users}
-          icon="👤"
-        />
+        <StatCard title="Active Users" value={stats.active_users} icon="👥" />
+        <StatCard title="Total Users" value={stats.total_users} icon="👤" />
         <StatCard
           title="Monthly Revenue"
           value={`$${stats.monthly_revenue.toFixed(2)}`}
           icon="💰"
         />
-        <StatCard
-          title="Paying Users"
-          value={stats.paying_users}
-          icon="💳"
-        />
+        <StatCard title="Paying Users" value={stats.paying_users} icon="💳" />
         <StatCard
           title="Avg Revenue/User"
           value={`$${stats.avg_revenue_per_user.toFixed(2)}`}
