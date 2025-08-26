@@ -5,6 +5,7 @@ import { apiFetch } from "../../utils/api";
 type User = {
   id: number;
   username: string;
+  email: string;
 };
 
 type ChatSession = {
@@ -55,7 +56,7 @@ export default function ChatSessionsPage() {
               >
                 <td className="px-5 py-4">{session.id}</td>
                 <td className="px-5 py-4">
-                  {session.user?.username ?? session.anon_id ?? "Anonymous"}
+                  {session.user?.username ?? session.user?.email ?? "Unknown"}
                 </td>
                 <td className="px-5 py-4">{new Date(session.started_at).toLocaleString()}</td>
                 <td className="px-5 py-4">

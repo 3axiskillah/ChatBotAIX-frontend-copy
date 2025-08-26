@@ -5,6 +5,7 @@ import { apiFetch } from "../../utils/api"; // adjust path if needed
 type User = {
   id: number;
   username: string;
+  email: string;
   time_credits_seconds?: number;
 };
 
@@ -120,7 +121,7 @@ export default function DashboardPage() {
               >
                 <td className="px-5 py-4">{session.id}</td>
                 <td className="px-5 py-4">
-                  {session.user?.username ?? "Anonymous"}
+                  {session.user?.username ?? session.user?.email ?? "Unknown"}
                 </td>
                 <td className="px-5 py-4">
                   {new Date(session.started_at).toLocaleString()}

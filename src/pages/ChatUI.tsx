@@ -126,9 +126,12 @@ export default function ChatUI() {
         // Use backend data for login status - much simpler!
         // Only show welcome messages if there are NO existing messages in the chat
         const hasExistingMessages = messages.length > 0;
-        const isFreshLogin = userData.is_fresh_login && !hasShownWelcome && !hasExistingMessages;
+        const isFreshLogin =
+          userData.is_fresh_login && !hasShownWelcome && !hasExistingMessages;
         const shouldWelcomeBack =
-          userData.should_welcome_back && !hasShownWelcome && !hasExistingMessages;
+          userData.should_welcome_back &&
+          !hasShownWelcome &&
+          !hasExistingMessages;
 
         setUser({
           id: userData.id,
@@ -150,7 +153,12 @@ export default function ChatUI() {
         }
 
         // Show welcome message ONLY on actual sign in with empty chat
-        if (isFreshLogin && messages.length === 0 && !hasPaymentSuccess && !hasShownWelcome) {
+        if (
+          isFreshLogin &&
+          messages.length === 0 &&
+          !hasPaymentSuccess &&
+          !hasShownWelcome
+        ) {
           setHasShownWelcome(true);
           // Only show toast on actual sign in, not navigation
           if (userData.is_fresh_login) {

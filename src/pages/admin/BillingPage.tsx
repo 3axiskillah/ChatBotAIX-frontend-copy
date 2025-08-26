@@ -9,7 +9,10 @@ type Transaction = {
   amount: number;
   date: string;
   status: "paid" | "failed" | "pending";
+  item_type: string;
+  quantity: number;
   subscription_id: string;
+  payment_intent_id: string;
 };
 
 type Stats = {
@@ -91,9 +94,10 @@ export default function BillingPage() {
                 <th className="px-4 py-3 text-left">User</th>
                 <th className="px-4 py-3 text-left">Email</th>
                 <th className="px-4 py-3 text-left">Amount</th>
+                <th className="px-4 py-3 text-left">Type</th>
                 <th className="px-4 py-3 text-left">Date</th>
                 <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left">Subscription</th>
+                <th className="px-4 py-3 text-left">Payment ID</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
@@ -102,6 +106,11 @@ export default function BillingPage() {
                   <td className="px-4 py-3">{tx.username}</td>
                   <td className="px-4 py-3">{tx.email}</td>
                   <td className="px-4 py-3">${tx.amount.toFixed(2)}</td>
+                  <td className="px-4 py-3">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {tx.item_type} x{tx.quantity}
+                    </span>
+                  </td>
                   <td className="px-4 py-3">{new Date(tx.date).toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -113,7 +122,7 @@ export default function BillingPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-400">
-                    {tx.subscription_id ? tx.subscription_id.slice(0, 8) + '...' : 'N/A'}
+                    {tx.payment_intent_id ? tx.payment_intent_id.slice(0, 8) + '...' : 'N/A'}
                   </td>
                 </tr>
               ))}
