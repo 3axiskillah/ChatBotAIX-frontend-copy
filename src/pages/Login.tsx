@@ -67,25 +67,7 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
         credentials: "include",
       });
 
-      // ✅ Migrate anonymous chat
-      try {
-        const migrationFlag = localStorage.getItem("anon_migration_needed");
-        const anonChat = sessionStorage.getItem("anon_chat");
 
-        if (migrationFlag === "true" && anonChat) {
-          await apiFetch("/api/chat/migrate_anon/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: anonChat,
-          });
-
-          sessionStorage.removeItem("anon_chat");
-          localStorage.removeItem("anon_migration_needed");
-        }
-      } catch (err) {
-        console.warn("Migration failed (non-critical):", err);
-      }
 
       toast.success("Logged in successfully!");
 

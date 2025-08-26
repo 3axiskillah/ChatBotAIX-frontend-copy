@@ -149,7 +149,12 @@ export default function ChatUI() {
         }
 
         // Show welcome message ONLY on actual sign in with empty chat
-        if (isFreshLogin && !hasPaymentSuccess && !hasShownWelcome && messages.length === 0) {
+        if (
+          isFreshLogin &&
+          !hasPaymentSuccess &&
+          !hasShownWelcome &&
+          messages.length === 0
+        ) {
           setHasShownWelcome(true);
           // Only show toast on actual sign in, not navigation
           if (userData.is_fresh_login) {

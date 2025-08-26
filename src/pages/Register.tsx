@@ -52,8 +52,6 @@ export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
         username: form.username.trim(),
         email: form.email.toLowerCase().trim(),
         password: form.password,
-        anon_id: localStorage.getItem("anon_id"),
-        chat_history: sessionStorage.getItem("anon_chat"),
       };
 
       const response = await apiFetch("/api/accounts/register/", {
@@ -62,11 +60,8 @@ export default function Register({ onSwitchToLogin, onClose }: RegisterProps) {
       });
 
       if (response.detail) {
-        // Clear anonymous chat data after successful registration
-        localStorage.removeItem("anon_id");
-        sessionStorage.removeItem("anon_chat");
+        // Store email for verification
         localStorage.setItem("pending_email", form.email);
-        sessionStorage.setItem("anon_migration_needed", "true");
         toast.success(
           response.detail || "✅ Account created! Check your email."
         );
