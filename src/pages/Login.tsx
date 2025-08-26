@@ -67,8 +67,6 @@ export default function Login({ onClose, onSwitchToRegister }: LoginProps) {
         credentials: "include",
       });
 
-
-
       toast.success("Logged in successfully!");
 
       if (onClose) {

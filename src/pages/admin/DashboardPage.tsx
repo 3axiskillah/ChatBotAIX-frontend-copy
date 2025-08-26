@@ -12,7 +12,6 @@ type User = {
 type ChatSession = {
   id: number;
   user?: User | null;
-
   started_at: string;
   ended_at?: string | null;
 };
