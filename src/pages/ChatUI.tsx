@@ -146,6 +146,8 @@ export default function ChatUI() {
           // Always use the backend time as the source of truth
           setTimeCreditsSeconds(currentCredits);
           setDisplayTime(currentCredits);
+          
+
         }
 
         // Show welcome message ONLY on actual sign in with empty chat
@@ -394,7 +396,7 @@ export default function ChatUI() {
     };
   }, [navigate]);
 
-  // Real-time countdown timer with backend sync
+  // Real-time countdown timer - runs continuously
   useEffect(() => {
     if (displayTime <= 0) return;
 
@@ -405,7 +407,13 @@ export default function ChatUI() {
       });
     }, 1000);
 
-    // Sync with backend every 30 seconds to prevent drift
+    return () => clearInterval(interval);
+  }, [displayTime > 0]); // Run whenever displayTime is greater than 0
+
+  // Sync with backend every 30 seconds to prevent drift
+  useEffect(() => {
+    if (timeCreditsSeconds <= 0) return;
+
     const syncInterval = setInterval(async () => {
       try {
         const credits = await apiFetch("/api/billing/credits/status/");
@@ -418,11 +426,8 @@ export default function ChatUI() {
       }
     }, 30000);
 
-    return () => {
-      clearInterval(interval);
-      clearInterval(syncInterval);
-    };
-  }, []); // Empty dependency array - only run once
+    return () => clearInterval(syncInterval);
+  }, [timeCreditsSeconds]);
 
   // Load chat history
   useEffect(() => {
@@ -581,7 +586,7 @@ export default function ChatUI() {
 
       const processingTime = Math.floor((Date.now() - startTime) / 1000);
 
-      // Reliable time credit handling - always sync with backend
+      // Report usage to backend and sync credits
       try {
         const usage = await apiFetch("/api/billing/usage/report/", {
           method: "POST",
