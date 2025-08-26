@@ -45,7 +45,6 @@ export default function ChatUI() {
   const [timeCreditsSeconds, setTimeCreditsSeconds] = useState<number>(0);
   const [displayTime, setDisplayTime] = useState<number>(0);
   const [hasShownWelcome, setHasShownWelcome] = useState<boolean>(false);
-  const [hasInitialized, setHasInitialized] = useState<boolean>(false);
   const [keepGalleryOpen, setKeepGalleryOpen] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
 
@@ -126,10 +125,12 @@ export default function ChatUI() {
 
         // Check if user just logged in (not navigating)
         const justLoggedIn = localStorage.getItem("just_logged_in") === "true";
-        
+
         // Only show welcome messages on actual login, not navigation
-        const isFreshLogin = userData.is_fresh_login && !hasShownWelcome && justLoggedIn;
-        const shouldWelcomeBack = userData.should_welcome_back && !hasShownWelcome && justLoggedIn;
+        const isFreshLogin =
+          userData.is_fresh_login && !hasShownWelcome && justLoggedIn;
+        const shouldWelcomeBack =
+          userData.should_welcome_back && !hasShownWelcome && justLoggedIn;
 
         setUser({
           id: userData.id,
@@ -158,10 +159,9 @@ export default function ChatUI() {
           messages.length === 0
         ) {
           setHasShownWelcome(true);
-          setHasInitialized(true);
           // Clear the login flag
           localStorage.removeItem("just_logged_in");
-          
+
           // Only show toast on actual sign in, not navigation
           if (userData.is_fresh_login) {
             toast.success("Welcome to Amber!");
@@ -197,10 +197,9 @@ export default function ChatUI() {
           messages.length === 0
         ) {
           setHasShownWelcome(true);
-          setHasInitialized(true);
           // Clear the login flag
           localStorage.removeItem("just_logged_in");
-          
+
           // Only show toast on actual sign in, not navigation
           if (userData.should_welcome_back) {
             toast.success("Welcome back!");
