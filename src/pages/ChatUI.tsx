@@ -419,13 +419,13 @@ export default function ChatUI() {
       // Calculate session time and charge for it
       const sessionTime = Math.floor((Date.now() - sessionStartTime) / 1000);
 
-      // Charge every 30 seconds of session time
-      if (sessionTime > 0 && sessionTime % 30 === 0) {
+      // Charge every 60 seconds of session time
+      if (sessionTime > 0 && sessionTime % 60 === 0) {
         try {
           const usage = await apiFetch("/api/billing/usage/report/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: { seconds_used: 30 }, // Charge 30 seconds
+            body: { seconds_used: 60 }, // Charge 60 seconds
           });
 
           if (usage && typeof usage.time_credits_seconds === "number") {
@@ -444,16 +444,16 @@ export default function ChatUI() {
         }
       }
 
-      // Update display time continuously (every second)
+      // Update display time every minute only
       setDisplayTime((prev) => {
-        const newTime = Math.max(0, prev - 1);
+        const newTime = Math.max(0, prev - 60); // Subtract 60 seconds (1 minute)
         if (newTime <= 0) {
           setIsSessionActive(false);
           setShowUpgradePrompt(true);
         }
         return newTime;
       });
-    }, 1000);
+    }, 60000); // Update every minute instead of every second
 
     return () => clearInterval(interval);
   }, [isSessionActive, displayTime > 0, sessionStartTime]); // Run when session is active
@@ -722,15 +722,12 @@ export default function ChatUI() {
   };
 
   const getRemainingTime = () => {
-    const remainingMinutes = Math.floor(displayTime / 60);
-    const remainingSeconds = displayTime % 60;
+    const remainingMinutes = Math.ceil(displayTime / 60); // Round up to show full minutes
 
     if (remainingMinutes > 0) {
-      return `${remainingMinutes}:${remainingSeconds
-        .toString()
-        .padStart(2, "0")}`;
+      return `${remainingMinutes}m`;
     } else {
-      return `${remainingSeconds}s`;
+      return `0m`;
     }
   };
 
