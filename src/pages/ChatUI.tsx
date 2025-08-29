@@ -126,7 +126,20 @@ export default function ChatUI() {
           params.get("unlock_success") === "true";
 
         // Check if user just logged in (not navigating)
-        const justLoggedIn = localStorage.getItem("just_logged_in") === "true";
+        let justLoggedIn = localStorage.getItem("just_logged_in") === "true";
+
+        // Check if user just activated their account (came from email verification)
+        const isFromActivation =
+          params.get("activated") === "true" ||
+          window.location.pathname.includes("activated") ||
+          document.referrer.includes("email-verify");
+
+        if (isFromActivation && !justLoggedIn) {
+          localStorage.setItem("just_logged_in", "true");
+          justLoggedIn = true;
+          // Clean up URL
+          navigate(window.location.pathname, { replace: true });
+        }
 
         // Only show welcome messages on actual login, not navigation
         const isFreshLogin =
@@ -161,6 +174,14 @@ export default function ChatUI() {
 
         // Show welcome message ONLY on actual sign in
         if (isFreshLogin && !hasPaymentSuccess && !hasShownWelcome) {
+          console.log("Showing welcome message for fresh login:", {
+            isFreshLogin,
+            hasPaymentSuccess,
+            hasShownWelcome,
+            justLoggedIn,
+            userData,
+          });
+
           setHasShownWelcome(true);
           // Clear the login flag
           localStorage.removeItem("just_logged_in");
