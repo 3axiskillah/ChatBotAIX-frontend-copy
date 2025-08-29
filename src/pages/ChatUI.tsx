@@ -411,58 +411,29 @@ export default function ChatUI() {
     };
   }, [navigate]);
 
-  // Real-time session tracking and countdown timer
+  // Simple timer: countdown every minute when session is active
   useEffect(() => {
     if (!isSessionActive || displayTime <= 0) return;
 
-    const interval = setInterval(async () => {
-      // Calculate session time and charge for it
-      const sessionTime = Math.floor((Date.now() - sessionStartTime) / 1000);
-
-      // Charge every 60 seconds of session time
-      if (sessionTime > 0 && sessionTime % 60 === 0) {
-        try {
-          const usage = await apiFetch("/api/billing/usage/report/", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: { seconds_used: 60 }, // Charge 60 seconds
-          });
-
-          if (usage && typeof usage.time_credits_seconds === "number") {
-            setTimeCreditsSeconds(usage.time_credits_seconds);
-            setDisplayTime(usage.time_credits_seconds);
-
-            // Stop session if out of credits
-            if (usage.time_credits_seconds <= 0) {
-              setIsSessionActive(false);
-              setShowUpgradePrompt(true);
-              return;
-            }
-          }
-        } catch (error) {
-          console.error("Session time charging failed:", error);
-        }
-      }
-
-      // Update display time every minute only
+    const interval = setInterval(() => {
       setDisplayTime((prev) => {
-        const newTime = Math.max(0, prev - 60); // Subtract 60 seconds (1 minute)
+        const newTime = Math.max(0, prev - 60); // Subtract 1 minute
         if (newTime <= 0) {
           setIsSessionActive(false);
           setShowUpgradePrompt(true);
         }
         return newTime;
       });
-    }, 60000); // Update every minute instead of every second
+    }, 60000); // Update every minute
 
     return () => clearInterval(interval);
-  }, [isSessionActive, displayTime > 0, sessionStartTime]); // Run when session is active
+  }, [isSessionActive, displayTime > 0]);
 
-  // Sync with backend every 30 seconds to prevent drift
+  // Simple sync when user returns to page (not during active session)
   useEffect(() => {
-    if (timeCreditsSeconds <= 0) return;
+    if (isSessionActive) return; // Don't sync during active session
 
-    const syncInterval = setInterval(async () => {
+    const syncCredits = async () => {
       try {
         const credits = await apiFetch("/api/billing/credits/status/");
         if (credits && typeof credits.time_credits_seconds === "number") {
@@ -472,29 +443,35 @@ export default function ChatUI() {
       } catch (error) {
         console.error("Failed to sync time credits:", error);
       }
-    }, 30000);
+    };
 
-    return () => clearInterval(syncInterval);
-  }, [timeCreditsSeconds]);
+    // Sync once when component mounts and user is not in active session
+    syncCredits();
+  }, [isSessionActive]);
 
   // Cleanup session when user leaves the page
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (isSessionActive) {
-        // Stop session tracking when user leaves
-        setIsSessionActive(false);
+      if (isSessionActive && sessionStartTime > 0) {
+        // Calculate and charge time used before leaving
+        const sessionTime = Math.floor((Date.now() - sessionStartTime) / 1000);
+        if (sessionTime > 0) {
+          // Send synchronous request to charge time
+          navigator.sendBeacon(
+            "/api/billing/usage/report/",
+            JSON.stringify({
+              seconds_used: sessionTime,
+            })
+          );
+        }
       }
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      // Also stop session when component unmounts
-      if (isSessionActive) {
-        setIsSessionActive(false);
-      }
     };
-  }, [isSessionActive]);
+  }, [isSessionActive, sessionStartTime]);
 
   // Load chat history
   useEffect(() => {
@@ -575,8 +552,27 @@ export default function ChatUI() {
 
   const handleSignOut = async () => {
     try {
+      // Calculate time used and charge backend
+      if (isSessionActive && sessionStartTime > 0) {
+        const sessionTime = Math.floor((Date.now() - sessionStartTime) / 1000);
+        if (sessionTime > 0) {
+          try {
+            await apiFetch("/api/billing/usage/report/", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: { seconds_used: sessionTime },
+            });
+          } catch (error) {
+            console.error("Failed to charge session time:", error);
+          }
+        }
+      }
+
       // Stop session tracking
       setIsSessionActive(false);
+      setSessionStartTime(0);
+      setDisplayTime(0);
+      setTimeCreditsSeconds(0);
 
       await apiFetch("/api/accounts/logout/", { method: "POST" });
       localStorage.removeItem("access");
@@ -585,7 +581,7 @@ export default function ChatUI() {
       localStorage.removeItem("chat_seconds_used");
       localStorage.removeItem("imagesSentToday");
       localStorage.removeItem("imageResetDate");
-      setHasShownWelcome(false); // Reset welcome flag on actual logout
+      setHasShownWelcome(false);
       setGalleryImages([]);
       navigate("/");
     } catch (err) {
