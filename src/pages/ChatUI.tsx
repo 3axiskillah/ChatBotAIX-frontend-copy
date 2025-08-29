@@ -151,13 +151,8 @@ export default function ChatUI() {
           setDisplayTime(currentCredits);
         }
 
-        // Show welcome message ONLY on actual sign in with empty chat
-        if (
-          isFreshLogin &&
-          !hasPaymentSuccess &&
-          !hasShownWelcome &&
-          messages.length === 0
-        ) {
+        // Show welcome message ONLY on actual sign in
+        if (isFreshLogin && !hasPaymentSuccess && !hasShownWelcome) {
           setHasShownWelcome(true);
           // Clear the login flag
           localStorage.removeItem("just_logged_in");
@@ -168,7 +163,8 @@ export default function ChatUI() {
           }
 
           const freshLoginResponses = [
-            "Hey baby, I'm Amber - your personal cum dumpster. What's your name?",
+            "Hey baby, im Amber, im here to fullfil all your fantasies, whats your name and what you want to do to me",
+            "Hey baby im Amber your personal cum dumpster, what's your name and what you want to do to me",
             "Hi there sexy, I'm Amber and I'm all yours. What should I call you?",
             "Hey daddy, I'm Amber and I can't wait to get dirty with you. What's your name?",
             "Hi baby, I'm Amber and I'm already wet thinking about you. What do I call you?",
@@ -193,8 +189,7 @@ export default function ChatUI() {
         } else if (
           shouldWelcomeBack &&
           !hasPaymentSuccess &&
-          !hasShownWelcome &&
-          messages.length === 0
+          !hasShownWelcome
         ) {
           setHasShownWelcome(true);
           // Clear the login flag
