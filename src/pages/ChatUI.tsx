@@ -163,7 +163,11 @@ export default function ChatUI() {
 
           // Always use the backend time as the source of truth
           setTimeCreditsSeconds(currentCredits);
-          setDisplayTime(currentCredits);
+
+          // Only set display time if not in an active session (to avoid overriding timer)
+          if (!isSessionActive) {
+            setDisplayTime(currentCredits);
+          }
 
           // Start session tracking if user has credits
           if (currentCredits > 0) {
@@ -683,22 +687,23 @@ export default function ChatUI() {
           : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
         : undefined;
 
-      // No longer charge for processing time - session time is charged separately
-      // Just sync credits to ensure accuracy
-      try {
-        const credits = await apiFetch("/api/billing/credits/status/");
-        if (credits && typeof credits.time_credits_seconds === "number") {
-          setTimeCreditsSeconds(credits.time_credits_seconds);
-          setDisplayTime(credits.time_credits_seconds);
+      // Only sync credits if session is not active (to avoid overriding timer)
+      if (!isSessionActive) {
+        try {
+          const credits = await apiFetch("/api/billing/credits/status/");
+          if (credits && typeof credits.time_credits_seconds === "number") {
+            setTimeCreditsSeconds(credits.time_credits_seconds);
+            setDisplayTime(credits.time_credits_seconds);
 
-          // Stop session if out of credits
-          if (credits.time_credits_seconds <= 0) {
-            setIsSessionActive(false);
-            setShowUpgradePrompt(true);
+            // Stop session if out of credits
+            if (credits.time_credits_seconds <= 0) {
+              setIsSessionActive(false);
+              setShowUpgradePrompt(true);
+            }
           }
+        } catch (error) {
+          console.error("Credit sync failed:", error);
         }
-      } catch (error) {
-        console.error("Credit sync failed:", error);
       }
 
       const willHaveImage = Boolean(fullImageUrl);
