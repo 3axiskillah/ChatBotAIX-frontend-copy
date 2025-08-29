@@ -11,15 +11,18 @@ export default function ActivationProcessor() {
     const processActivation = async () => {
       try {
         // Call the activation endpoint
-        const response = await apiFetch(`/api/accounts/activate/${uidb64}/${token}/`, {
-          method: "GET",
-          credentials: "include"
-        });
+        const response = await apiFetch(
+          `/api/accounts/activate/${uidb64}/${token}/`,
+          {
+            method: "GET",
+            credentials: "include",
+          }
+        );
 
         if (response?.access) {
           // Store tokens in cookies automatically via credentials: "include"
           toast.success("Account activated successfully!");
-          
+
           // Redirect to chat or appropriate page
           navigate("/chat");
         } else {

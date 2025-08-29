@@ -47,6 +47,8 @@ export default function ChatUI() {
   const [hasShownWelcome, setHasShownWelcome] = useState<boolean>(false);
   const [keepGalleryOpen, setKeepGalleryOpen] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [sessionStartTime, setSessionStartTime] = useState<number>(0);
+  const [isSessionActive, setIsSessionActive] = useState<boolean>(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -149,6 +151,12 @@ export default function ChatUI() {
           // Always use the backend time as the source of truth
           setTimeCreditsSeconds(currentCredits);
           setDisplayTime(currentCredits);
+
+          // Start session tracking if user has credits
+          if (currentCredits > 0) {
+            setSessionStartTime(Date.now());
+            setIsSessionActive(true);
+          }
         }
 
         // Show welcome message ONLY on actual sign in
@@ -403,19 +411,52 @@ export default function ChatUI() {
     };
   }, [navigate]);
 
-  // Real-time countdown timer - runs continuously
+  // Real-time session tracking and countdown timer
   useEffect(() => {
-    if (displayTime <= 0) return;
+    if (!isSessionActive || displayTime <= 0) return;
 
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
+      // Calculate session time and charge for it
+      const sessionTime = Math.floor((Date.now() - sessionStartTime) / 1000);
+
+      // Charge every 30 seconds of session time
+      if (sessionTime > 0 && sessionTime % 30 === 0) {
+        try {
+          const usage = await apiFetch("/api/billing/usage/report/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: { seconds_used: 30 }, // Charge 30 seconds
+          });
+
+          if (usage && typeof usage.time_credits_seconds === "number") {
+            setTimeCreditsSeconds(usage.time_credits_seconds);
+            setDisplayTime(usage.time_credits_seconds);
+
+            // Stop session if out of credits
+            if (usage.time_credits_seconds <= 0) {
+              setIsSessionActive(false);
+              setShowUpgradePrompt(true);
+              return;
+            }
+          }
+        } catch (error) {
+          console.error("Session time charging failed:", error);
+        }
+      }
+
+      // Update display time continuously (every second)
       setDisplayTime((prev) => {
         const newTime = Math.max(0, prev - 1);
+        if (newTime <= 0) {
+          setIsSessionActive(false);
+          setShowUpgradePrompt(true);
+        }
         return newTime;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [displayTime > 0]); // Run whenever displayTime is greater than 0
+  }, [isSessionActive, displayTime > 0, sessionStartTime]); // Run when session is active
 
   // Sync with backend every 30 seconds to prevent drift
   useEffect(() => {
@@ -435,6 +476,25 @@ export default function ChatUI() {
 
     return () => clearInterval(syncInterval);
   }, [timeCreditsSeconds]);
+
+  // Cleanup session when user leaves the page
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isSessionActive) {
+        // Stop session tracking when user leaves
+        setIsSessionActive(false);
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      // Also stop session when component unmounts
+      if (isSessionActive) {
+        setIsSessionActive(false);
+      }
+    };
+  }, [isSessionActive]);
 
   // Load chat history
   useEffect(() => {
@@ -515,6 +575,9 @@ export default function ChatUI() {
 
   const handleSignOut = async () => {
     try {
+      // Stop session tracking
+      setIsSessionActive(false);
+
       await apiFetch("/api/accounts/logout/", { method: "POST" });
       localStorage.removeItem("access");
       localStorage.removeItem("refresh");
@@ -591,39 +654,22 @@ export default function ChatUI() {
           : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
         : undefined;
 
-      const processingTime = Math.floor((Date.now() - startTime) / 1000);
-
-      // Report usage to backend and sync credits
+      // No longer charge for processing time - session time is charged separately
+      // Just sync credits to ensure accuracy
       try {
-        const usage = await apiFetch("/api/billing/usage/report/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: { seconds_used: processingTime },
-        });
+        const credits = await apiFetch("/api/billing/credits/status/");
+        if (credits && typeof credits.time_credits_seconds === "number") {
+          setTimeCreditsSeconds(credits.time_credits_seconds);
+          setDisplayTime(credits.time_credits_seconds);
 
-        if (usage && typeof usage.time_credits_seconds === "number") {
-          setTimeCreditsSeconds(usage.time_credits_seconds);
-          setDisplayTime(usage.time_credits_seconds);
-        } else {
-          // If usage report doesn't return credits, fetch them separately
-          const credits = await apiFetch("/api/billing/credits/status/");
-          if (credits && typeof credits.time_credits_seconds === "number") {
-            setTimeCreditsSeconds(credits.time_credits_seconds);
-            setDisplayTime(credits.time_credits_seconds);
+          // Stop session if out of credits
+          if (credits.time_credits_seconds <= 0) {
+            setIsSessionActive(false);
+            setShowUpgradePrompt(true);
           }
         }
       } catch (error) {
-        console.error("Time credit usage report failed:", error);
-        // Try to get current credits as fallback
-        try {
-          const credits = await apiFetch("/api/billing/credits/status/");
-          if (credits && typeof credits.time_credits_seconds === "number") {
-            setTimeCreditsSeconds(credits.time_credits_seconds);
-            setDisplayTime(credits.time_credits_seconds);
-          }
-        } catch (fallbackError) {
-          console.error("Fallback credit fetch failed:", fallbackError);
-        }
+        console.error("Credit sync failed:", error);
       }
 
       const willHaveImage = Boolean(fullImageUrl);
@@ -660,11 +706,7 @@ export default function ChatUI() {
         );
       }
 
-      // Check if time is up after the response
-      const currentCredits = await apiFetch("/api/billing/credits/status/");
-      if (currentCredits && currentCredits.time_credits_seconds <= 0) {
-        setShowUpgradePrompt(true);
-      }
+      // Session time is handled by the real-time timer, no need to check here
     } catch (err) {
       console.error("Chat error:", err);
       setMessages((prev) => [
