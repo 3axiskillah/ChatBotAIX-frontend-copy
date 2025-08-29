@@ -167,6 +167,9 @@ export default function ChatUI() {
 
           // Start session tracking if user has credits
           if (currentCredits > 0) {
+            console.log(
+              `Starting session: credits=${currentCredits}s, displayTime=${currentCredits}s`
+            );
             setSessionStartTime(Date.now());
             setIsSessionActive(true);
           }
@@ -434,11 +437,19 @@ export default function ChatUI() {
 
   // Simple timer: countdown every minute when session is active
   useEffect(() => {
-    if (!isSessionActive || displayTime <= 0) return;
+    console.log(
+      `Timer useEffect: isSessionActive=${isSessionActive}, displayTime=${displayTime}`
+    );
+    if (!isSessionActive) return;
 
+    console.log("Starting timer interval...");
     const interval = setInterval(() => {
+      console.log("Timer interval triggered");
       setDisplayTime((prev) => {
         const newTime = Math.max(0, prev - 60); // Subtract 1 minute
+        console.log(
+          `Timer update: ${prev}s -> ${newTime}s (${Math.ceil(newTime / 60)}m)`
+        );
         if (newTime <= 0) {
           setIsSessionActive(false);
           setShowUpgradePrompt(true);
@@ -448,7 +459,7 @@ export default function ChatUI() {
     }, 60000); // Update every minute
 
     return () => clearInterval(interval);
-  }, [isSessionActive, displayTime > 0]);
+  }, [isSessionActive]); // Remove displayTime > 0 from dependencies
 
   // Simple sync when user returns to page (not during active session)
   useEffect(() => {
@@ -459,7 +470,10 @@ export default function ChatUI() {
         const credits = await apiFetch("/api/billing/credits/status/");
         if (credits && typeof credits.time_credits_seconds === "number") {
           setTimeCreditsSeconds(credits.time_credits_seconds);
-          setDisplayTime(credits.time_credits_seconds);
+          // Only update display time if not in active session
+          if (!isSessionActive) {
+            setDisplayTime(credits.time_credits_seconds);
+          }
         }
       } catch (error) {
         console.error("Failed to sync time credits:", error);
@@ -740,6 +754,9 @@ export default function ChatUI() {
 
   const getRemainingTime = () => {
     const remainingMinutes = Math.ceil(displayTime / 60); // Round up to show full minutes
+    console.log(
+      `getRemainingTime: displayTime=${displayTime}s, remainingMinutes=${remainingMinutes}`
+    );
 
     if (remainingMinutes > 0) {
       return `${remainingMinutes}m`;
