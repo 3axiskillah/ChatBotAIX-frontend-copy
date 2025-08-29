@@ -625,8 +625,6 @@ export default function ChatUI() {
     setMessage("");
     setTyping(true);
 
-    const startTime = Date.now();
-
     try {
       const payload = {
         user_id: user.id,
