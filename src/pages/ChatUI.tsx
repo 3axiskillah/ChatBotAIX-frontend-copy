@@ -166,9 +166,7 @@ export default function ChatUI() {
 
           // Start session tracking if user has credits
           if (currentCredits > 0) {
-            console.log(
-              `Starting session: credits=${currentCredits}s, displayTime=${currentCredits}s`
-            );
+            // Session started with credits
             setSessionStartTime(Date.now());
             setIsSessionActive(true);
             setDisplayTime(currentCredits);
@@ -180,13 +178,7 @@ export default function ChatUI() {
 
         // Show welcome message ONLY on actual sign in
         if (isFreshLogin && !hasPaymentSuccess && !hasShownWelcome) {
-          console.log("Showing welcome message for fresh login:", {
-            isFreshLogin,
-            hasPaymentSuccess,
-            hasShownWelcome,
-            justLoggedIn,
-            userData,
-          });
+          // Showing welcome message for fresh login
 
           setHasShownWelcome(true);
           // Clear the login flag
@@ -287,13 +279,11 @@ export default function ChatUI() {
               if (newCredits > 0) {
                 setIsSessionActive(true);
                 setSessionStartTime(Date.now());
-                console.log(
-                  `Payment success: Restarted session with ${newCredits}s credits`
-                );
+                // Payment success - session restarted
               }
             }
           } catch (error) {
-            console.error("Failed to refresh credits after payment:", error);
+            // Failed to refresh credits after payment
           }
 
           // Show toast notification instead of system message
@@ -424,16 +414,11 @@ export default function ChatUI() {
               if (newCredits > 0) {
                 setIsSessionActive(true);
                 setSessionStartTime(Date.now());
-                console.log(
-                  `Time purchase success: Restarted session with ${newCredits}s credits`
-                );
+                // Time purchase success - session restarted
               }
             }
           } catch (error) {
-            console.error(
-              "Failed to refresh credits after time purchase:",
-              error
-            );
+            // Failed to refresh credits after time purchase
           }
 
           setMessages((prev) => [
@@ -483,10 +468,10 @@ export default function ChatUI() {
       return;
     }
 
-    console.log(`Starting timer: ${displayTime}s remaining`);
+    // Timer started
 
     const interval = setInterval(async () => {
-      console.log("Timer tick - charging 60 seconds");
+      // Timer tick - charging 60 seconds
 
       // Charge backend first
       try {
@@ -499,9 +484,7 @@ export default function ChatUI() {
         if (response && response.ok !== false) {
           // Update frontend display based on backend response
           const newCredits = response.time_credits_seconds || 0;
-          console.log(
-            `Backend charged successfully. New credits: ${newCredits}s`
-          );
+          // Backend charged successfully
 
           setDisplayTime(newCredits);
           setTimeCreditsSeconds(newCredits);
@@ -512,10 +495,10 @@ export default function ChatUI() {
             setShowUpgradePrompt(true);
           }
         } else {
-          console.error("Backend charging failed:", response);
+          // Backend charging failed
         }
       } catch (error) {
-        console.error("Failed to charge backend:", error);
+        // Failed to charge backend
         // Fallback: update frontend display anyway
         setDisplayTime((prev) => {
           const newTime = Math.max(0, prev - 60);
@@ -529,7 +512,7 @@ export default function ChatUI() {
     }, 60000); // Every minute
 
     return () => {
-      console.log("Clearing timer interval");
+      // Clearing timer interval
       clearInterval(interval);
     };
   }, [isSessionActive, displayTime]);
@@ -550,11 +533,11 @@ export default function ChatUI() {
           if (newCredits > 0) {
             setIsSessionActive(true);
             setSessionStartTime(Date.now());
-            console.log(`Sync: Started session with ${newCredits}s credits`);
+            // Sync: Started session
           }
         }
       } catch (error) {
-        console.error("Failed to sync time credits:", error);
+        // Failed to sync time credits
       }
     };
 
@@ -816,9 +799,7 @@ export default function ChatUI() {
 
   const getRemainingTime = () => {
     const remainingMinutes = Math.ceil(displayTime / 60); // Round up to show full minutes
-    console.log(
-      `getRemainingTime: displayTime=${displayTime}s, remainingMinutes=${remainingMinutes}`
-    );
+    // Calculate remaining time
 
     if (remainingMinutes > 0) {
       return `${remainingMinutes}m`;
@@ -846,7 +827,7 @@ export default function ChatUI() {
   const handleBuyTime = async (tier: string) => {
     try {
       setCheckoutLoading(true);
-      console.log("Creating checkout session for tier:", tier);
+      // Creating checkout session
 
       const stripe = await loadStripe(
         "pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX"
@@ -867,7 +848,7 @@ export default function ChatUI() {
       );
 
       const data = await response.json();
-      console.log("Checkout session response:", data);
+      // Checkout session response received
 
       if (!response.ok) {
         throw new Error(data.error || data.message || "Payment failed");
@@ -1250,21 +1231,10 @@ export default function ChatUI() {
                           alt="attachment"
                           className="rounded-lg w-full aspect-[1/1] object-cover cursor-pointer hover:opacity-90 transition"
                           onLoad={() => {
-                            console.log(
-                              `Image loaded for message ${
-                                msg.serverMessageId
-                              } using ${
-                                msg.blurred
-                                  ? "protected endpoint"
-                                  : "direct R2 URL"
-                              }`
-                            );
+                            // Image loaded successfully
                           }}
                           onError={(e) => {
-                            console.error(
-                              `Image failed to load for message ${msg.serverMessageId}:`,
-                              e
-                            );
+                            // Image failed to load
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1307,10 +1277,7 @@ export default function ChatUI() {
                               return;
                             }
                             try {
-                              console.log(
-                                "Attempting to unlock image:",
-                                msg.serverMessageId
-                              );
+                              // Attempting to unlock image
                               const res = await apiFetch(
                                 `/api/billing/create-checkout-session/image-unlock/`,
                                 {
@@ -1321,7 +1288,7 @@ export default function ChatUI() {
                                   body: { message_id: msg.serverMessageId },
                                 }
                               );
-                              console.log("Unlock response:", res);
+                              // Unlock response received
 
                               if (res?.checkout_url) {
                                 window.location.href = res.checkout_url;
