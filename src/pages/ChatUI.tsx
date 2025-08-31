@@ -164,11 +164,6 @@ export default function ChatUI() {
           // Always use the backend time as the source of truth
           setTimeCreditsSeconds(currentCredits);
 
-          // Only set display time if not in an active session (to avoid overriding timer)
-          if (!isSessionActive) {
-            setDisplayTime(currentCredits);
-          }
-
           // Start session tracking if user has credits
           if (currentCredits > 0) {
             console.log(
@@ -176,6 +171,10 @@ export default function ChatUI() {
             );
             setSessionStartTime(Date.now());
             setIsSessionActive(true);
+            setDisplayTime(currentCredits);
+          } else {
+            // No credits, set display time directly
+            setDisplayTime(currentCredits);
           }
         }
 
@@ -280,8 +279,18 @@ export default function ChatUI() {
               currentCredits &&
               typeof currentCredits.time_credits_seconds === "number"
             ) {
-              setTimeCreditsSeconds(currentCredits.time_credits_seconds);
-              setDisplayTime(currentCredits.time_credits_seconds);
+              const newCredits = currentCredits.time_credits_seconds;
+              setTimeCreditsSeconds(newCredits);
+              setDisplayTime(newCredits);
+
+              // Restart session if credits were added
+              if (newCredits > 0) {
+                setIsSessionActive(true);
+                setSessionStartTime(Date.now());
+                console.log(
+                  `Payment success: Restarted session with ${newCredits}s credits`
+                );
+              }
             }
           } catch (error) {
             console.error("Failed to refresh credits after payment:", error);
@@ -398,6 +407,35 @@ export default function ChatUI() {
           }
           navigate(window.location.pathname, { replace: true });
         } else if (params.get("purchase") === "time_success") {
+          // Refresh time credits after time purchase
+          try {
+            const currentCredits = await apiFetch(
+              "/api/billing/credits/status/"
+            );
+            if (
+              currentCredits &&
+              typeof currentCredits.time_credits_seconds === "number"
+            ) {
+              const newCredits = currentCredits.time_credits_seconds;
+              setTimeCreditsSeconds(newCredits);
+              setDisplayTime(newCredits);
+
+              // Restart session if credits were added
+              if (newCredits > 0) {
+                setIsSessionActive(true);
+                setSessionStartTime(Date.now());
+                console.log(
+                  `Time purchase success: Restarted session with ${newCredits}s credits`
+                );
+              }
+            }
+          } catch (error) {
+            console.error(
+              "Failed to refresh credits after time purchase:",
+              error
+            );
+          }
+
           setMessages((prev) => [
             ...prev,
             {
@@ -439,33 +477,64 @@ export default function ChatUI() {
     };
   }, [navigate]);
 
-  // Simple timer: countdown every minute when session is active
+  // Timer: countdown every minute when session is active
   useEffect(() => {
-    console.log(
-      `Timer useEffect: isSessionActive=${isSessionActive}, displayTime=${displayTime}`
-    );
-    if (!isSessionActive) return;
+    if (!isSessionActive || displayTime <= 0) {
+      return;
+    }
 
-    console.log("Starting timer interval...");
-    const interval = setInterval(() => {
-      console.log("Timer interval triggered");
-      setDisplayTime((prev) => {
-        const newTime = Math.max(0, prev - 60); // Subtract 1 minute
-        console.log(
-          `Timer update: ${prev}s -> ${newTime}s (${Math.ceil(newTime / 60)}m)`
-        );
-        if (newTime <= 0) {
-          setIsSessionActive(false);
-          setShowUpgradePrompt(true);
+    console.log(`Starting timer: ${displayTime}s remaining`);
+
+    const interval = setInterval(async () => {
+      console.log("Timer tick - charging 60 seconds");
+
+      // Charge backend first
+      try {
+        const response = await apiFetch("/api/billing/usage/report/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: { seconds_used: 60 },
+        });
+
+        if (response && response.ok !== false) {
+          // Update frontend display based on backend response
+          const newCredits = response.time_credits_seconds || 0;
+          console.log(
+            `Backend charged successfully. New credits: ${newCredits}s`
+          );
+
+          setDisplayTime(newCredits);
+          setTimeCreditsSeconds(newCredits);
+
+          // End session if no credits left
+          if (newCredits <= 0) {
+            setIsSessionActive(false);
+            setShowUpgradePrompt(true);
+          }
+        } else {
+          console.error("Backend charging failed:", response);
         }
-        return newTime;
-      });
-    }, 60000); // Update every minute
+      } catch (error) {
+        console.error("Failed to charge backend:", error);
+        // Fallback: update frontend display anyway
+        setDisplayTime((prev) => {
+          const newTime = Math.max(0, prev - 60);
+          if (newTime <= 0) {
+            setIsSessionActive(false);
+            setShowUpgradePrompt(true);
+          }
+          return newTime;
+        });
+      }
+    }, 60000); // Every minute
 
-    return () => clearInterval(interval);
-  }, [isSessionActive]); // Remove displayTime > 0 from dependencies
+    return () => {
+      console.log("Clearing timer interval");
+      clearInterval(interval);
+    };
+  }, [isSessionActive, displayTime]);
 
-  // Simple sync when user returns to page (not during active session)
+  // Sync credits when user returns to page (not during active session)
   useEffect(() => {
     if (isSessionActive) return; // Don't sync during active session
 
@@ -473,10 +542,15 @@ export default function ChatUI() {
       try {
         const credits = await apiFetch("/api/billing/credits/status/");
         if (credits && typeof credits.time_credits_seconds === "number") {
-          setTimeCreditsSeconds(credits.time_credits_seconds);
-          // Only update display time if not in active session
-          if (!isSessionActive) {
-            setDisplayTime(credits.time_credits_seconds);
+          const newCredits = credits.time_credits_seconds;
+          setTimeCreditsSeconds(newCredits);
+          setDisplayTime(newCredits);
+
+          // Start session if user has credits
+          if (newCredits > 0) {
+            setIsSessionActive(true);
+            setSessionStartTime(Date.now());
+            console.log(`Sync: Started session with ${newCredits}s credits`);
           }
         }
       } catch (error) {
@@ -687,24 +761,7 @@ export default function ChatUI() {
           : `${import.meta.env.VITE_AI_WORKER_URL}${data.image_url}`
         : undefined;
 
-      // Only sync credits if session is not active (to avoid overriding timer)
-      if (!isSessionActive) {
-        try {
-          const credits = await apiFetch("/api/billing/credits/status/");
-          if (credits && typeof credits.time_credits_seconds === "number") {
-            setTimeCreditsSeconds(credits.time_credits_seconds);
-            setDisplayTime(credits.time_credits_seconds);
-
-            // Stop session if out of credits
-            if (credits.time_credits_seconds <= 0) {
-              setIsSessionActive(false);
-              setShowUpgradePrompt(true);
-            }
-          }
-        } catch (error) {
-          console.error("Credit sync failed:", error);
-        }
-      }
+      // Timer handles charging, no need to sync here
 
       const willHaveImage = Boolean(fullImageUrl);
 
