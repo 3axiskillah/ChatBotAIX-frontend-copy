@@ -1233,7 +1233,7 @@ export default function ChatUI() {
                           onLoad={() => {
                             // Image loaded successfully
                           }}
-                          onError={(e) => {
+                          onError={() => {
                             // Image failed to load
                           }}
                           onClick={(e) => {
