@@ -43,6 +43,10 @@
         {
           "key": "Cross-Origin-Resource-Policy",
           "value": "cross-origin"
+        },
+        {
+          "key": "Cross-Origin-Resource-Policy",
+          "value": "cross-origin"
         }
       ]
     }
