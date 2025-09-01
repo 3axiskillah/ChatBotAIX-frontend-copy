@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../utils/api"; // adjust path if needed
 
 type User = {
@@ -18,7 +17,6 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showUserModal, setShowUserModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     apiFetch("/api/accounts/admin/users/", { credentials: "include" })
@@ -38,7 +36,7 @@ export default function UsersPage() {
   ) => {
     setLoading(true);
     try {
-      const response = await apiFetch(`/api/accounts/admin/users/${userId}/`, {
+      await apiFetch(`/api/accounts/admin/users/${userId}/`, {
         method: action === "delete" ? "DELETE" : "PATCH",
         headers: { "Content-Type": "application/json" },
         body: action === "delete" ? undefined : JSON.stringify(data),
