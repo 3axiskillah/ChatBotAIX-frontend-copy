@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Security Headers Test</title>
+  </head>
+  <body>
+    <h1>Security Headers Test Page</h1>
+    <p>
+      This page is used to test if security headers are being applied correctly.
+    </p>
+    <p>Check the response headers in your browser's developer tools.</p>
+
+    <script>
+      // Test if headers are working
+      console.log("Security headers test page loaded");
+
+      // Try to access some restricted features to test CSP
+      try {
+        // This should be blocked by CSP if working
+        eval('console.log("CSP test")');
+      } catch (e) {
+        console.log("CSP is working - eval blocked");
+      }
+    </script>
+  </body>
+</html>
