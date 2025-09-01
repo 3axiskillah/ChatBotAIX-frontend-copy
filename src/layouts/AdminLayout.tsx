@@ -7,7 +7,6 @@ const links = [
   { name: "Dashboard", path: "/admin/dashboard" },
   { name: "Users", path: "/admin/users" },
   { name: "Chat Sessions", path: "/admin/sessions" },
-  { name: "Anonymous Chats", path: "/admin/anonymous" },
   { name: "Billing", path: "/admin/billing" },
 ];
 
@@ -54,9 +53,9 @@ export default function AdminLayout() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen bg-[#4B1F1F] text-[#E7D8C1] items-center justify-center">
+      <div className="flex h-screen bg-black text-white items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#D1A75D] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500 mx-auto mb-4"></div>
           <p>Checking admin privileges...</p>
         </div>
       </div>
@@ -68,11 +67,11 @@ export default function AdminLayout() {
   }
 
   return (
-    <div className="flex h-screen bg-[#4B1F1F] text-[#E7D8C1]">
+    <div className="flex h-screen bg-black text-white">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#3A1818] p-6 border-r border-[#D1A75D] flex flex-col justify-between">
+      <aside className="w-64 bg-gray-900 p-6 border-r border-gray-800 flex flex-col justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#D1A75D]">Admin</h1>
+          <h1 className="text-2xl font-bold text-red-500">Admin</h1>
           <nav className="flex flex-col space-y-2 mt-4">
             {links.map((link) => (
               <Link
@@ -80,8 +79,8 @@ export default function AdminLayout() {
                 to={link.path}
                 className={`block px-3 py-2 rounded font-semibold ${
                   location.pathname.startsWith(link.path)
-                    ? "bg-[#D1A75D] text-[#4B1F1F]"
-                    : "hover:bg-[#c49851] hover:text-[#4B1F1F] text-[#E7D8C1]"
+                    ? "bg-red-600 text-white"
+                    : "hover:bg-red-600 hover:text-white text-gray-300"
                 }`}
               >
                 {link.name}
@@ -94,7 +93,7 @@ export default function AdminLayout() {
         <div className="mt-4">
           <button
             onClick={handleLogout}
-            className="w-full text-left px-3 py-2 rounded font-semibold text-[#E7D8C1] hover:bg-[#c49851] hover:text-[#4B1F1F]"
+            className="w-full text-left px-3 py-2 rounded font-semibold text-gray-300 hover:bg-red-600 hover:text-white"
           >
             Sign Out
           </button>
@@ -102,7 +101,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 overflow-y-auto">
+      <main className="flex-1 p-6 overflow-y-auto bg-gray-900">
         <Outlet />
       </main>
     </div>

@@ -19,7 +19,7 @@ type ChatSession = {
 export default function DashboardPage() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [userCount, setUserCount] = useState(0);
-  const [premiumCount, setPremiumCount] = useState(0);
+
   const [activeUserSessions, setActiveUserSessions] = useState(0);
 
   const [revenue, setRevenue] = useState(0);
@@ -49,10 +49,6 @@ export default function DashboardPage() {
           credentials: "include",
         });
         setUserCount(users.length);
-        setPremiumCount(
-          users.filter((user: User) => (user.time_credits_seconds || 0) > 0)
-            .length
-        );
       } catch (error) {
         console.error("Error loading user stats:", error);
       }
@@ -77,14 +73,10 @@ export default function DashboardPage() {
       <h1 className="text-3xl font-bold text-red-500">Admin Dashboard</h1>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mt-6">
+      <div className="grid grid-cols-3 gap-4 mt-6">
         <div className="bg-gray-900 p-4 rounded text-center border border-gray-800">
           <div className="text-white">Total Users</div>
           <div className="text-2xl font-bold text-red-500">{userCount}</div>
-        </div>
-        <div className="bg-gray-900 p-4 rounded text-center border border-gray-800">
-          <div className="text-white">Premium Users</div>
-          <div className="text-2xl font-bold text-red-500">{premiumCount}</div>
         </div>
         <div className="bg-gray-900 p-4 rounded text-center border border-gray-800">
           <div className="text-white">Active Chat Sessions</div>
