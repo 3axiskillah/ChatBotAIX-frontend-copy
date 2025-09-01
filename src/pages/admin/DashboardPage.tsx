@@ -21,7 +21,7 @@ export default function DashboardPage() {
   const [userCount, setUserCount] = useState(0);
   const [premiumCount, setPremiumCount] = useState(0);
   const [activeUserSessions, setActiveUserSessions] = useState(0);
-  const [anonCount, setAnonCount] = useState(0);
+
   const [revenue, setRevenue] = useState(0);
   const navigate = useNavigate();
 
@@ -38,9 +38,7 @@ export default function DashboardPage() {
             (sess: ChatSession) => !sess.ended_at && sess.user !== null
           ).length
         );
-        setAnonCount(
-          sessions.filter((sess: ChatSession) => sess.user === null).length
-        );
+        // Remove anonymous count - not needed
       } catch (error) {
         console.error("Error loading chat sessions:", error);
       }
@@ -59,8 +57,16 @@ export default function DashboardPage() {
         console.error("Error loading user stats:", error);
       }
 
-      // Placeholder for revenue (hook up billing API later)
-      setRevenue(0);
+      try {
+        // Get revenue from billing API
+        const billingStats = await apiFetch("/api/billing/admin/dashboard/", {
+          credentials: "include",
+        });
+        setRevenue(billingStats.total_revenue || 0);
+      } catch (error) {
+        console.error("Error loading revenue:", error);
+        setRevenue(0);
+      }
     };
 
     loadDashboardData();
@@ -71,7 +77,7 @@ export default function DashboardPage() {
       <h1 className="text-3xl font-bold text-red-500">Admin Dashboard</h1>
 
       {/* Stats */}
-      <div className="grid grid-cols-5 gap-4 mt-6">
+      <div className="grid grid-cols-4 gap-4 mt-6">
         <div className="bg-gray-900 p-4 rounded text-center border border-gray-800">
           <div className="text-white">Total Users</div>
           <div className="text-2xl font-bold text-red-500">{userCount}</div>
@@ -87,12 +93,10 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className="bg-gray-900 p-4 rounded text-center border border-gray-800">
-          <div className="text-white">Anonymous Chats</div>
-          <div className="text-2xl font-bold text-red-500">{anonCount}</div>
-        </div>
-        <div className="bg-gray-900 p-4 rounded text-center border border-gray-800">
-          <div className="text-white">Revenue</div>
-          <div className="text-2xl font-bold text-red-500">${revenue}</div>
+          <div className="text-white">Total Revenue</div>
+          <div className="text-2xl font-bold text-red-500">
+            ${revenue.toFixed(2)}
+          </div>
         </div>
       </div>
 

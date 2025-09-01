@@ -35,6 +35,8 @@ export default function BillingPage() {
   });
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [transactionsPerPage] = useState(10);
 
   useEffect(() => {
     const loadData = async () => {
@@ -59,6 +61,15 @@ export default function BillingPage() {
 
     loadData();
   }, []);
+
+  // Pagination logic
+  const indexOfLastTransaction = currentPage * transactionsPerPage;
+  const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage;
+  const currentTransactions = transactions.slice(
+    indexOfFirstTransaction,
+    indexOfLastTransaction
+  );
+  const totalPages = Math.ceil(transactions.length / transactionsPerPage);
 
   if (loading) {
     return <div className="p-8">Loading...</div>;
@@ -109,8 +120,8 @@ export default function BillingPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-700">
-              {transactions && transactions.length > 0 ? (
-                transactions.map((tx) => (
+              {currentTransactions && currentTransactions.length > 0 ? (
+                currentTransactions.map((tx) => (
                   <tr key={tx.id} className="hover:bg-gray-800">
                     <td className="px-4 py-3">{tx.username}</td>
                     <td className="px-4 py-3">{tx.email}</td>
@@ -146,10 +157,7 @@ export default function BillingPage() {
               ) : (
                 <tr>
                   <td colSpan={7} className="text-center py-8 text-white">
-                    No transactions found.{" "}
-                    {transactions
-                      ? `(Array length: ${transactions.length})`
-                      : "(transactions is null/undefined)"}
+                    No transactions found.
                   </td>
                 </tr>
               )}
@@ -157,6 +165,37 @@ export default function BillingPage() {
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center mt-6 space-x-3">
+          <button
+            className={`px-3 py-1 rounded font-bold ${
+              currentPage === 1
+                ? "bg-gray-900 text-gray-500 cursor-not-allowed"
+                : "bg-red-600 text-white hover:bg-red-700"
+            }`}
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(currentPage - 1)}
+          >
+            ← Prev
+          </button>
+          <span className="text-white flex items-center">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            className={`px-3 py-1 rounded font-bold ${
+              currentPage === totalPages
+                ? "bg-gray-900 text-gray-500 cursor-not-allowed"
+                : "bg-red-600 text-white hover:bg-red-700"
+            }`}
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(currentPage + 1)}
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
