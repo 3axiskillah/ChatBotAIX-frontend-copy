@@ -295,7 +295,6 @@ export default function Landing({
                 </div>
                 <div className="text-center">
                   <p className="text-white font-medium mb-1">{title}</p>
-                  <p className="text-red-400 font-bold">$280</p>
                 </div>
               </div>
             ))}
