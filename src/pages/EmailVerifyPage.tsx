@@ -19,25 +19,29 @@ export default function EmailVerifyPage() {
 
   const getMessage = () => {
     switch (status) {
-      case "sent": return "Check your email for the verification link";
-      case "invalid": return "Invalid or expired verification link";
-      case "error": return "Activation failed - please try again";
-      default: return "Email verification";
+      case "sent":
+        return "Check your email for the verification link";
+      case "invalid":
+        return "Invalid or expired verification link";
+      case "error":
+        return "Activation failed - please try again";
+      default:
+        return "Email verification";
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#4B1F1F]">
-      <div className="p-8 max-w-md w-full bg-[#3A1A1A] rounded-lg border border-[#D1A75D] text-center">
-        <h2 className="text-2xl font-bold text-[#D1A75D] mb-4">
+    <div className="flex items-center justify-center min-h-screen bg-black">
+      <div className="p-8 max-w-md w-full bg-gray-900 rounded-lg border border-red-600 text-center">
+        <h2 className="text-2xl font-bold text-red-500 mb-4">
           {status === "sent" ? "Check Your Email" : "Account Verification"}
         </h2>
-        <p className="text-[#E7D8C1] mb-6">{getMessage()}</p>
+        <p className="text-gray-300 mb-6">{getMessage()}</p>
 
         {status === "invalid" && (
           <button
             onClick={() => navigate("/accounts/register")}
-            className="w-full py-2 bg-[#D1A75D] text-[#4B1F1F] rounded hover:bg-[#b88b35]"
+            className="w-full py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
           >
             Register Again
           </button>
