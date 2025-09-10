@@ -8,6 +8,10 @@ type User = {
   is_staff: boolean;
   time_credits_seconds?: number;
   last_active?: string;
+  date_joined?: string;
+  last_purchase_date?: string;
+  total_purchases?: number;
+  total_chat_time?: number;
 };
 
 export default function UsersPage() {
@@ -80,6 +84,10 @@ export default function UsersPage() {
               <th className="px-5 py-3 text-center">Has Credits</th>
               <th className="px-5 py-3 text-center">Staff</th>
               <th className="px-5 py-3 text-center">Last Active</th>
+              <th className="px-5 py-3 text-center">Registered</th>
+              <th className="px-5 py-3 text-center">Last Purchase</th>
+              <th className="px-5 py-3 text-center">Total Spent</th>
+              <th className="px-5 py-3 text-center">Chat Time</th>
               <th className="px-5 py-3 text-center">Actions</th>
             </tr>
           </thead>
@@ -119,6 +127,26 @@ export default function UsersPage() {
                     : "Never"}
                 </td>
                 <td className="px-5 py-4 text-center">
+                  {user.date_joined
+                    ? new Date(user.date_joined).toLocaleDateString()
+                    : "Unknown"}
+                </td>
+                <td className="px-5 py-4 text-center">
+                  {user.last_purchase_date
+                    ? new Date(user.last_purchase_date).toLocaleDateString()
+                    : "Never"}
+                </td>
+                <td className="px-5 py-4 text-center">
+                  <span className="text-green-400 font-medium">
+                    ${(user.total_purchases || 0).toFixed(2)}
+                  </span>
+                </td>
+                <td className="px-5 py-4 text-center">
+                  <span className="text-blue-400 font-medium">
+                    {user.total_chat_time || 0}m
+                  </span>
+                </td>
+                <td className="px-5 py-4 text-center">
                   <button
                     onClick={() => openUserModal(user)}
                     className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition"
@@ -130,7 +158,7 @@ export default function UsersPage() {
             ))}
             {currentUsers.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-white">
+                <td colSpan={10} className="text-center py-8 text-white">
                   No users found.
                 </td>
               </tr>
