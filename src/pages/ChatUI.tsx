@@ -189,80 +189,82 @@ export default function ChatUI() {
             toast.success("Welcome to Amber!");
           }
 
-          // Trigger AI welcome message by sending a simple message
-          const triggerWelcome = async () => {
-            try {
-              const payload = {
-                user_id: userData.id,
-                prompt: "Hello",
-                session_key: `u${userData.id}`,
-                history: [],
-              };
+          // Only trigger AI welcome message for truly new users (fresh login)
+          if (userData.is_fresh_login) {
+            const triggerWelcome = async () => {
+              try {
+                const payload = {
+                  user_id: userData.id,
+                  prompt: "Hello",
+                  session_key: `u${userData.id}`,
+                  history: [],
+                };
 
-              const data = await apiFetch(
-                "/chat/respond",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(payload),
-                },
-                true
-              );
+                const data = await apiFetch(
+                  "/chat/respond",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                  },
+                  true
+                );
 
-              // Add the AI welcome response to messages
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: Date.now(),
-                  text: data.response || "Hey baby, I'm Amber!",
-                  sender: "ai",
-                  image_url: data.image_url,
-                  blurred: data.blurred || false,
-                  locked: data.blurred || false,
-                  has_image: Boolean(data.image_url),
-                },
-              ]);
-
-              // Save to backend
-              if (data.response) {
-                await apiFetch("/api/chat/submit/", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    prompt: "Hello",
-                    reply: data.response,
-                    image_url: data.image_url || null,
+                // Add the AI welcome response to messages
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now(),
+                    text: data.response || "Hey baby, I'm Amber!",
+                    sender: "ai",
+                    image_url: data.image_url,
                     blurred: data.blurred || false,
-                  }),
-                });
+                    locked: data.blurred || false,
+                    has_image: Boolean(data.image_url),
+                  },
+                ]);
+
+                // Save to backend
+                if (data.response) {
+                  await apiFetch("/api/chat/submit/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      prompt: "Hello",
+                      reply: data.response,
+                      image_url: data.image_url || null,
+                      blurred: data.blurred || false,
+                    }),
+                  });
+                }
+
+                setTimeout(() => {
+                  scrollToBottom("auto");
+                }, 100);
+              } catch (error) {
+                console.error("Failed to trigger welcome message:", error);
+                // Fallback to local welcome message if AI call fails
+                const fallbackMessages = [
+                  "Hey baby, I'm Amber, I'm here to fulfill all your fantasies, what's your name and what you want to do to me",
+                  "Hey baby I'm Amber your personal cum dumpster, what's your name and what you want to do to me",
+                  "Hi there sexy, I'm Amber and I'm all yours. What should I call you?",
+                ];
+
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    id: Date.now(),
+                    text: fallbackMessages[
+                      Math.floor(Math.random() * fallbackMessages.length)
+                    ],
+                    sender: "ai",
+                  },
+                ]);
               }
+            };
 
-              setTimeout(() => {
-                scrollToBottom("auto");
-              }, 100);
-            } catch (error) {
-              console.error("Failed to trigger welcome message:", error);
-              // Fallback to local welcome message if AI call fails
-              const fallbackMessages = [
-                "Hey baby, I'm Amber, I'm here to fulfill all your fantasies, what's your name and what you want to do to me",
-                "Hey baby I'm Amber your personal cum dumpster, what's your name and what you want to do to me",
-                "Hi there sexy, I'm Amber and I'm all yours. What should I call you?",
-              ];
-
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: Date.now(),
-                  text: fallbackMessages[
-                    Math.floor(Math.random() * fallbackMessages.length)
-                  ],
-                  sender: "ai",
-                },
-              ]);
-            }
-          };
-
-          triggerWelcome();
+            triggerWelcome();
+          }
           navigate(window.location.pathname, { replace: true });
         } else if (
           shouldWelcomeBack &&
@@ -773,7 +775,7 @@ export default function ChatUI() {
         user_id: user.id,
         prompt: sanitizedMessage,
         session_key: `u${user.id}`,
-        history: messages.slice(-20).map((msg) => ({
+        history: updatedMessages.slice(-20).map((msg) => ({
           role: msg.sender === "user" ? "user" : "assistant",
           content: sanitizeInput(msg.text),
         })),
