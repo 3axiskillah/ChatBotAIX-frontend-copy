@@ -773,7 +773,7 @@ export default function ChatUI() {
         user_id: user.id,
         prompt: sanitizedMessage,
         session_key: `u${user.id}`,
-        history: updatedMessages.slice(-20).map((msg) => ({
+        history: messages.slice(-20).map((msg) => ({
           role: msg.sender === "user" ? "user" : "assistant",
           content: sanitizeInput(msg.text),
         })),
