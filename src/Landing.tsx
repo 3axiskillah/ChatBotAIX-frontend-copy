@@ -149,6 +149,9 @@ export default function Landing({
               >
                 Chat now for free!
               </button>
+              <p className="mt-3 text-sm text-red-300">
+                10 minutes free upon sign up
+              </p>
             </div>
           </div>
         </div>
