@@ -143,7 +143,7 @@ export default function UsersPage() {
                 </td>
                 <td className="px-5 py-4 text-center">
                   <span className="text-blue-400 font-medium">
-                    {user.total_chat_time || 0}m
+                    {(((user.total_chat_time || 0) as number) / 60).toFixed(1)}m
                   </span>
                 </td>
                 <td className="px-5 py-4 text-center">
