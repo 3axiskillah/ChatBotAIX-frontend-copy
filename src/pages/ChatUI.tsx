@@ -883,7 +883,7 @@ export default function ChatUI() {
       // Creating checkout session
 
       const stripe = await loadStripe(
-        "pk_live_51QbghtDGzHpWMy7sKMwPXAnv82i3nRvMqejIiNy2WNnXmlyLZ5pAcmykuB7hWO8WwpS9nT1hpeuvvWQdRyUpg2or00x6xR1JgX"
+        "pk_test_51SDoFp1meK7WUySJ2XqK7zMyWfq6ZXZ30XJ3EfBOImUTOa8sz3FTrDDxWKUS0hQQy5UEnKVYstad0JDyIl31sX7n00IcV0wTQ1"
       );
 
       const response = await fetch(
