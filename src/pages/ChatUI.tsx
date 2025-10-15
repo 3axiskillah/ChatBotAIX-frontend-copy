@@ -372,15 +372,55 @@ export default function ChatUI() {
           const messageId = params.get("message_id");
           if (messageId) {
             try {
+              // Wait a bit for webhook to process, then reload chat history
+              setTimeout(async () => {
+                try {
+                  const data = await apiFetch("/api/chat/history/all/");
+                  const formatted: Message[] = data.messages.map((msg: any) => ({
+                    id: msg.id || Date.now(),
+                    text: msg.content,
+                    sender: msg.is_user ? "user" : "ai",
+                    image_url: msg.image_url || undefined,
+                    serverMessageId: msg.id,
+                    timestamp: msg.timestamp,
+                    blurred: msg.blurred || false,
+                    locked: msg.locked || false,
+                    has_image: msg.has_image || false,
+                  }));
+                  
+                  setMessages(formatted);
+                  
+                  // Update gallery with unlocked images
+                  const galleryImgs = formatted
+                    .filter((m) => m.image_url && !m.blurred && !m.locked)
+                    .map((m) => m.image_url)
+                    .filter((url) => url !== undefined)
+                    .filter((url, index, self) => self.indexOf(url) === index) as string[];
+                  
+                  setGalleryImages(galleryImgs);
+                  
+                  toast.success("Image unlocked and added to gallery!");
+                } catch (error) {
+                  console.error("Failed to reload chat history after unlock:", error);
+                  // Fallback to local update
+                  setMessages((prev) => prev.map((m) =>
+                    m.serverMessageId === parseInt(messageId)
+                      ? { ...m, blurred: false, locked: false }
+                      : m
+                  ));
+                  toast.success("Image unlocked!");
+                }
+              }, 2000); // Wait 2 seconds for webhook to process
+
+              // Show immediate feedback
               setMessages((prev) => {
                 const unlockedMessage = prev.find(
                   (m) => m.serverMessageId === parseInt(messageId)
                 );
                 if (unlockedMessage && unlockedMessage.image_url) {
-                  // Check if image is already in gallery to prevent duplication
                   setGalleryImages((gallery) => {
                     if (gallery.includes(unlockedMessage.image_url!)) {
-                      return gallery; // Already exists, don't add again
+                      return gallery;
                     }
                     return [...gallery, unlockedMessage.image_url!];
                   });
@@ -398,7 +438,7 @@ export default function ChatUI() {
               });
 
               // Show toast notification instead of system message
-              toast.success("Image unlocked and added to gallery!");
+              toast.success("Processing payment...");
 
               // Add Amber's natural response
               const imageResponses = [
